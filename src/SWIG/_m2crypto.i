@@ -107,4 +107,3 @@ static PyObject *x509_store_verify_cb_func;
 %constant int encrypt = 1;
 %constant int decrypt = 0;
 #endif
-

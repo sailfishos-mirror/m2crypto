@@ -953,6 +953,35 @@ class X509_Stack(object):
         """
         return m2.get_der_encoding_stack(self.stack)
 
+    def create_degenerate(self, bio: BIO.BIO) -> int:
+        """Write this certificate stack as a degenerate PKCS7 object.
+
+        :param bio: Output BIO to write to
+        :return: 1 on success, 0 on failure
+        :raises X509Error: If operation fails
+        """
+        if not isinstance(bio, BIO.BIO):
+            raise X509Error("bio must be a BIO.BIO")
+        if len(self) == 0:
+            raise X509Error("Cannot create degenerate PKCS7 from empty stack")
+
+        ret = m2.pkcs7_create_degenerate(self._ptr(), bio._ptr())
+        if ret != 1:
+            raise X509Error(m2.err_get_error())
+        return ret
+
+    def save_degenerate(self, filename: Union[str, bytes]) -> int:
+        """Save this certificate stack as a .p7c file.
+
+        :param filename: Output filename (.p7c extension recommended)
+        :return: 1 on success, 0 on failure
+        """
+        if isinstance(filename, bytes):
+            filename = filename.decode("utf-8")
+
+        with BIO.openfile(filename, "wb") as bio:
+            return self.create_degenerate(bio)
+
 
 class X509_Store_Context(object):
     """

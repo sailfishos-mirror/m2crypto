@@ -118,6 +118,70 @@ def smime_load_pkcs7_bio(p7_bio: BIO.BIO) -> Tuple[PKCS7, Optional[BIO.BIO]]:
         return PKCS7(p7_ptr, 1), BIO.BIO(bio_ptr, 1)
 
 
+def create_degenerate(cert_stack: X509.X509_Stack, bio: BIO.BIO) -> int:
+    """Create a degenerate PKCS7 object containing only certificates.
+
+    Creates a certificate-only message (.p7c format) as defined in RFC 2311
+    Section 3.6. This is used for distributing certificates without any
+    signed content.
+
+    :param cert_stack: Stack of certificates to include
+    :param bio: Output BIO to write degenerate PKCS7 to
+    :return: 1 on success, 0 on failure
+    :raises SMIME_Error: If creation fails
+    """
+    if not isinstance(cert_stack, X509.X509_Stack):
+        raise SMIME_Error("cert_stack must be an X509.X509_Stack")
+    if not isinstance(bio, BIO.BIO):
+        raise SMIME_Error("bio must be a BIO.BIO")
+
+    if len(cert_stack) == 0:
+        raise SMIME_Error("cert_stack cannot be empty")
+
+    ret = m2.pkcs7_create_degenerate(cert_stack._ptr(), bio._ptr())
+    if ret != 1:
+        raise SMIME_Error(Err.get_error())
+    return ret
+
+
+def save_degenerate(cert_stack: X509.X509_Stack, filename: Union[str, bytes]) -> int:
+    """Save certificates as a degenerate PKCS7 file (.p7c).
+
+    :param cert_stack: Stack of certificates to save
+    :param filename: Output filename (should have .p7c extension)
+    :return: 1 on success, 0 on failure
+    """
+    if isinstance(filename, bytes):
+        filename = filename.decode("utf-8")
+
+    with BIO.openfile(filename, "wb") as bio:
+        return create_degenerate(cert_stack, bio)
+
+
+def load_certificates(filename: Union[str, bytes]) -> X509.X509_Stack:
+    """Load certificates from a degenerate PKCS7 file (.p7c).
+
+    :param filename: Path to .p7c file
+    :return: Stack of certificates
+    :raises SMIME_Error: If loading fails
+    """
+    if isinstance(filename, bytes):
+        filename = filename.decode("utf-8")
+
+    # Load as regular PKCS7 and extract certificates
+    p7 = load_pkcs7_der(filename)
+    if p7.type() != PKCS7_SIGNED:
+        raise SMIME_Error("Not a degenerate PKCS7 (certs-only) file")
+
+    # Extract a deep copy of the certificate stack
+    certs_ptr = m2.pkcs7_get_certs_sk(p7._ptr())
+    if certs_ptr is None:
+        return X509.X509_Stack()
+
+    # The returned stack is a deep copy, so Python should own it and free it.
+    return X509.X509_Stack(certs_ptr, 1)
+
+
 class Cipher(object):
     """Object interface to EVP_CIPHER without all the frills of
     M2Crypto.EVP.Cipher.

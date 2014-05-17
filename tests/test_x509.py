@@ -802,6 +802,49 @@ class X509StackTestCase(unittest.TestCase):
         self.assertEqual(str(issuer_subject1), str(issuer_subject2))
 
 
+class X509StackDegenerateTestCase(unittest.TestCase):
+    def setUp(self):
+        self.cert1 = X509.load_cert("tests/signer.pem")
+        self.cert2 = X509.load_cert("tests/server.pem")
+        self.stack = X509.X509_Stack()
+        self.stack.push(self.cert1)
+        self.stack.push(self.cert2)
+
+    def test_create_degenerate_method(self):
+        """Test X509_Stack.create_degenerate() method."""
+        bio = BIO.MemoryBuffer()
+        ret = self.stack.create_degenerate(bio)
+        self.assertEqual(ret, 1)
+
+        output = bio.read()
+        self.assertTrue(len(output) > 0)
+        # self.assertIn(b"-----BEGIN PKCS7-----", output)
+
+    def test_save_degenerate_method(self):
+        """Test X509_Stack.save_degenerate() method."""
+        filename = "tests/test_stack_degenerate.p7c"
+        try:
+            ret = self.stack.save_degenerate(filename)
+            self.assertEqual(ret, 1)
+            self.assertTrue(os.path.exists(filename))
+        finally:
+            if os.path.exists(filename):
+                os.unlink(filename)
+
+    def test_create_degenerate_empty_stack(self):
+        """Test error handling for empty stack."""
+        empty_stack = X509.X509_Stack()
+        bio = BIO.MemoryBuffer()
+
+        with self.assertRaises(X509.X509Error):
+            empty_stack.create_degenerate(bio)
+
+    def test_create_degenerate_invalid_bio(self):
+        """Test error handling for invalid BIO parameter."""
+        with self.assertRaises(X509.X509Error):
+            self.stack.create_degenerate("not_a_bio")
+
+
 class X509ExtTestCase(unittest.TestCase):
     def test_ext(self):
         if 0:  # XXX
@@ -828,6 +871,7 @@ def suite():
     st = unittest.TestSuite()
     st.addTest(unittest.TestLoader().loadTestsFromTestCase(X509TestCase))
     st.addTest(unittest.TestLoader().loadTestsFromTestCase(X509StackTestCase))
+    st.addTest(unittest.TestLoader().loadTestsFromTestCase(X509StackDegenerateTestCase))
     st.addTest(unittest.TestLoader().loadTestsFromTestCase(X509ExtTestCase))
     st.addTest(unittest.TestLoader().loadTestsFromTestCase(CRLTestCase))
     return st

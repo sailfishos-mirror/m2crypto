@@ -8,12 +8,15 @@
 #include <openssl/evp.h>
 #include <openssl/objects.h>
 #include <openssl/pkcs7.h>
+#include <openssl/x509.h>
+#include <openssl/x509v3.h>
 %}
 
 %apply Pointer NONNULL { BIO * };
 %apply Pointer NONNULL { EVP_CIPHER * };
 %apply Pointer NONNULL { EVP_PKEY * };
 %apply Pointer NONNULL { PKCS7 * };
+%apply Pointer NONNULL { PKCS7_SIGNED * };
 %apply Pointer NONNULL { STACK_OF(X509) * };
 %apply Pointer NONNULL { X509 * };
 
@@ -280,5 +283,58 @@ STACK_OF(X509) *pkcs7_get0_signers(PKCS7 *p7, STACK_OF(X509) *certs, int flags) 
     return PKCS7_get0_signers(p7, certs, flags);
 }
 
+STACK_OF(X509) *pkcs7_get_certs_sk(PKCS7 *p7) {
+    STACK_OF(X509) *certs = NULL;
+    if (OBJ_obj2nid(p7->type) != NID_pkcs7_signed) {
+        return NULL;
+    }
+    if (p7->d.sign == NULL) {
+        return NULL;
+    }
+    certs = p7->d.sign->cert;
+    if (certs == NULL) {
+        return NULL;
+    }
+    return sk_X509_deep_copy(certs, X509_dup, X509_free);
+}
+
 %}
 
+/* Additional interface definitions for degenerate PKCS#7 object creation
+ * 
+*/
+%threadallow pkcs7_create_degenerate;
+%inline %{
+int pkcs7_create_degenerate(STACK_OF(X509) *cert_stack, BIO *bio) {
+	int ret=1;
+	PKCS7 *p7=NULL;
+	PKCS7_SIGNED *p7s=NULL;
+	STACK_OF(X509_CRL) *crl_stack=NULL;
+
+	if ((p7=PKCS7_new()) == NULL) goto end;
+	if ((p7s=PKCS7_SIGNED_new()) == NULL) goto end;  
+	
+	p7->type=OBJ_nid2obj(NID_pkcs7_signed);
+	p7->d.sign=p7s;
+	p7s->contents->type=OBJ_nid2obj(NID_pkcs7_data);
+
+	if (!ASN1_INTEGER_set(p7s->version,1)) goto end;
+	if ((crl_stack=sk_X509_CRL_new_null()) == NULL) goto end;
+	p7s->crl=crl_stack;
+	p7s->cert=cert_stack;
+	
+	ret=i2d_PKCS7_bio(bio, p7);
+
+end:
+	p7s->cert=NULL;
+	
+	if (p7 != NULL) {
+// 		printf("about to free p7: ");
+		PKCS7_free(p7);
+// 		printf("freed.\n");
+	}
+
+	return ret;
+
+}
+%}

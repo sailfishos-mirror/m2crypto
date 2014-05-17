@@ -398,10 +398,108 @@ class WriteLoadTestCase(unittest.TestCase):
         self.assertEqual(a.type(), SMIME.PKCS7_SIGNED)
 
 
+class DegenerateTestCase(unittest.TestCase):
+    def setUp(self):
+        # Load test certificates
+        self.cert1 = X509.load_cert("tests/signer.pem")
+        self.cert2 = X509.load_cert("tests/server.pem")
+        self.stack = X509.X509_Stack()
+        self.stack.push(self.cert1)
+        self.stack.push(self.cert2)
+        self.test_filename = "tests/test_degenerate.p7c"
+
+    def tearDown(self):
+        # Clean up test files
+        import os
+        if os.path.exists(self.test_filename):
+            os.unlink(self.test_filename)
+
+    def test_create_degenerate_single_cert(self):
+        """Test creating degenerate PKCS7 with single certificate."""
+        single_stack = X509.X509_Stack()
+        single_stack.push(self.cert1)
+
+        bio = BIO.MemoryBuffer()
+        ret = SMIME.create_degenerate(single_stack, bio)
+        self.assertEqual(ret, 1)
+
+        # Verify the output
+        output = bio.read()
+        self.assertTrue(len(output) > 0)
+        # It's DER format
+        # self.assertIn(b"-----BEGIN PKCS7-----", output)
+
+    def test_create_degenerate_multiple_certs(self):
+        """Test creating degenerate PKCS7 with multiple certificates."""
+        bio = BIO.MemoryBuffer()
+        ret = SMIME.create_degenerate(self.stack, bio)
+        self.assertEqual(ret, 1)
+
+        output = bio.read()
+        self.assertTrue(len(output) > 0)
+
+    def test_create_degenerate_empty_stack(self):
+        """Test error handling for empty certificate stack."""
+        empty_stack = X509.X509_Stack()
+        bio = BIO.MemoryBuffer()
+
+        with self.assertRaises(SMIME.SMIME_Error):
+            SMIME.create_degenerate(empty_stack, bio)
+
+    def test_save_degenerate_file(self):
+        """Test file saving functionality."""
+        ret = SMIME.save_degenerate(self.stack, self.test_filename)
+        self.assertEqual(ret, 1)
+        self.assertTrue(os.path.exists(self.test_filename))
+
+        # Verify file contents
+        # with open(self.test_filename, "rb") as f:
+        #     content = f.read()
+            # self.assertIn(b"-----BEGIN PKCS7-----", content)
+
+    def test_load_certificates_roundtrip(self):
+        """Test save/load cycle for degenerate PKCS7."""
+        # Save first
+        SMIME.save_degenerate(self.stack, self.test_filename)
+
+        # Then load back
+        loaded_stack = SMIME.load_certificates(self.test_filename)
+        self.assertEqual(len(loaded_stack), len(self.stack))
+
+        # Verify certificates match
+        for i, cert in enumerate(self.stack):
+            loaded_cert = loaded_stack[i]
+            self.assertEqual(cert.as_pem(), loaded_cert.as_pem())
+
+    def test_degenerate_type_detection(self):
+        """Verify created object has correct PKCS7 type."""
+        bio = BIO.MemoryBuffer()
+        SMIME.create_degenerate(self.stack, bio)
+
+        # Load back as PKCS7 to verify type
+        p7_data = bio.read()
+        p7_bio = BIO.MemoryBuffer(p7_data)
+        p7 = SMIME.load_pkcs7_bio_der(p7_bio)
+        self.assertEqual(p7.type(), SMIME.PKCS7_SIGNED)
+
+    def test_invalid_parameters(self):
+        """Test error handling for invalid parameters."""
+        bio = BIO.MemoryBuffer()
+
+        # Test invalid stack type
+        with self.assertRaises(SMIME.SMIME_Error):
+            SMIME.create_degenerate("not_a_stack", bio)
+
+        # Test invalid bio type
+        with self.assertRaises(SMIME.SMIME_Error):
+            SMIME.create_degenerate(self.stack, "not_a_bio")
+
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(SMIMETestCase))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(WriteLoadTestCase))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(DegenerateTestCase))
     return suite
 
 

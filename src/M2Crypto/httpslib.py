@@ -1,4 +1,3 @@
-
 import warnings
 
 """M2Crypto support for Python's httplib.
@@ -29,6 +28,7 @@ class HTTPSConnection(HTTPConnection):
         host: str,
         port: Optional[int] = None,
         strict: Optional[bool] = None,
+        ssl_conn_cls: SSL.Connection = SSL.Connection,
         **ssl
     ) -> None:
         """
@@ -48,6 +48,7 @@ class HTTPSConnection(HTTPConnection):
         self.session: Optional[bytes] = None
         self.host = host
         self.port = port
+        self._ssl_conn_cls = ssl_conn_cls
         keys = set(ssl.keys()) - set(
             ('key_file', 'cert_file', 'ssl_context')
         )
@@ -69,7 +70,7 @@ class HTTPSConnection(HTTPConnection):
         ):
             sock = None
             try:
-                sock = SSL.Connection(self.ssl_ctx, family=family)
+                sock = self._ssl_conn_cls(self.ssl_ctx, family=family)
 
                 # set SNI server name since we know it at this point
                 sock.set_tlsext_host_name(self.host)
@@ -279,7 +280,7 @@ class ProxyHTTPSConnection(HTTPSConnection):
 
     def _start_ssl(self) -> None:
         """Make this connection's socket SSL-aware."""
-        self.sock = SSL.Connection(self.ssl_ctx, self.sock)
+        self.sock = self._ssl_conn_cls(self.ssl_ctx, self.sock)
         self.sock.setup_ssl()
         self.sock.set_connect_state()
         self.sock.connect_ssl()

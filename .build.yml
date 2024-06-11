@@ -9,8 +9,11 @@ packages:
   - openssl-devel
   - openssl
   - python3-setuptools
+  - python3-wheel
   - python3-twisted
   - python3-docutils
+environment:
+  CFLAGS: -pthread -Wno-unused-result -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -mtune=generic -D_GNU_SOURCE -fwrapv
 sources:
   - https://git.sr.ht/~mcepl/m2crypto
 tasks:
@@ -18,7 +21,8 @@ tasks:
      cd m2crypto
      export PATH=$PATH:$HOME/.local/bin
      python3 -mpip install --user -r dev-requirements.txt
-     python3 -mbuild .
+     # python3 -mbuild -n -v .
+     python3 -mpip wheel --no-build-isolation --no-clean --no-deps -v --global-option --verbose --wheel-dir dist/ .
      find . -name \*.whl -o -name \*.tar.gz
      python3 -mpip install -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
   - test: |

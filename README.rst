@@ -5,6 +5,7 @@ M2Crypto
 :Maintainer: Matěj Cepl
 :Web-Site: https://sr.ht/~mcepl/m2crypto/
 :Documentation: https://m2crypto.readthedocs.io/
+:IRC channel: irc://irc.ergo.chat/#m2crypto
 :Email list: https://lists.sr.ht/~mcepl/m2crypto (`subscribe via email`_)
 :Issue tracker: https://todo.sr.ht/~mcepl/m2crypto (R/O, please
                 report issues via the email list).

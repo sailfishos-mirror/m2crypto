@@ -246,7 +246,6 @@ class X509TestCase(unittest.TestCase):
         self.assertEqual(req.get_version(), 0)
 
     @unittest.skipIf(platform.system() == 'Windows', 'Skip on Windows. TODO')
-    @expectedFailureIf(is_32bit())
     def test_mkcert(self):
         for utc in (True, False):
             req, pk = self.mkreq(1024)

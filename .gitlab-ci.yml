@@ -15,7 +15,7 @@ python39:
         - python3 -mpip install --break-system-packages --user -r dev-requirements.txt
         - python3 -mbuild .
         - python3 -mpip install --break-system-packages -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
-        - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest -b -v tests.alltests.suite
+        - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest discover -b -v tests
 
 python3:
     image: python:3
@@ -28,7 +28,7 @@ python3:
         - python3 -mpip install --break-system-packages --user -r dev-requirements.txt
         - python3 -mbuild .
         - python3 -mpip install --break-system-packages -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
-        - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest -b -v tests.alltests.suite
+        - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest discover -b -v tests
 
 alpine-32bit:
     image:
@@ -43,7 +43,7 @@ alpine-32bit:
         - python3 -mpip install --break-system-packages --user -r dev-requirements.txt
         - python3 -mbuild .
         - python3 -mpip install --break-system-packages -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
-        - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest -b -v tests.alltests.suite
+        - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest discover -b -v tests
 
 python3-32bit:
     image:
@@ -58,7 +58,7 @@ python3-32bit:
         - python3 -mpip install --break-system-packages --user -r dev-requirements.txt
         - python3 -mbuild .
         - python3 -mpip install --break-system-packages -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
-        - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest -b -v tests.alltests.suite
+        - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest discover -b -v tests
 
 python3-doctest:
     image: python:3
@@ -86,7 +86,7 @@ fedora:
         - python3 -mpip install --user -r dev-requirements.txt
         - python3 -mbuild .
         - python3 -mpip install -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
-        - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest -b -v tests.alltests.suite
+        - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest discover -b -v tests
 
 fedora-rawhide:
     image: registry.fedoraproject.org/fedora:rawhide
@@ -100,7 +100,7 @@ fedora-rawhide:
         - python3 -mpip install --break-system-packages --user -r dev-requirements.txt
         - python3 -mbuild .
         - python3 -mpip install --break-system-packages -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
-        - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest -b -v tests.alltests.suite
+        - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest discover -b -v tests
 
 leap:
     # image: registry.suse.com/bci/bci-base:latest
@@ -115,7 +115,7 @@ leap:
         - python3 -mpip install --user -r dev-requirements.txt
         - python3 -mbuild .
         - python3 -mpip install -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
-        - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest -b -v tests.alltests.suite
+        - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest discover -b -v tests
 
 opensuse:
     image: opensuse/tumbleweed
@@ -129,7 +129,7 @@ opensuse:
         - python3 -mpip install --user --break-system-packages -r dev-requirements.txt
         - python3 -mbuild .
         - python3 -mpip install -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
-        - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest -b -v tests.alltests.suite
+        - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest discover -b -v tests
 
 build-sdist:
     image: python:3

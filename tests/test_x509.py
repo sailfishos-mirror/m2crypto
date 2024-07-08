@@ -619,15 +619,15 @@ class X509TestCase(unittest.TestCase):
             with self.assertRaises(X509.X509Error):
                 X509.new_stack_from_der(b"Hello")
             with self.assertRaises(X509.X509Error):
-                X509.load_cert("tests/alltests.py")
+                X509.load_cert('tests/__init__.py')
             with self.assertRaises(X509.X509Error):
-                X509.load_request("tests/alltests.py")
+                X509.load_request('tests/__init__.py')
             with self.assertRaises(X509.X509Error):
                 X509.load_request_string("Hello")
             with self.assertRaises(X509.X509Error):
                 X509.load_request_der_string("Hello")
             with self.assertRaises(X509.X509Error):
-                X509.load_crl("tests/alltests.py")
+                X509.load_crl('tests/__init__.py')
         except SystemError:
             pass
 

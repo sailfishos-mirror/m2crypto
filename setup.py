@@ -145,6 +145,8 @@ class _M2CryptoBuildExt(build_ext.build_ext):
         # swig seems to need the default header file directories
         self.swig_opts.extend(['-I%s' % i for i in _get_additional_includes()])
 
+        self.swig_opts.append('-I%s' % os.path.join(os.getcwd(), 'src', 'SWIG'))
+
         log.debug('self.include_dirs = %s', self.include_dirs)
         log.debug('self.library_dirs = %s', self.library_dirs)
 

@@ -41,7 +41,7 @@ tasks:
      cd m2crypto
      export M2CRYPTO_OPENSSL_MODULE_PKCS11=/usr/lib64/ossl-modules/pkcs11.so
      export M2CRYPTO_PKCS11_MODULE_PATH=/usr/lib64/libsofthsm2.so
-     PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest -b -v tests.alltests.suite
+     PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest discover -b -v tests
      case $BUILD_SUBMITTER in
         *git.sr.ht*)
              [ -n "$GIT_REF" ] && REASON="$JOB_ID ($GIT_REF)"

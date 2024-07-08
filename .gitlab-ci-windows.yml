@@ -20,6 +20,7 @@
   - $ErrorActionPreference = "Stop"
   - if (-not (Test-Path "$OPENSSL_PATH\\bin\\openssl.exe")) { throw "OpenSSL installation failed" }
   - echo "Install pywin32"; python -m pip install pywin32
+  - $env:PATH = "$OPENSSL_PATH\bin;$env:PATH"
   # Print information for debugging
   - ls "$OPENSSL_PATH"
   - ls -Recurse "$OPENSSL_PATH"
@@ -64,7 +65,7 @@ build-test-windows:
     - $env:PYTHONPATH_DIR = "win-amd64-cpython-$PYTHON_VERSION"
     - python -m pip install -v --upgrade --target build/lib.$PYTHONPATH_DIR --no-compile --ignore-installed --no-deps --no-index --find-links dist m2crypto
     # Run tests
-    - $env:PYTHONPATH = "build/lib.$PYTHONPATH_DIR"; python -m unittest -b -v tests.alltests.suite
+    - $env:PYTHONPATH = "build/lib.$PYTHONPATH_DIR"; python -munittest discover -b -v tests
   rules:
     - if: "($CI_COMMIT_BRANCH == \"master\" || $CI_COMMIT_BRANCH =~ /^windows.*/)"  # Run for all changes to master or branches starting with "windows"
     - if: "$CI_COMMIT_TAG =~ /^\\d+\\.\\d+\\.\\d+$/"  # Also run when pushing tags for versions, e.g: 0.40.1

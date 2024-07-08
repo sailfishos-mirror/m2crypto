@@ -84,7 +84,7 @@ check: install ## Run the unit tests.
 		echo "Error: Build library directory not found. Run 'make install' first."; \
 		exit 1; \
 	fi
-	PYTHONPATH="$(BUILD_LIB_DIR)" $(PYTHON) -m unittest -v tests.alltests.suite
+	PYTHONPATH="$(BUILD_LIB_DIR)" $(PYTHON) -m unittest discover -b -v tests
 
 # 'clean' is a manual operation to remove all generated files.
 clean: ## Remove all generated files and build artifacts.

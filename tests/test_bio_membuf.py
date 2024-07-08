@@ -4,6 +4,7 @@
 
 Copyright (c) 2000 Ng Pheng Siong. All rights reserved."""
 
+import logging
 import os
 import multiprocessing
 
@@ -11,7 +12,10 @@ from platform import system
 from sys import version_info
 from M2Crypto import m2
 from M2Crypto.BIO import MemoryBuffer
+from M2Crypto.Err import get_error_message
 from tests import unittest
+
+log = logging.getLogger('test_bio_membuf')
 
 
 class TimeLimitExpired(Exception):
@@ -50,8 +54,11 @@ class MemoryBufferTestCase(unittest.TestCase):
     def test_init_empty(self):
         mb = MemoryBuffer()
         self.assertEqual(len(mb), 0)
-        out = mb.read()
-        assert out is None
+        try:
+            out = mb.read()
+        except:
+            log.debug('Error was: %s', get_error_message())
+        self.assertIsNone(out)
 
     def test_init_empty_cm(self):
         with MemoryBuffer() as mb:

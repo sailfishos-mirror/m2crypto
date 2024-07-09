@@ -50,7 +50,7 @@ build-test-windows:
     - $env:PYTHONPATH_DIR = If ($ARCH -eq "32") {"win32-cpython-$PYTHON_VERSION"} Else {"win-amd64-cpython-$PYTHON_VERSION"}
     - python -m pip install -v --upgrade --target build/lib.$PYTHONPATH_DIR --no-compile --ignore-installed --no-deps --no-index --find-links dist m2crypto
     # Run tests
-    - $env:PYTHONPATH = "build/lib.$PYTHONPATH_DIR"; python3 -munittest discover -b -v tests
+    - $env:PYTHONPATH = "build/lib.$PYTHONPATH_DIR"; $env:PATH = "$PATH ; $OPENSSL_PATH/bin" ; python -munittest discover -b -v tests
   rules:
     - if: ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH =~ /^windows.*/)  # Run for all changes to master or branches starting with "windows"
     - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/  # Also run when pushing tags for versions, e.g: 0.40.1

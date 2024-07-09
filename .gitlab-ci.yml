@@ -4,170 +4,170 @@ stages:
 
 include: '/.gitlab-ci-windows.yml'
 
-python39:
-    image: python:3.9-alpine
-    when: always
-    stage: build
-    script:
-        - apk update
-        - apk add --no-interactive swig gcc git musl-dev python3-dev python3 py3-pip openssl-dev openssl py3-setuptools py3-twisted py3-docutils py3-wheel
-        - export PATH=$PATH:$HOME/.local/bin
-        - python3 -mpip install --break-system-packages --user -r dev-requirements.txt
-        - python3 -mbuild .
-        - python3 -mpip install --break-system-packages -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
-        - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest discover -b -v tests
-
-python3:
-    image: python:3
-    when: always
-    stage: build
-    script:
-        - apt-get update -q -y
-        - apt-get install -y swig libssl-dev python3-dev python3-pip openssl python3-setuptools python3-twisted python3-pip
-        - export PATH=$PATH:$HOME/.local/bin
-        - python3 -mpip install --break-system-packages --user -r dev-requirements.txt
-        - python3 -mbuild .
-        - python3 -mpip install --break-system-packages -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
-        - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest discover -b -v tests
-
-alpine-32bit:
-    image:
-        name: i386/alpine
-        entrypoint: ["linux32"]
-    when: always
-    stage: build
-    script:
-        - apk update
-        - apk add --no-interactive swig gcc git musl-dev python3-dev python3 py3-pip openssl-dev openssl py3-setuptools py3-twisted py3-docutils py3-wheel
-        - export PATH=$PATH:$HOME/.local/bin
-        - python3 -mpip install --break-system-packages --user -r dev-requirements.txt
-        - python3 -mbuild .
-        - python3 -mpip install --break-system-packages -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
-        - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest discover -b -v tests
-
-python3-32bit:
-    image:
-        name: i386/debian
-        entrypoint: ["linux32"]
-    when: always
-    stage: build
-    script:
-        - apt-get update -q -y
-        - apt-get install -y swig gcc git libc6-dev python3-dev python3 python3-pip libssl-dev openssl python3-setuptools python3-twisted python3-docutils python3-wheel
-        - export PATH=$PATH:$HOME/.local/bin
-        - python3 -mpip install --break-system-packages --user -r dev-requirements.txt
-        - python3 -mbuild .
-        - python3 -mpip install --break-system-packages -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
-        - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest discover -b -v tests
-
-python3-doctest:
-    image: python:3
-    when: always
-    stage: build
-    script:
-        - apt-get update -q -y
-        - apt-get install -y swig libssl-dev python3-dev python3-pip openssl python3-setuptools python3-twisted python3-pip
-        - export PATH=$PATH:$HOME/.local/bin
-        - python3 -mpip install --break-system-packages --user -r dev-requirements.txt -r doc/requirements.txt
-        - python3 -mbuild .
-        - python3 -mpip install --break-system-packages -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
-        - cd doc/
-        - PYTHONPATH=$(readlink -f ../build/lib.*) make doctest
-
-fedora:
-    image: fedora:latest
-    when: always
-    stage: build
-    script:
-        - dnf makecache
-        - dnf install -y @development-tools fedora-packager rpmdevtools
-        - dnf install -y swig python3-devel python3-pip openssl-devel openssl python3-setuptools python3-twisted
-        - export PATH=$PATH:$HOME/.local/bin
-        - python3 -mpip install --user -r dev-requirements.txt
-        - python3 -mbuild .
-        - python3 -mpip install -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
-        - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest discover -b -v tests
-
-fedora-rawhide:
-    image: registry.fedoraproject.org/fedora:rawhide
-    when: always
-    stage: build
-    script:
-        - dnf makecache
-        - dnf install -y @development-tools fedora-packager rpmdevtools
-        - dnf install -y swig python3-devel python3-pip openssl-devel openssl python3-setuptools python3-twisted openssl-devel-engine
-        - export PATH=$PATH:$HOME/.local/bin
-        - python3 -mpip install --break-system-packages --user -r dev-requirements.txt
-        - python3 -mbuild .
-        - python3 -mpip install --break-system-packages -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
-        - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest discover -b -v tests
-
-leap:
-    # image: registry.suse.com/bci/bci-base:latest
-    image: opensuse/leap
-    when: always
-    stage: build
-    script:
-        - zypper refresh
-        - zypper install -y pattern:devel_rpm_build pattern:devel_C_C++ osc
-        - zypper install -y swig python3-devel python3-pip libopenssl-devel openssl python3-service_identity python3-setuptools python3-Twisted
-        - export PATH=$PATH:$HOME/.local/bin
-        - python3 -mpip install --user -r dev-requirements.txt
-        - python3 -mbuild .
-        - python3 -mpip install -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
-        - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest discover -b -v tests
-
-opensuse:
-    image: opensuse/tumbleweed
-    when: always
-    stage: build
-    script:
-        - zypper refresh
-        - zypper install -y --force-resolution pattern:devel_rpm_build pattern:devel_C_C++ osc
-        - zypper install -y --force-resolution swig python3-devel python3-pip libopenssl-devel openssl python3-service_identity python3-setuptools python3-Twisted
-        - export PATH=$PATH:$HOME/.local/bin
-        - python3 -mpip install --user --break-system-packages -r dev-requirements.txt
-        - python3 -mbuild .
-        - python3 -mpip install -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
-        - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest discover -b -v tests
-
-build-sdist:
-    image: python:3
-    when: always
-    stage: build
-    artifacts:
-      paths:
-        - "dist/*.tar.gz"
-    script:
-        - apt-get update -q -y
-        - apt-get install -y swig libssl-dev python3-dev python3-pip openssl python3-setuptools python3-twisted python3-pip
-        - export PATH=$PATH:$HOME/.local/bin
-        - python3 -mpip install --break-system-packages --user -r dev-requirements.txt
-        - python3 -mbuild . --sdist
-
-release-pypi:
-  stage: deploy
-  image: python:latest
-  dependencies:
-    - build-test-windows
-    - build-sdist
-  id_tokens:
-    PYPI_ID_TOKEN:
-      aud: pypi
-  script:
-    - echo "Built artifacts:"
-    - ls dist/
-    # Install dependencies
-    - apt update && apt install -y jq
-    - python -m pip install -U twine id
-
-    # Retrieve the OIDC token from GitLab CI/CD, and exchange it for a PyPI API token
-    - oidc_token=$(python -m id PYPI)
-    - resp=$(curl -X POST https://pypi.org/_/oidc/mint-token -d "{\"token\":\"${oidc_token}\"}")
-    - api_token=$(jq --raw-output '.token' <<< "${resp}")
-
-    # Upload wheel to PyPI authenticating via the newly-minted token
-    - twine upload -u __token__ -p "${api_token}" dist/*
-  rules:
-    - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/  # Job enabled only when pushing tags for versions, e.g: 0.40.1
-      when: manual   # Can only be triggered manually
+# python39:
+#     image: python:3.9-alpine
+#     when: always
+#     stage: build
+#     script:
+#         - apk update
+#         - apk add --no-interactive swig gcc git musl-dev python3-dev python3 py3-pip openssl-dev openssl py3-setuptools py3-twisted py3-docutils py3-wheel
+#         - export PATH=$PATH:$HOME/.local/bin
+#         - python3 -mpip install --break-system-packages --user -r dev-requirements.txt
+#         - python3 -mbuild .
+#         - python3 -mpip install --break-system-packages -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
+#         - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest discover -b -v tests
+# 
+# python3:
+#     image: python:3
+#     when: always
+#     stage: build
+#     script:
+#         - apt-get update -q -y
+#         - apt-get install -y swig libssl-dev python3-dev python3-pip openssl python3-setuptools python3-twisted python3-pip
+#         - export PATH=$PATH:$HOME/.local/bin
+#         - python3 -mpip install --break-system-packages --user -r dev-requirements.txt
+#         - python3 -mbuild .
+#         - python3 -mpip install --break-system-packages -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
+#         - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest discover -b -v tests
+# 
+# alpine-32bit:
+#     image:
+#         name: i386/alpine
+#         entrypoint: ["linux32"]
+#     when: always
+#     stage: build
+#     script:
+#         - apk update
+#         - apk add --no-interactive swig gcc git musl-dev python3-dev python3 py3-pip openssl-dev openssl py3-setuptools py3-twisted py3-docutils py3-wheel
+#         - export PATH=$PATH:$HOME/.local/bin
+#         - python3 -mpip install --break-system-packages --user -r dev-requirements.txt
+#         - python3 -mbuild .
+#         - python3 -mpip install --break-system-packages -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
+#         - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest discover -b -v tests
+# 
+# python3-32bit:
+#     image:
+#         name: i386/debian
+#         entrypoint: ["linux32"]
+#     when: always
+#     stage: build
+#     script:
+#         - apt-get update -q -y
+#         - apt-get install -y swig gcc git libc6-dev python3-dev python3 python3-pip libssl-dev openssl python3-setuptools python3-twisted python3-docutils python3-wheel
+#         - export PATH=$PATH:$HOME/.local/bin
+#         - python3 -mpip install --break-system-packages --user -r dev-requirements.txt
+#         - python3 -mbuild .
+#         - python3 -mpip install --break-system-packages -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
+#         - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest discover -b -v tests
+# 
+# python3-doctest:
+#     image: python:3
+#     when: always
+#     stage: build
+#     script:
+#         - apt-get update -q -y
+#         - apt-get install -y swig libssl-dev python3-dev python3-pip openssl python3-setuptools python3-twisted python3-pip
+#         - export PATH=$PATH:$HOME/.local/bin
+#         - python3 -mpip install --break-system-packages --user -r dev-requirements.txt -r doc/requirements.txt
+#         - python3 -mbuild .
+#         - python3 -mpip install --break-system-packages -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
+#         - cd doc/
+#         - PYTHONPATH=$(readlink -f ../build/lib.*) make doctest
+# 
+# fedora:
+#     image: fedora:latest
+#     when: always
+#     stage: build
+#     script:
+#         - dnf makecache
+#         - dnf install -y @development-tools fedora-packager rpmdevtools
+#         - dnf install -y swig python3-devel python3-pip openssl-devel openssl python3-setuptools python3-twisted
+#         - export PATH=$PATH:$HOME/.local/bin
+#         - python3 -mpip install --user -r dev-requirements.txt
+#         - python3 -mbuild .
+#         - python3 -mpip install -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
+#         - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest discover -b -v tests
+# 
+# fedora-rawhide:
+#     image: registry.fedoraproject.org/fedora:rawhide
+#     when: always
+#     stage: build
+#     script:
+#         - dnf makecache
+#         - dnf install -y @development-tools fedora-packager rpmdevtools
+#         - dnf install -y swig python3-devel python3-pip openssl-devel openssl python3-setuptools python3-twisted openssl-devel-engine
+#         - export PATH=$PATH:$HOME/.local/bin
+#         - python3 -mpip install --break-system-packages --user -r dev-requirements.txt
+#         - python3 -mbuild .
+#         - python3 -mpip install --break-system-packages -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
+#         - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest discover -b -v tests
+# 
+# leap:
+#     # image: registry.suse.com/bci/bci-base:latest
+#     image: opensuse/leap
+#     when: always
+#     stage: build
+#     script:
+#         - zypper refresh
+#         - zypper install -y pattern:devel_rpm_build pattern:devel_C_C++ osc
+#         - zypper install -y swig python3-devel python3-pip libopenssl-devel openssl python3-service_identity python3-setuptools python3-Twisted
+#         - export PATH=$PATH:$HOME/.local/bin
+#         - python3 -mpip install --user -r dev-requirements.txt
+#         - python3 -mbuild .
+#         - python3 -mpip install -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
+#         - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest discover -b -v tests
+# 
+# opensuse:
+#     image: opensuse/tumbleweed
+#     when: always
+#     stage: build
+#     script:
+#         - zypper refresh
+#         - zypper install -y --force-resolution pattern:devel_rpm_build pattern:devel_C_C++ osc
+#         - zypper install -y --force-resolution swig python3-devel python3-pip libopenssl-devel openssl python3-service_identity python3-setuptools python3-Twisted
+#         - export PATH=$PATH:$HOME/.local/bin
+#         - python3 -mpip install --user --break-system-packages -r dev-requirements.txt
+#         - python3 -mbuild .
+#         - python3 -mpip install -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
+#         - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest discover -b -v tests
+# 
+# build-sdist:
+#     image: python:3
+#     when: always
+#     stage: build
+#     artifacts:
+#       paths:
+#         - "dist/*.tar.gz"
+#     script:
+#         - apt-get update -q -y
+#         - apt-get install -y swig libssl-dev python3-dev python3-pip openssl python3-setuptools python3-twisted python3-pip
+#         - export PATH=$PATH:$HOME/.local/bin
+#         - python3 -mpip install --break-system-packages --user -r dev-requirements.txt
+#         - python3 -mbuild . --sdist
+# 
+# release-pypi:
+#   stage: deploy
+#   image: python:latest
+#   dependencies:
+#     - build-test-windows
+#     - build-sdist
+#   id_tokens:
+#     PYPI_ID_TOKEN:
+#       aud: pypi
+#   script:
+#     - echo "Built artifacts:"
+#     - ls dist/
+#     # Install dependencies
+#     - apt update && apt install -y jq
+#     - python -m pip install -U twine id
+# 
+#     # Retrieve the OIDC token from GitLab CI/CD, and exchange it for a PyPI API token
+#     - oidc_token=$(python -m id PYPI)
+#     - resp=$(curl -X POST https://pypi.org/_/oidc/mint-token -d "{\"token\":\"${oidc_token}\"}")
+#     - api_token=$(jq --raw-output '.token' <<< "${resp}")
+# 
+#     # Upload wheel to PyPI authenticating via the newly-minted token
+#     - twine upload -u __token__ -p "${api_token}" dist/*
+#   rules:
+#     - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/  # Job enabled only when pushing tags for versions, e.g: 0.40.1
+#       when: manual   # Can only be triggered manually

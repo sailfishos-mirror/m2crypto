@@ -1,5 +1,7 @@
 from typing import Callable, Optional
 
+# char * is str and it is for string constants only; NO R/W!
+
 from M2Crypto import ASN1, BIO, types as C
 
 def asn1_integer_cmp(

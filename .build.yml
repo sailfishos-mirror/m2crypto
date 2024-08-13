@@ -13,6 +13,7 @@ packages:
   - python3-twisted
   - python3-pexpect
   - python3-docutils
+  - python3-mypy
 environment:
   CFLAGS: -pthread -Wno-unused-result -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -mtune=generic -D_GNU_SOURCE -fwrapv
 sources:
@@ -29,6 +30,9 @@ tasks:
      find . -name \*.whl -o -name \*.tar.gz
      mkdir -p shadowing/sys && touch shadowing/sys/types.h
      python3 -mpip install -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/[mM]2[cC]rypto*.whl
+  - mypy: |
+     cd m2crypto
+     PYTHONPATH=$(readlink -f build/lib.*) python3 -mmypy --no-color-output src/M2Crypto
   - test: |
      cd m2crypto
      PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest -b -v tests.alltests.suite

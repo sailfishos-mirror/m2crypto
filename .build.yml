@@ -32,7 +32,7 @@ tasks:
      [ -n "$GIT_REF" ] && REASON="$JOB_ID ($GIT_REF)"
      [ -n "$PATCHSET_URL" ] && REASON="$JOB_ID ($PATCHSET_URL)"
      set +x
-     .builds/irc-send mcepl build-bot m2crypto "sourcehut build $REASON finished with the result $? ($JOB_URL)." "$(cat ~/.irc_pass)"
+     # .builds/irc-send mcepl build-bot m2crypto "sourcehut build $REASON finished with the result $? ($JOB_URL)." "$(cat ~/.irc_pass)"
      set -x
   - readme: |
      cd m2crypto

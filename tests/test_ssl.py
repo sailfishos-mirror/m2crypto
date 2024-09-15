@@ -329,6 +329,7 @@ class HttpslibSSLSNIClientTestCase(BaseSSLClientTestCase):
             'Hostname in TLS extension: "%s"' % srv_host, out
         )
 
+    @unittest.skipIf('DISTROBOX_ENTER_PATH' in os.environ, "Don't run the test on local machine")
     def test_IP_call(self):
         no_exception = True
         runs_counter = 0

@@ -309,6 +309,7 @@ class HttpslibSSLSNIClientTestCase(BaseSSLClientTestCase):
     def tearDown(self):
         self.ctx.close()
 
+    @unittest.skipIf('DISTROBOX_ENTER_PATH' in os.environ, "Don't run the test on local machine")
     def test_SNI_support(self):
         pid = self.start_server(self.args)
         try:

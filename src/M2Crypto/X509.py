@@ -11,6 +11,7 @@ Author: Heikki Toivonen
 
 import binascii
 import logging
+import re
 
 from M2Crypto import ASN1, BIO, EVP, m2  # noqa
 from typing import List, Optional, Union  # noqa
@@ -93,23 +94,90 @@ class X509_Extension(object):
         return out.decode() if isinstance(out, bytes) else out
 
 
+# Make new_extension much more robust in face of incorrect values
+def validate_subject_key_identifier(val):
+    """
+    Validate used subjectKeyIdentifier value against invalid values.
+    See https://todo.sr.ht/~mcepl/m2crypto/9 for more information
+    """
+    if not isinstance(val, str):
+        raise TypeError("Subject Key Identifier must be a string.")
+    cleaned_value = val.replace(":", "").strip()
+    if cleaned_value != "":
+        raise ValueError("value must be precomputed hash")
+    if not re.fullmatch(r"^[0-9a-fA-F]*$", cleaned_value):
+        raise ValueError(
+            "Subject Key Identifier contains invalid characters (non-hex)."
+        )
+    if len(cleaned_value) % 2 != 0:
+        raise ValueError("Subject Key Identifier hex string has an odd length.")
+    # Optional: Check for typical SHA-1 length
+    # if len(cleaned_value) != 40:
+    #     warnings.warn("Subject Key Identifier does not appear to be a SHA-1 hash length.")
+
+
+def validate_authority_key_identifier(value):
+    if not isinstance(value, str):
+        raise TypeError("Authority Key Identifier must be a string.")
+
+    if value.startswith("keyid:"):
+        ski_part = value[len("keyid:") :]
+        # Reuse subjectKeyIdentifier validation logic
+        validate_subject_key_identifier(ski_part)
+    elif (
+        value == "keyid:always"
+        or value == "issuer:always"
+        or value == "keyid,issuer:always"
+    ):
+        pass  # These are valid literal values
+    elif value.startswith("issuer:") or value.startswith("serial:"):
+        # More complex validation needed for DNs or serials
+        # For simplicity, we might just check for non-empty string here if we can't parse DNs
+        pass
+    else:
+        raise ValueError(
+            f"Invalid format for Authority Key Identifier: '{value}'. "
+            "Expected formats like 'keyid:<hex>', 'keyid:always', etc."
+        )
+
+
+_EXTENSION_VALIDATORS = {
+    "subjectKeyIdentifier": validate_subject_key_identifier,
+    "authorityKeyIdentifier": validate_authority_key_identifier,
+    # Add other validators for common extensions
+    # 'basicConstraints': validate_basic_constraints,
+    # 'extendedKeyUsage': validate_extended_key_usage,
+    # 'keyUsage': validate_key_usage,
+}
+
+
 def new_extension(
     name: str, value: bytes, critical: int = 0, _pyfree: int = 1
 ) -> X509_Extension:
     """
     Create new X509_Extension instance.
     """
-    if (
-        name == 'subjectKeyIdentifier'
-        and value.strip('0123456789abcdefABCDEF:') != ''
-    ):
-        raise ValueError('value must be precomputed hash')
+    if not isinstance(name, str):
+        raise TypeError("Extension name must be a string.")
+    if not isinstance(critical, (int, bool)):
+        raise TypeError("Critical flag must be an integer or boolean.")
+
+    validator = _EXTENSION_VALIDATORS.get(name)
+    if validator:
+        try:
+            validator(value)
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Invalid value for extension '{name}': {e}") from e
+    else:
+        # Do at least some validation
+        if not isinstance(value, str):
+            raise TypeError(f"Value for the extension '{name}' must be a string.")
+
     ctx = m2.x509v3_set_nconf()
     x509_ext_ptr = m2.x509v3_ext_conf(None, ctx, name, value)
     if x509_ext_ptr is None:
         raise X509Error(
-            "Cannot create X509_Extension with name '%s' and value '%s'"
-            % (name, value)
+            "Cannot create X509_Extension with name '%s' and value '%s'" % (name, value)
         )
     x509_ext = X509_Extension(x509_ext_ptr, _pyfree)
     x509_ext.set_critical(critical)

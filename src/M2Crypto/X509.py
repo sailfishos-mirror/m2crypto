@@ -103,7 +103,7 @@ def validate_subject_key_identifier(val):
     if not isinstance(val, str):
         raise TypeError("Subject Key Identifier must be a string.")
     cleaned_value = val.replace(":", "").strip()
-    if cleaned_value != "":
+    if cleaned_value == "":
         raise ValueError("value must be precomputed hash")
     if not re.fullmatch(r"^[0-9a-fA-F]*$", cleaned_value):
         raise ValueError(
@@ -120,16 +120,16 @@ def validate_authority_key_identifier(value):
     if not isinstance(value, str):
         raise TypeError("Authority Key Identifier must be a string.")
 
-    if value.startswith("keyid:"):
-        ski_part = value[len("keyid:") :]
-        # Reuse subjectKeyIdentifier validation logic
-        validate_subject_key_identifier(ski_part)
-    elif (
+    if (
         value == "keyid:always"
         or value == "issuer:always"
         or value == "keyid,issuer:always"
     ):
         pass  # These are valid literal values
+    elif value.startswith("keyid:"):
+        ski_part = value[len("keyid:") :]
+        # Reuse subjectKeyIdentifier validation logic
+        validate_subject_key_identifier(ski_part)
     elif value.startswith("issuer:") or value.startswith("serial:"):
         # More complex validation needed for DNs or serials
         # For simplicity, we might just check for non-empty string here if we can't parse DNs
@@ -167,7 +167,8 @@ def new_extension(
         try:
             validator(value)
         except (TypeError, ValueError) as e:
-            raise ValueError(f"Invalid value for extension '{name}': {e}") from e
+            # raise ValueError(f"Invalid value for extension '{name}': {e}") from e
+            raise
     else:
         # Do at least some validation
         if not isinstance(value, str):

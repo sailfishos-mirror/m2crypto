@@ -1,3 +1,4 @@
+import ctypes
 from typing import Callable, Optional
 
 from M2Crypto import ASN1, BIO, types as C
@@ -41,5 +42,8 @@ def engine_ctrl_cmd_string(
     e: Engine.ENGINE, cmd_name: str, arg: str, cmd_optional: int
 ) -> None: ...
 def time_t_bits() -> int: ...
+
+def x509v3_ext_nconf(conf: ctypes.c_void_p, ctx:C.X509V3_CTX, name: bytes, value: str) -> C.X509_EXTENSION
+
 def x509_free(a: C.X509) -> None: ...
 def x509_new() -> C.X509: ...

@@ -1,3 +1,4 @@
+import ctypes
 from typing import Optional
 
 from M2Crypto import ASN1, BIO, types as C
@@ -46,6 +47,8 @@ def bio_f_cipher() -> C.BIO_METHOD: ...  # FIXME
 def bio_flush(b: C.BIO) -> int: ...
 
 def time_t_bits() -> int: ...
+
+def x509v3_ext_nconf(conf: ctypes.c_void_p, ctx:C.X509V3_CTX, name: bytes, value: str) -> C.X509_EXTENSION
 
 def x509_free(a: C.X509) -> None: ...
 

@@ -113,7 +113,7 @@ fedora-rawhide:
     script:
         - dnf makecache
         - dnf install -y @development-tools fedora-packager rpmdevtools
-        - dnf install -y swig python3-devel python3-pip openssl-devel openssl python3-setuptools python3-twisted openssl-devel-engine
+        - dnf install -y swig python3-devel python3-pip openssl-devel openssl python3-setuptools python3-twisted
         - mkdir -p $HOME/.local/bin
         - ls $HOME/.local/bin
         - export PATH=$PATH:$HOME/.local/bin

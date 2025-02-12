@@ -773,6 +773,13 @@ void ssl_set_shutdown1(SSL *ssl, int mode) {
     SSL_set_shutdown(ssl, mode);
 }
 
+/* Translation of the underlying function SSL_read(3)
+ *
+ * Important thing is that contrary to the original function it does NOT
+ * return int with number of read bytes, but it returns whole buffer
+ * with read data (of the correct length, of course, and as Python bytes
+ * object).
+ */
 PyObject *ssl_read(SSL *ssl, int num, double timeout) {
     PyObject *obj = NULL;
     void *buf;
@@ -793,6 +800,7 @@ PyObject *ssl_read(SSL *ssl, int num, double timeout) {
     Py_END_ALLOW_THREADS
 
     if (r >= 0) {
+        /* The size should increase by r, not be r. */
         buf = PyMem_Realloc(buf, r);
         obj = PyBytes_FromStringAndSize(buf, r);
     } else {
@@ -800,10 +808,15 @@ PyObject *ssl_read(SSL *ssl, int num, double timeout) {
 
         ssl_err = SSL_get_error(ssl, r);
         switch (ssl_err) {
+            /* This should never happen here: documentation for
+             * SSL_get_error(3) claims that "This result code is
+             * returned if and only if ret > 0." */
             case SSL_ERROR_NONE:
-            case SSL_ERROR_ZERO_RETURN:
-                assert(0);
-
+                PyErr_SetString(PyExc_IOError,
+                                "Got SSL_ERROR_NONE while in the error handler.");
+                obj = NULL;
+                break;
+            /* The operation did not complete and can be retried later. */
             case SSL_ERROR_WANT_WRITE:
             case SSL_ERROR_WANT_READ:
             case SSL_ERROR_WANT_X509_LOOKUP:
@@ -813,9 +826,15 @@ PyObject *ssl_read(SSL *ssl, int num, double timeout) {
                     break;
                 }
                 if (ssl_sleep_with_timeout(ssl, &tv, timeout, ssl_err) == 0)
+                    /* FIXME bsc#1068470 … couldn't we get an endless
+                     * loop here? */
                     goto again;
                 obj = NULL;
                 break;
+            /* Some non-recoverable, fatal I/O error occurred. If this
+             * error occurs then no further I/O operations should be
+             * performed on the connection and SSL_shutdown() must not
+             * be called. */
             case SSL_ERROR_SSL:
             case SSL_ERROR_SYSCALL:
                 ssl_handle_error(ssl_err, r);

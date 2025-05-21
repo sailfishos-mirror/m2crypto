@@ -20,7 +20,7 @@ FORMAT_PEM = 1
 
 __g = globals()
 for x in dir(m2):
-    if x.startswith('VERIFY_'):
+    if x.startswith("VERIFY_"):
         __g[x.lower()] = getattr(m2, x)
 
 log = logging.getLogger(__name__)
@@ -42,14 +42,12 @@ class X509_Extension(object):
 
     m2_x509_extension_free = m2.x509_extension_free
 
-    def __init__(
-        self, x509_ext_ptr: Optional[bytes] = None, _pyfree: int = 1
-    ) -> None:
+    def __init__(self, x509_ext_ptr: Optional[bytes] = None, _pyfree: int = 1) -> None:
         self.x509_ext = x509_ext_ptr
         self._pyfree = _pyfree
 
     def __del__(self) -> None:
-        if getattr(self, '_pyfree', 0) and self.x509_ext:
+        if getattr(self, "_pyfree", 0) and self.x509_ext:
             self.m2_x509_extension_free(self.x509_ext)
 
     def _ptr(self) -> bytes:
@@ -132,9 +130,7 @@ class X509_Extension_Stack(object):
 
     m2_sk_x509_extension_free = m2.sk_x509_extension_free
 
-    def __init__(
-        self, stack: Optional[bytes] = None, _pyfree: int = 0
-    ) -> None:
+    def __init__(self, stack: Optional[bytes] = None, _pyfree: int = 0) -> None:
         if stack is not None:
             self.stack = stack
             self._pyfree = _pyfree
@@ -149,19 +145,15 @@ class X509_Extension_Stack(object):
         else:
             self.stack = m2.sk_x509_extension_new_null()
             self._pyfree = 1
-            self.pystack = (
-                []
-            )  # This must be kept in sync with self.stack
+            self.pystack = []  # This must be kept in sync with self.stack
 
     def __del__(self) -> None:
         # see BIO.py - unbalanced __init__ / __del__
-        if getattr(self, '_pyfree', 0):
+        if getattr(self, "_pyfree", 0):
             self.m2_sk_x509_extension_free(self.stack)
 
     def __len__(self) -> int:
-        assert m2.sk_x509_extension_num(self.stack) == len(
-            self.pystack
-        )
+        assert m2.sk_x509_extension_num(self.stack) == len(self.pystack)
         return len(self.pystack)
 
     def __getitem__(self, idx: int) -> X509_Extension:
@@ -205,9 +197,7 @@ class X509_Name_Entry(object):
 
     m2_x509_name_entry_free = m2.x509_name_entry_free
 
-    def __init__(
-        self, x509_name_entry: bytes, _pyfree: int = 0
-    ) -> None:
+    def __init__(self, x509_name_entry: bytes, _pyfree: int = 0) -> None:
         """
         :param x509_name_entry: this should be OpenSSL X509_NAME_ENTRY binary
         :param _pyfree:
@@ -216,7 +206,7 @@ class X509_Name_Entry(object):
         self._pyfree = _pyfree
 
     def __del__(self) -> None:
-        if getattr(self, '_pyfree', 0):
+        if getattr(self, "_pyfree", 0):
             self.m2_x509_name_entry_free(self.x509_name_entry)
 
     def _ptr(self) -> bytes:
@@ -229,32 +219,22 @@ class X509_Name_Entry(object):
         :param asn1obj:
         :return: 0 on failure, 1 on success
         """
-        return m2.x509_name_entry_set_object(
-            self.x509_name_entry, asn1obj._ptr()
-        )
+        return m2.x509_name_entry_set_object(self.x509_name_entry, asn1obj._ptr())
 
-    def set_data(
-        self, data: bytes, type: int = ASN1.MBSTRING_ASC
-    ) -> int:
+    def set_data(self, data: bytes, type: int = ASN1.MBSTRING_ASC) -> int:
         """
         Sets the field name to asn1obj
 
         :param data: data in a binary form to be set
         :return: 0 on failure, 1 on success
         """
-        return m2.x509_name_entry_set_data(
-            self.x509_name_entry, type, data
-        )
+        return m2.x509_name_entry_set_data(self.x509_name_entry, type, data)
 
     def get_object(self) -> ASN1.ASN1_Object:
-        return ASN1.ASN1_Object(
-            m2.x509_name_entry_get_object(self.x509_name_entry)
-        )
+        return ASN1.ASN1_Object(m2.x509_name_entry_get_object(self.x509_name_entry))
 
     def get_data(self) -> ASN1.ASN1_String:
-        return ASN1.ASN1_String(
-            m2.x509_name_entry_get_data(self.x509_name_entry)
-        )
+        return ASN1.ASN1_String(m2.x509_name_entry_get_data(self.x509_name_entry))
 
     def create_by_txt(self, field, type, entry, len):
         return m2.x509_name_entry_create_by_txt(
@@ -268,40 +248,36 @@ class X509_Name(object):
     """
 
     nid = {
-        'C': m2.NID_countryName,
-        'SP': m2.NID_stateOrProvinceName,
-        'ST': m2.NID_stateOrProvinceName,
-        'stateOrProvinceName': m2.NID_stateOrProvinceName,
-        'L': m2.NID_localityName,
-        'localityName': m2.NID_localityName,
-        'O': m2.NID_organizationName,
-        'organizationName': m2.NID_organizationName,
-        'OU': m2.NID_organizationalUnitName,
-        'organizationUnitName': m2.NID_organizationalUnitName,
-        'CN': m2.NID_commonName,
-        'commonName': m2.NID_commonName,
-        'Email': m2.NID_pkcs9_emailAddress,
-        'emailAddress': m2.NID_pkcs9_emailAddress,
-        'serialNumber': m2.NID_serialNumber,
-        'SN': m2.NID_surname,
-        'surname': m2.NID_surname,
-        'GN': m2.NID_givenName,
-        'givenName': m2.NID_givenName,
+        "C": m2.NID_countryName,
+        "SP": m2.NID_stateOrProvinceName,
+        "ST": m2.NID_stateOrProvinceName,
+        "stateOrProvinceName": m2.NID_stateOrProvinceName,
+        "L": m2.NID_localityName,
+        "localityName": m2.NID_localityName,
+        "O": m2.NID_organizationName,
+        "organizationName": m2.NID_organizationName,
+        "OU": m2.NID_organizationalUnitName,
+        "organizationUnitName": m2.NID_organizationalUnitName,
+        "CN": m2.NID_commonName,
+        "commonName": m2.NID_commonName,
+        "Email": m2.NID_pkcs9_emailAddress,
+        "emailAddress": m2.NID_pkcs9_emailAddress,
+        "serialNumber": m2.NID_serialNumber,
+        "SN": m2.NID_surname,
+        "surname": m2.NID_surname,
+        "GN": m2.NID_givenName,
+        "givenName": m2.NID_givenName,
     }
 
     m2_x509_name_free = m2.x509_name_free
 
-    def __init__(
-        self, x509_name: Optional[bytes] = None, _pyfree: int = 0
-    ) -> None:
+    def __init__(self, x509_name: Optional[bytes] = None, _pyfree: int = 0) -> None:
         """
         :param x509_name: this should be OpenSSL X509_NAME binary
         :param _pyfree:
         """
         if x509_name is not None:
-            assert m2.x509_name_type_check(
-                x509_name
-            ), "'x509_name' type error"
+            assert m2.x509_name_type_check(x509_name), "'x509_name' type error"
             self.x509_name = x509_name
             self._pyfree = _pyfree
         else:
@@ -309,20 +285,16 @@ class X509_Name(object):
             self._pyfree = 1
 
     def __del__(self) -> None:
-        if getattr(self, '_pyfree', 0):
+        if getattr(self, "_pyfree", 0):
             self.m2_x509_name_free(self.x509_name)
 
     def __str__(self) -> bytes:
-        assert m2.x509_name_type_check(
-            self.x509_name
-        ), "'x509_name' type error"
+        assert m2.x509_name_type_check(self.x509_name), "'x509_name' type error"
         return m2.x509_name_oneline(self.x509_name)
 
     def __getattr__(self, attr: str) -> str:
         if attr in self.nid:
-            assert m2.x509_name_type_check(
-                self.x509_name
-            ), "'x509_name' type error"
+            assert m2.x509_name_type_check(self.x509_name), "'x509_name' type error"
             out = m2.x509_name_by_nid(self.x509_name, self.nid[attr])
             return out.decode() if isinstance(out, bytes) else out
 
@@ -336,15 +308,9 @@ class X509_Name(object):
         :return: 1 for success of 0 if an error occurred.
         """
         if attr in self.nid:
-            assert m2.x509_name_type_check(
-                self.x509_name
-            ), "'x509_name' type error"
-            value = (
-                value.encode() if isinstance(value, str) else value
-            )
-            return m2.x509_name_set_by_nid(
-                self.x509_name, self.nid[attr], value
-            )
+            assert m2.x509_name_type_check(self.x509_name), "'x509_name' type error"
+            value = value.encode() if isinstance(value, str) else value
+            return m2.x509_name_set_by_nid(self.x509_name, self.nid[attr], value)
 
         self.__dict__[attr] = value
 
@@ -354,23 +320,17 @@ class X509_Name(object):
     def __getitem__(self, idx: int) -> X509_Name_Entry:
         if not 0 <= idx < self.entry_count():
             raise IndexError("index out of range")
-        return X509_Name_Entry(
-            m2.x509_name_get_entry(self.x509_name, idx)
-        )
+        return X509_Name_Entry(m2.x509_name_get_entry(self.x509_name, idx))
 
     def __iter__(self):
         for i in range(self.entry_count()):
             yield self[i]
 
     def _ptr(self):
-        assert m2.x509_name_type_check(
-            self.x509_name
-        ), "'x509_name' type error"
+        assert m2.x509_name_type_check(self.x509_name), "'x509_name' type error"
         return self.x509_name
 
-    def add_entry_by_txt(
-        self, field, type, entry, len, loc, set
-    ) -> int:
+    def add_entry_by_txt(self, field, type, entry, len, loc, set) -> int:
         # entry_type: (str, int, bytes, int, int, int)
         """
         Add X509_Name field whose name is identified by its name.
@@ -419,9 +379,7 @@ class X509_Name(object):
         lastpos = -1
 
         while True:
-            lastpos = m2.x509_name_get_index_by_nid(
-                self.x509_name, nid, lastpos
-            )
+            lastpos = m2.x509_name_get_index_by_nid(self.x509_name, nid, lastpos)
             if lastpos == -1:
                 break
 
@@ -429,9 +387,7 @@ class X509_Name(object):
 
         return ret
 
-    def as_text(
-        self, indent: int = 0, flags: int = m2.XN_FLAG_COMPAT
-    ) -> str:
+    def as_text(self, indent: int = 0, flags: int = m2.XN_FLAG_COMPAT) -> str:
         """
         as_text returns the name as a string.
 
@@ -439,26 +395,18 @@ class X509_Name(object):
                        by this many spaces.
         :param flags:  Flags that control how the output should be formatted.
         """
-        assert m2.x509_name_type_check(
-            self.x509_name
-        ), "'x509_name' type error"
+        assert m2.x509_name_type_check(self.x509_name), "'x509_name' type error"
         buf = BIO.MemoryBuffer()
-        m2.x509_name_print_ex(
-            buf.bio_ptr(), self.x509_name, indent, flags
-        )
+        m2.x509_name_print_ex(buf.bio_ptr(), self.x509_name, indent, flags)
         out = buf.read_all()
         return out.decode() if isinstance(out, bytes) else out
 
     def as_der(self) -> bytes:
-        assert m2.x509_name_type_check(
-            self.x509_name
-        ), "'x509_name' type error"
+        assert m2.x509_name_type_check(self.x509_name), "'x509_name' type error"
         return m2.x509_name_get_der(self.x509_name)
 
     def as_hash(self) -> int:
-        assert m2.x509_name_type_check(
-            self.x509_name
-        ), "'x509_name' type error"
+        assert m2.x509_name_type_check(self.x509_name), "'x509_name' type error"
         return m2.x509_name_hash(self.x509_name)
 
 
@@ -469,9 +417,7 @@ class X509(object):
 
     m2_x509_free = m2.x509_free
 
-    def __init__(
-        self, x509: Optional[bytes] = None, _pyfree: int = 0
-    ) -> None:
+    def __init__(self, x509: Optional[bytes] = None, _pyfree: int = 0) -> None:
         """
         :param x509: binary representation of
                the underlying OpenSSL X509 object.
@@ -486,7 +432,7 @@ class X509(object):
             self._pyfree = 1
 
     def __del__(self) -> None:
-        if getattr(self, '_pyfree', 0):
+        if getattr(self, "_pyfree", 0):
             self.m2_x509_free(self.x509)
 
     def _ptr(self) -> bytes:
@@ -514,12 +460,10 @@ class X509(object):
         :param filename: name of the file to be loaded
         :return: 1 for success or 0 for failure
         """
-        with BIO.openfile(filename, 'wb') as bio:
+        with BIO.openfile(filename, "wb") as bio:
             return m2.x509_write_pem(bio.bio_ptr(), self.x509)
 
-    def save(
-        self, filename: Union[str, bytes], format: int = FORMAT_PEM
-    ) -> int:
+    def save(self, filename: Union[str, bytes], format: int = FORMAT_PEM) -> int:
         """
         Saves X.509 certificate to a file. Default output
         format is PEM.
@@ -533,7 +477,7 @@ class X509(object):
 
         :return: 1 for success or 0 for failure
         """
-        with BIO.openfile(filename, 'wb') as bio:
+        with BIO.openfile(filename, "wb") as bio:
             if format == FORMAT_PEM:
                 return m2.x509_write_pem(bio.bio_ptr(), self.x509)
             elif format == FORMAT_DER:
@@ -622,11 +566,11 @@ class X509(object):
         ref = ASN1.ASN1_TIME(m2.x509_get_not_after(self.x509))
         out = ASN1.ASN1_TIME(_pyfree=1)
         out.set_datetime(ref.get_datetime())
-        if 'Bad time value' in str(out):
+        if "Bad time value" in str(out):
             raise X509Error(
-                '''M2Crypto cannot handle dates after year 2050.
+                """M2Crypto cannot handle dates after year 2050.
                 See RFC 5280 4.1.2.5 for more information.
-                '''
+                """
             )
         return out
 
@@ -718,9 +662,7 @@ class X509(object):
         if index < 0 or index >= self.get_ext_count():
             raise IndexError
 
-        return X509_Extension(
-            m2.x509_get_ext(self.x509, index), _pyfree=0
-        )
+        return X509_Extension(m2.x509_get_ext(self.x509, index), _pyfree=0)
 
     def get_ext_count(self) -> int:
         """
@@ -742,7 +684,7 @@ class X509(object):
         assert m2.x509_type_check(self.x509), "'x509' type error"
         mda = getattr(m2, md, None)
         if mda is None:
-            raise ValueError('unknown message digest', md)
+            raise ValueError("unknown message digest", md)
         return m2.x509_sign(self.x509, pkey.pkey, mda())
 
     def verify(self, pkey: Optional[EVP.PKey] = None) -> int:
@@ -775,7 +717,7 @@ class X509(object):
         """
         return m2.x509_check_purpose(self.x509, id, ca)
 
-    def get_fingerprint(self, md: str = 'md5') -> str:
+    def get_fingerprint(self, md: str = "md5") -> str:
         """
         Get the fingerprint of the certificate.
 
@@ -809,9 +751,7 @@ def load_cert(file, format: int = FORMAT_PEM) -> X509:
             cptr = m2.d2i_x509(bio._ptr())
             return X509(cptr, _pyfree=1)
         else:
-            raise ValueError(
-                "Unknown format. Must be either FORMAT_DER or FORMAT_PEM"
-            )
+            raise ValueError("Unknown format. Must be either FORMAT_DER or FORMAT_PEM")
 
 
 def load_cert_bio(bio: BIO.BIO, format: int = FORMAT_PEM) -> X509:
@@ -831,15 +771,11 @@ def load_cert_bio(bio: BIO.BIO, format: int = FORMAT_PEM) -> X509:
     elif format == FORMAT_DER:
         cptr = m2.d2i_x509(bio._ptr())
     else:
-        raise ValueError(
-            "Unknown format. Must be either FORMAT_DER or FORMAT_PEM"
-        )
+        raise ValueError("Unknown format. Must be either FORMAT_DER or FORMAT_PEM")
     return X509(cptr, _pyfree=1)
 
 
-def load_cert_string(
-    cert_str: Union[str, bytes], format: int = FORMAT_PEM
-) -> X509:
+def load_cert_string(cert_str: Union[str, bytes], format: int = FORMAT_PEM) -> X509:
     """
     Load certificate from a cert_str.
 
@@ -852,9 +788,7 @@ def load_cert_string(
 
     :return: M2Crypto.X509.X509 object.
     """
-    cert_str = (
-        cert_str.encode() if isinstance(cert_str, str) else cert_str
-    )
+    cert_str = cert_str.encode() if isinstance(cert_str, str) else cert_str
     bio = BIO.MemoryBuffer(cert_str)
     return load_cert_bio(bio, format)
 
@@ -867,9 +801,7 @@ def load_cert_der_string(cert_str: Union[str, bytes]) -> X509:
 
     :return: M2Crypto.X509.X509 object.
     """
-    cert_str = (
-        cert_str.encode() if isinstance(cert_str, str) else cert_str
-    )
+    cert_str = cert_str.encode() if isinstance(cert_str, str) else cert_str
     bio = BIO.MemoryBuffer(cert_str)
     cptr = m2.d2i_x509(bio._ptr())
     return X509(cptr, _pyfree=1)
@@ -898,9 +830,7 @@ class X509_Stack(object):
         if stack is not None:
             self.stack = stack
             self._pyfree = _pyfree
-            self.pystack = (
-                []
-            )  # This must be kept in sync with self.stack
+            self.pystack = []  # This must be kept in sync with self.stack
             num = m2.sk_x509_num(self.stack)
             for i in range(num):
                 self.pystack.append(
@@ -912,12 +842,10 @@ class X509_Stack(object):
         else:
             self.stack = m2.sk_x509_new_null()
             self._pyfree = 1
-            self.pystack = (
-                []
-            )  # This must be kept in sync with self.stack
+            self.pystack = []  # This must be kept in sync with self.stack
 
     def __del__(self) -> None:
-        if getattr(self, '_pyfree', 0):
+        if getattr(self, "_pyfree", 0):
             self.m2_sk_x509_free(self.stack)
 
     def __len__(self) -> int:
@@ -973,9 +901,7 @@ class X509_Store_Context(object):
 
     m2_x509_store_ctx_free = m2.x509_store_ctx_free
 
-    def __init__(
-        self, x509_store_ctx: bytes, _pyfree: int = 0
-    ) -> None:
+    def __init__(self, x509_store_ctx: bytes, _pyfree: int = 0) -> None:
         """
 
         :param x509_store_ctx: binary data for
@@ -986,7 +912,7 @@ class X509_Store_Context(object):
 
     def __del__(self) -> None:
         # see BIO.py - unbalanced __init__ / __del__
-        if not hasattr(self, '_pyfree'):
+        if not hasattr(self, "_pyfree"):
             pass  # print("OOPS")
         elif self._pyfree:
             self.m2_x509_store_ctx_free(self.ctx)
@@ -1002,9 +928,7 @@ class X509_Store_Context(object):
                   rely on it being valid once the store context goes
                   away or is modified.
         """
-        return X509(
-            m2.x509_store_ctx_get_current_cert(self.ctx), _pyfree=0
-        )
+        return X509(m2.x509_store_ctx_get_current_cert(self.ctx), _pyfree=0)
 
     def get_error(self) -> int:
         """
@@ -1026,9 +950,7 @@ class X509_Store_Context(object):
                  context goes away) stack of certificates in the
                  chain as X509_Stack.
         """
-        return X509_Stack(
-            m2.x509_store_ctx_get1_chain(self.ctx), 1, 1
-        )
+        return X509_Stack(m2.x509_store_ctx_get1_chain(self.ctx), 1, 1)
 
 
 def x509_store_default_cb(ok: int, ctx: X509_Store_Context) -> int:
@@ -1042,9 +964,7 @@ class X509_Store(object):
 
     m2_x509_store_free = m2.x509_store_free
 
-    def __init__(
-        self, store: Optional[bytes] = None, _pyfree: int = 0
-    ) -> None:
+    def __init__(self, store: Optional[bytes] = None, _pyfree: int = 0) -> None:
         """
         :param store: binary data for OpenSSL X509_STORE_CTX type.
         """
@@ -1056,7 +976,7 @@ class X509_Store(object):
             self._pyfree = 1
 
     def __del__(self) -> None:
-        if getattr(self, '_pyfree', 0):
+        if getattr(self, "_pyfree", 0):
             self.m2_x509_store_free(self.store)
 
     def _ptr(self):
@@ -1076,9 +996,7 @@ class X509_Store(object):
     def add_x509(self, x509: X509) -> int:
         return m2.x509_store_add_cert(self.store, x509._ptr())
 
-    def set_verify_cb(
-        self, callback: Optional[callable] = None
-    ) -> None:
+    def set_verify_cb(self, callback: Optional[callable] = None) -> None:
         """
         Set callback which will be called when the store is verified.
         Wrapper over OpenSSL X509_STORE_set_verify_cb().
@@ -1127,11 +1045,7 @@ def new_stack_from_der(der_string: bytes) -> X509_Stack:
 
     :return: X509_Stack
     """
-    der_string = (
-        der_string.encode()
-        if isinstance(der_string, str)
-        else der_string
-    )
+    der_string = der_string.encode() if isinstance(der_string, str) else der_string
     stack_ptr = m2.make_stack_from_der_sequence(der_string)
     return X509_Stack(stack_ptr, 1, 1)
 
@@ -1143,9 +1057,7 @@ class Request(object):
 
     m2_x509_req_free = m2.x509_req_free
 
-    def __init__(
-        self, req: Optional[int] = None, _pyfree: int = 0
-    ) -> None:
+    def __init__(self, req: Optional[int] = None, _pyfree: int = 0) -> None:
         if req is not None:
             self.req = req
             self._pyfree = _pyfree
@@ -1155,7 +1067,7 @@ class Request(object):
             self._pyfree = 1
 
     def __del__(self) -> None:
-        if getattr(self, '_pyfree', 0):
+        if getattr(self, "_pyfree", 0):
             self.m2_x509_req_free(self.req)
 
     def as_text(self) -> str:
@@ -1175,12 +1087,10 @@ class Request(object):
         return buf.read_all()
 
     def save_pem(self, filename: Union[str, bytes]) -> int:
-        with BIO.openfile(filename, 'wb') as bio:
+        with BIO.openfile(filename, "wb") as bio:
             return m2.x509_req_write_pem(bio.bio_ptr(), self.req)
 
-    def save(
-        self, filename: Union[str, bytes], format: int = FORMAT_PEM
-    ) -> int:
+    def save(self, filename: Union[str, bytes], format: int = FORMAT_PEM) -> int:
         """
         Saves X.509 certificate request to a file. Default output
         format is PEM.
@@ -1194,7 +1104,7 @@ class Request(object):
         :return: 1 for success, 0 for failure.
                  The error code can be obtained by ERR_get_error.
         """
-        with BIO.openfile(filename, 'wb') as bio:
+        with BIO.openfile(filename, "wb") as bio:
             if format == FORMAT_PEM:
                 return m2.x509_req_write_pem(bio.bio_ptr(), self.req)
             elif format == FORMAT_DER:
@@ -1279,13 +1189,11 @@ class Request(object):
         """
         mda = getattr(m2, md, None)
         if mda is None:
-            raise ValueError('unknown message digest', md)
+            raise ValueError("unknown message digest", md)
         return m2.x509_req_sign(self.req, pkey.pkey, mda())
 
 
-def load_request(
-    file: Union[str, bytes], format: int = FORMAT_PEM
-) -> Request:
+def load_request(file: Union[str, bytes], format: int = FORMAT_PEM) -> Request:
     """
     Load certificate request from file.
 
@@ -1309,9 +1217,7 @@ def load_request(
     return Request(cptr, 1)
 
 
-def load_request_bio(
-    bio: BIO.BIO, format: int = FORMAT_PEM
-) -> Request:
+def load_request_bio(bio: BIO.BIO, format: int = FORMAT_PEM) -> Request:
     """
     Load certificate request from a bio.
 
@@ -1327,9 +1233,7 @@ def load_request_bio(
     elif format == FORMAT_DER:
         cptr = m2.d2i_x509_req(bio._ptr())
     else:
-        raise ValueError(
-            "Unknown format. Must be either FORMAT_DER or FORMAT_PEM"
-        )
+        raise ValueError("Unknown format. Must be either FORMAT_DER or FORMAT_PEM")
 
     return Request(cptr, _pyfree=1)
 
@@ -1348,9 +1252,7 @@ def load_request_string(
 
     :return: M2Crypto.X509.Request object.
     """
-    cert_str = (
-        cert_str.encode() if isinstance(cert_str, str) else cert_str
-    )
+    cert_str = cert_str.encode() if isinstance(cert_str, str) else cert_str
     bio = BIO.MemoryBuffer(cert_str)
     return load_request_bio(bio, format)
 
@@ -1362,9 +1264,7 @@ def load_request_der_string(cert_str: Union[str, bytes]) -> Request:
     :param cert_str: String containing a certificate request in DER format.
     :return: M2Crypto.X509.Request object.
     """
-    cert_str = (
-        cert_str.encode() if isinstance(cert_str, str) else cert_str
-    )
+    cert_str = cert_str.encode() if isinstance(cert_str, str) else cert_str
     bio = BIO.MemoryBuffer(cert_str)
     return load_request_bio(bio, FORMAT_DER)
 
@@ -1376,9 +1276,7 @@ class CRL(object):
 
     m2_x509_crl_free = m2.x509_crl_free
 
-    def __init__(
-        self, crl: Optional[bytes] = None, _pyfree: int = 0
-    ) -> None:
+    def __init__(self, crl: Optional[bytes] = None, _pyfree: int = 0) -> None:
         """
 
         :param crl: binary representation of
@@ -1392,7 +1290,7 @@ class CRL(object):
             self._pyfree = 1
 
     def __del__(self) -> None:
-        if getattr(self, '_pyfree', 0):
+        if getattr(self, "_pyfree", 0):
             self.m2_x509_crl_free(self.crl)
 
     def as_text(self) -> str:

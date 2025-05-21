@@ -664,29 +664,47 @@ X509_NAME_ENTRY *x509_name_entry_create_by_txt(X509_NAME_ENTRY **ne, char *field
         $result = NULL;
     }
 }
+
 %inline %{
 X509V3_CTX *
-x509v3_set_nconf(void) {
-      X509V3_CTX * ctx;
-      CONF *conf = NCONF_new(NULL);
+x509v3_ctx_new(void) {
+    X509V3_CTX * ctx;
 
-      if (!(ctx=(X509V3_CTX *)PyMem_Malloc(sizeof(X509V3_CTX)))) {
-          PyErr_SetString(PyExc_MemoryError, "x509v3_set_nconf");
-          return NULL;
-      }
-      /* X509V3_set_nconf does not generate any error signs at all. */
-      X509V3_set_nconf(ctx, conf);
-      return ctx;
+    if (!(ctx=(X509V3_CTX *)PyMem_Malloc(sizeof(X509V3_CTX)))) {
+        PyErr_SetString(PyExc_MemoryError, "x509v3_context_new: Memory allocation failed");
+        return NULL;
+    }
+    // Zero out the structure
+    memset(ctx, 0, sizeof(X509V3_CTX)); // Ensures all members are NULL/zero
+
+    // Initialize the context. DO NOT set a custom CONF here.
+    // Let X509V3_EXT_conf manage its own CONF if the first arg is NULL.
+    // All parameters are NULL to avoid ownership issues and memory leaks.
+    X509V3_set_ctx(ctx, NULL, NULL, NULL, NULL, 0);
+    return ctx;
+}
+
+void x509v3_ctx_free(X509V3_CTX *ctx) {
+    if (ctx) {
+        // As X509V3_set_ctx was called with NULLs, and we didn't explicitly set a CONF
+        // object via X509V3_set_nconf, we only need to free the context itself.
+        // If X509V3_EXT_conf *itself* stores something in the ctx, then that's OpenSSL's
+        // responsibility to manage or provide an accessor/free function for it.
+        PyMem_Free(ctx);
+    }
 }
 %}
 %typemap(out) X509V3_CTX * ;
 
+
 %typemap(out) X509_EXTENSION * {
-    PyObject *self = NULL; /* bug in SWIG_NewPointerObj as of 3.0.5 */
+    PyObject *self = NULL;
 
     if ($1 != NULL)
         $result = SWIG_NewPointerObj($1, $1_descriptor, 0);
     else {
+        // *** ADD THIS LINE TO PRINT OPENSSL ERRORS ***
+        ERR_print_errors_fp(stderr);
         m2_PyErr_Msg(_x509_err);
         $result = NULL;
     }
@@ -696,7 +714,6 @@ X509_EXTENSION *
 x509v3_ext_conf(void *conf, X509V3_CTX *ctx, char *name, char *value) {
       X509_EXTENSION * ext = NULL;
       ext = X509V3_EXT_conf(conf, ctx, name, value);
-      PyMem_Free(ctx);
       return ext;
 }
 %}

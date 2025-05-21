@@ -9,6 +9,7 @@ Author: Heikki Toivonen
 
 import binascii
 import logging
+import re
 
 from M2Crypto import ASN1, BIO, EVP, m2, types as C
 from typing import (
@@ -24,6 +25,8 @@ from typing import (
 
 FORMAT_DER = 0
 FORMAT_PEM = 1
+
+AUTH_ID_EXT_RE = re.compile(r"^([0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2})*)$")
 
 __g = globals()
 for x in dir(m2):
@@ -59,9 +62,13 @@ class X509_Extension(object):
         self.x509_ext = x509_ext_ptr
         self._pyfree = _pyfree
 
+    @staticmethod
+    def m2_x509_extension_free(ext: C.X509_EXTENSION) -> None:
+        m2.x509_extension_free(ext)
+
     def __del__(self) -> None:
         if getattr(self, "_pyfree", 0) and self.x509_ext:
-            m2.x509_extension_free(self.x509_ext)
+            self.m2_x509_extension_free(self.x509_ext)
 
     def _ptr(self) -> Optional[C.X509_EXTENSION]:
         return self.x509_ext
@@ -113,21 +120,122 @@ class X509_Extension(object):
         return (buf.read_all() or b"").decode()
 
 
+# Make new_extension much more robust in face of incorrect values
+def validate_subject_key_identifier(val):
+    """
+    Validate used subjectKeyIdentifier value against invalid values.
+    See https://todo.sr.ht/~mcepl/m2crypto/9 for more information
+    """
+    log.debug("value: {}".format(val))
+    re_test = AUTH_ID_EXT_RE.fullmatch(val)
+    log.debug("re_test: {}".format(re_test))
+    if not isinstance(val, str):
+        raise TypeError("Subject Key Identifier must be a string.")
+    cleaned_value = val.replace(":", "").strip()
+    if cleaned_value == "":
+        raise ValueError("value must be precomputed hash")
+    if not re.fullmatch(r"^[0-9a-fA-F]*$", cleaned_value):
+        raise ValueError(
+            "Subject Key Identifier contains invalid characters (non-hex)."
+        )
+    if len(cleaned_value) % 2 != 0:
+        raise ValueError("Subject Key Identifier hex string has an odd length.")
+    # Optional: Check for typical SHA-1 length
+    # if len(cleaned_value) != 40:
+    #     warnings.warn("Subject Key Identifier does not appear to be a SHA-1 hash length.")
+
+
+def validate_authority_key_identifier(value):
+    if not isinstance(value, str):
+        raise TypeError("Authority Key Identifier must be a string.")
+
+    if (
+        value == "keyid:always"
+        or value == "issuer:always"
+        or value == "keyid,issuer:always"
+    ):
+        pass  # These are valid literal values
+    elif value.startswith("keyid:"):
+        ski_part = value[len("keyid:") :]
+        # Reuse subjectKeyIdentifier validation logic
+        validate_subject_key_identifier(ski_part)
+    elif value.startswith("issuer:") or value.startswith("serial:"):
+        # More complex validation needed for DNs or serials
+        # For simplicity, we might just check for non-empty string here if we can't parse DNs
+        pass
+    else:
+        raise ValueError(
+            f"Invalid format for Authority Key Identifier: '{value}'. "
+            "Expected formats like 'keyid:<hex>', 'keyid:always', etc."
+        )
+
+
+_EXTENSION_VALIDATORS = {
+    "subjectKeyIdentifier": validate_subject_key_identifier,
+    "authorityKeyIdentifier": validate_authority_key_identifier,
+    # Add other validators for common extensions
+    # 'basicConstraints': validate_basic_constraints,
+    # 'extendedKeyUsage': validate_extended_key_usage,
+    # 'keyUsage': validate_key_usage,
+}
+
+
 def new_extension(
     name: str, value: str, critical: int = 0, _pyfree: int = 1
 ) -> X509_Extension:
     """
     Create new X509_Extension instance.
     """
-    ctx = m2.x509v3_set_nconf()
-    x509_ext_ptr = m2.x509v3_ext_conf(None, ctx, name, str(value))
-    if x509_ext_ptr is None:
-        raise X509Error(
-            "Cannot create X509_Extension with name '%s' and value '%s'" % (name, value)
-        )
-    x509_ext = X509_Extension(x509_ext_ptr, _pyfree)
-    x509_ext.set_critical(critical)
-    return x509_ext
+    if not isinstance(name, str):
+        raise TypeError("Extension name must be a string.")
+    if not isinstance(critical, (int, bool)):
+        raise TypeError("Critical flag must be an integer or boolean.")
+
+    validator = _EXTENSION_VALIDATORS.get(name)
+    if validator:
+        validator(value)
+    else:
+        # Do at least some validation
+        if not isinstance(value, str):
+            raise TypeError(f"Value for the extension '{name}' must be a string.")
+
+    ctx = m2.x509v3_ctx_new()
+
+    if ctx is None:
+        raise X509Error("Failed to create X509V3_CTX")
+
+    try:
+        # Special handling for authorityKeyIdentifier to prepend 'keyid:'
+        # if the value looks like a raw hex string.
+        # This assumes validate_authority_key_identifier has been updated
+        # to accept raw hex strings, as per our previous discussion (Option 1).
+        # If validate_authority_key_identifier *requires* 'keyid:',
+        # then this logic would also ensure the internal value for OpenSSL
+        # is correctly formatted.
+        _value_for_openssl = value
+        if name == "authorityKeyIdentifier":
+            # Check if the value is a raw hex string (already validated by validator)
+            # and not already prefixed with 'keyid:' or 'issuer:'
+            if not (value.startswith("keyid:") or value.startswith("issuer:")):
+                _value_for_openssl = "keyid:" + value
+
+        x509_ext_ptr = m2.x509v3_ext_conf(None, ctx, name, _value_for_openssl)
+        if x509_ext_ptr is None:
+            # Re-raise the X509Error from m2, it's typically more informative
+            if m2.x509v3_ctx_free:
+                m2.x509v3_ctx_free(ctx)
+            raise X509Error("Failed to create extension {} with value {}").format(
+                name, value
+            )
+        if hasattr(m2, "x509v3_ctx_free"):
+            m2.x509v3_ctx_free(ctx)
+        x509_ext = X509_Extension(x509_ext_ptr, _pyfree)
+        x509_ext.set_critical(critical)
+        return x509_ext
+    except Exception as e:
+        if hasattr(m2, "x509v3_ctx_free"):
+            m2.x509v3_ctx_free(ctx)
+        raise e
 
 
 class X509_Extension_Stack(object):
@@ -162,12 +270,17 @@ class X509_Extension_Stack(object):
             self.stack = m2.sk_x509_extension_new_null()
             self._pyfree = 1
 
+    @staticmethod
+    def m2_sk_x509_extension_free(stack: C.STACK_OF_X509_EXTENSION) -> None:
+        m2.sk_x509_extension_free(stack)
+
     def __del__(self) -> None:
         # see BIO.py - unbalanced __init__ / __del__
         if getattr(self, "_pyfree", 0):
-            m2.sk_x509_extension_free(self.stack)
+            self.m2_sk_x509_extension_free(self.stack)
 
     def __len__(self) -> int:
+        assert m2.sk_x509_extension_num(self.stack) == len(self.pystack)
         return len(self.pystack)
 
     def __getitem__(self, idx: int) -> X509_Extension:
@@ -221,9 +334,13 @@ class X509_Name_Entry(object):
         self.x509_name_entry = x509_name_entry
         self._pyfree = _pyfree
 
+    @staticmethod
+    def m2_x509_name_entry_free(ext: C.X509_NAME_ENTRY) -> None:
+        m2.x509_name_entry_free(ext)
+
     def __del__(self) -> None:
         if getattr(self, "_pyfree", 0):
-            m2.x509_name_entry_free(self.x509_name_entry)
+            self.m2_x509_name_entry_free(self.x509_name_entry)
 
     def _ptr(self) -> C.X509_NAME_ENTRY:
         return self.x509_name_entry
@@ -316,11 +433,16 @@ class X509_Name(object):
             self.x509_name = m2.x509_name_new()
             self._pyfree = 1
 
+    @staticmethod
+    def m2_x509_name_free(name: C.X509_NAME) -> None:
+        m2.x509_name_free(name)
+
     def __del__(self) -> None:
         if getattr(self, "_pyfree", 0):
-            m2.x509_name_free(self.x509_name)
+            self.m2_x509_name_free(self.x509_name)
 
     def __str__(self) -> str:
+        assert m2.x509_name_type_check(self.x509_name), "'x509_name' type error"
         return m2.x509_name_oneline(self.x509_name)
 
     def __getattr__(self, attr: str) -> str:
@@ -355,6 +477,7 @@ class X509_Name(object):
             yield self[i]
 
     def _ptr(self) -> C.X509_NAME:
+        assert m2.x509_name_type_check(self.x509_name), "'x509_name' type error"
         return self.x509_name
 
     def add_entry_by_txt(
@@ -444,7 +567,8 @@ class X509_Name(object):
         assert m2.x509_name_type_check(self.x509_name), "'x509_name' type error"
         buf = BIO.MemoryBuffer()
         m2.x509_name_print_ex(buf.bio_ptr(), self.x509_name, indent, flags)
-        return (buf.read_all() or b"").decode()
+        out = buf.read_all()
+        return out.decode() if isinstance(out, bytes) else out
 
     def as_der(self) -> bytes:
         assert m2.x509_name_type_check(self.x509_name), "'x509_name' type error"
@@ -473,9 +597,13 @@ class X509(object):
             self.x509 = m2.x509_new()
             self._pyfree = 1
 
+    @staticmethod
+    def m2_x509_free(x509: C.X509) -> None:
+        m2.x509_free(x509)
+
     def __del__(self) -> None:
         if getattr(self, "_pyfree", 0):
-            m2.x509_free(self.x509)
+            self.m2_x509_free(self.x509)
 
     def _ptr(self) -> C.X509:
         return self.x509
@@ -552,18 +680,6 @@ class X509(object):
         """
         return m2.x509_set_not_after(self.x509, asn1_time._ptr())
 
-    def get_not_before(self) -> ASN1.ASN1_TIME:
-        time_ptr = m2.x509_get_not_before(self.x509)
-        time = ASN1.ASN1_TIME(time_ptr, _pyfree=0)
-        time.owner = self
-        return time
-
-    def get_not_after(self) -> ASN1.ASN1_TIME:
-        time_ptr = m2.x509_get_not_after(self.x509)
-        time = ASN1.ASN1_TIME(time_ptr, _pyfree=0)
-        time.owner = self
-        return time
-
     def get_serial_number(self) -> int:
         asn1_int = m2.x509_get_serial_number(self.x509)
         py_int = int(ASN1.ASN1_Integer(asn1_int))
@@ -579,8 +695,37 @@ class X509(object):
 
         :return 1 for success and 0 for failure.
         """
-        asn1_integer = ASN1.ASN1_Integer(serial)
-        return m2.x509_set_serial_number(self.x509, asn1_integer.asn1int)
+        assert m2.x509_type_check(self.x509), "'x509' type error"
+        # This "magically" changes serial since asn1_integer
+        # is C pointer to x509's internal serial number.
+        asn1_integer = m2.x509_get_serial_number(self.x509)
+        return m2.asn1_integer_set(asn1_integer, serial)
+        # XXX Or should I do this?
+        # asn1_integer = m2.asn1_integer_new()
+        # m2.asn1_integer_set(asn1_integer, serial)
+        # return m2.x509_set_serial_number(self.x509, asn1_integer)
+
+    def get_not_before(self) -> ASN1.ASN1_TIME:
+        assert m2.x509_type_check(self.x509), "'x509' type error"
+        # ASN1_TIME_dup() as internal ref. depends on self being referenced
+        ref = ASN1.ASN1_TIME(m2.x509_get_not_before(self.x509))
+        out = ASN1.ASN1_TIME(_pyfree=1)
+        out.set_datetime(ref.get_datetime())
+        return out
+
+    def get_not_after(self) -> ASN1.ASN1_TIME:
+        assert m2.x509_type_check(self.x509), "'x509' type error"
+        # ASN1_TIME_dup() as internal ref. depends on self being referenced
+        ref = ASN1.ASN1_TIME(m2.x509_get_not_after(self.x509))
+        out = ASN1.ASN1_TIME(_pyfree=1)
+        out.set_datetime(ref.get_datetime())
+        if "Bad time value" in str(out):
+            raise X509Error(
+                """M2Crypto cannot handle dates after year 2050.
+                See RFC 5280 4.1.2.5 for more information.
+                """
+            )
+        return out
 
     def get_pubkey(self) -> EVP.PKey:
         pkey_ptr = m2.x509_get_pubkey(self.x509)
@@ -836,9 +981,13 @@ class X509_Stack(object):
             self.stack = m2.sk_x509_new_null()
             self._pyfree = 1
 
+    @staticmethod
+    def m2_sk_x509_free(stack: C.STACK_OF_X509) -> None:
+        m2.sk_x509_free(stack)
+
     def __del__(self) -> None:
         if getattr(self, "_pyfree", 0):
-            m2.sk_x509_free(self.stack)
+            self.m2_sk_x509_free(self.stack)
 
     def __len__(self) -> int:
         return len(self.pystack)
@@ -898,9 +1047,13 @@ class X509_Store_Context(object):
         self.ctx = x509_store_ctx
         self._pyfree = _pyfree
 
+    @staticmethod
+    def m2_x509_store_ctx_free(ctx: C.X509_STORE_CTX) -> None:
+        m2.x509_store_ctx_free(ctx)
+
     def __del__(self) -> None:
         if getattr(self, "_pyfree", 0):
-            m2.x509_store_ctx_free(self.ctx)
+            self.m2_x509_store_ctx_free(self.ctx)
 
     def _ptr(self) -> C.X509_STORE_CTX:
         return self.ctx
@@ -961,9 +1114,13 @@ class X509_Store(object):
             self.store = m2.x509_store_new()
             self._pyfree = 1
 
+    @staticmethod
+    def m2_x509_store_free(store: C.X509_STORE) -> None:
+        m2.x509_store_free(store)
+
     def __del__(self) -> None:
         if getattr(self, "_pyfree", 0):
-            m2.x509_store_free(self.store)
+            self.m2_x509_store_free(self.store)
 
     def _ptr(self) -> C.X509_STORE:
         return self.store
@@ -1034,6 +1191,7 @@ def new_stack_from_der(der_string: bytes) -> X509_Stack:
     """
     Create a new X509_Stack from DER string.
     """
+    der_string = der_string.encode() if isinstance(der_string, str) else der_string
     stack_ptr = m2.make_stack_from_der_sequence(der_string)
     if stack_ptr is None:
         raise X509Error("Failed to create stack from DER sequence")
@@ -1054,9 +1212,13 @@ class Request(object):
             m2.x509_req_set_version(self.req, 0)
             self._pyfree = 1
 
+    @staticmethod
+    def m2_x509_req_free(req: C.X509_REQ) -> None:
+        m2.x509_req_free(req)
+
     def __del__(self) -> None:
         if getattr(self, "_pyfree", 0):
-            m2.x509_req_free(self.req)
+            self.m2_x509_req_free(self.req)
 
     def _ptr(self) -> C.X509_REQ:
         return self.req
@@ -1261,7 +1423,8 @@ def load_request_der_string(cert_str: Union[str, bytes]) -> Request:
     :return: M2Crypto.X509.Request object.
     """
     cert_str = cert_str.encode() if isinstance(cert_str, str) else cert_str
-    return load_request_string(cert_str, FORMAT_DER)
+    bio = BIO.MemoryBuffer(cert_str)
+    return load_request_bio(bio, FORMAT_DER)
 
 
 class CRL(object):
@@ -1282,9 +1445,13 @@ class CRL(object):
             self.crl = m2.x509_crl_new()
             self._pyfree = 1
 
+    @staticmethod
+    def m2_x509_crl_free(crl: C.X509_CRL) -> None:
+        m2.x509_crl_free(crl)
+
     def __del__(self) -> None:
         if getattr(self, "_pyfree", 0):
-            m2.x509_crl_free(self.crl)
+            self.m2_x509_crl_free(self.crl)
 
     def as_text(self) -> str:
         """

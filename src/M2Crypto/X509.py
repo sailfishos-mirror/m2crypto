@@ -14,10 +14,12 @@ import logging
 import re
 
 from M2Crypto import ASN1, BIO, EVP, m2  # noqa
-from typing import List, Optional, Union  # noqa
+from typing import List, Optional, Union  # type: ignore # noqa
 
 FORMAT_DER = 0
 FORMAT_PEM = 1
+
+AUTH_ID_EXT_RE = re.compile(r'^([0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2})*)$')
 
 __g = globals()
 for x in dir(m2):
@@ -134,6 +136,13 @@ def validate_authority_key_identifier(value):
         # More complex validation needed for DNs or serials
         # For simplicity, we might just check for non-empty string here if we can't parse DNs
         pass
+    # Check if the value is a valid colon-separated hex string
+    # A simple regex for this: ^([0-9A-Fa-f]{2}:){19}[0-9A-Fa-f]{2}$ for 20 bytes
+    # Or more generally for any length of colon-separated hex pairs:
+    elif AUTH_ID_EXT_RE.fullmatch(value):
+        # You might want to add a length check here, e.g., for 20 bytes (SHA-1)
+        # if len(value.replace(':', '')) == 40: # 40 hex chars = 20 bytes
+        pass
     else:
         raise ValueError(
             f"Invalid format for Authority Key Identifier: '{value}'. "
@@ -175,14 +184,42 @@ def new_extension(
             raise TypeError(f"Value for the extension '{name}' must be a string.")
 
     ctx = m2.x509v3_set_nconf()
-    x509_ext_ptr = m2.x509v3_ext_conf(None, ctx, name, value)
-    if x509_ext_ptr is None:
-        raise X509Error(
-            "Cannot create X509_Extension with name '%s' and value '%s'" % (name, value)
-        )
-    x509_ext = X509_Extension(x509_ext_ptr, _pyfree)
-    x509_ext.set_critical(critical)
-    return x509_ext
+
+    if ctx is None:
+        raise X509Error('Failed to create X509V3_CTX')
+
+    try:
+        # Special handling for authorityKeyIdentifier to prepend 'keyid:'
+        # if the value looks like a raw hex string.
+        # This assumes validate_authority_key_identifier has been updated
+        # to accept raw hex strings, as per our previous discussion (Option 1).
+        # If validate_authority_key_identifier *requires* 'keyid:',
+        # then this logic would also ensure the internal value for OpenSSL
+        # is correctly formatted.
+        _value_for_openssl = value
+        if name == "authorityKeyIdentifier":
+            # Check if the value is a raw hex string (already validated by validator)
+            # and not already prefixed with 'keyid:' or 'issuer:'
+            if AUTH_ID_EXT_RE.fullmatch(value):
+                _value_for_openssl = "keyid:" + value
+            elif value.startswith('issuer:'):
+                # Ensure issuer format is correctly handled if necessary,
+                # but 'issuer:' is typically already what OpenSSL expects.
+                pass
+            # Add other known OpenSSL authorityKeyIdentifier options if needed,
+            # e.g., 'keyid:always', 'issuer:always' would pass through directly.
+
+        x509_ext_ptr = m2.x509v3_ext_conf(None, ctx, name, _value_for_openssl)
+        if x509_ext_ptr is None:
+                # Re-raise the X509Error from m2, it's typically more informative
+                raise X509Error('Failed to create extension {} with value {}').format(name, value)
+        m2.x509_ctx_free(ctx)
+        x509_ext = X509_Extension(x509_ext_ptr, _pyfree, _owner=1)
+        x509_ext.set_critical(critical)
+        return x509_ext
+    except Exception as e:
+        m2.x509_ctx_free(ctx)
+        raise e
 
 
 class X509_Extension_Stack(object):

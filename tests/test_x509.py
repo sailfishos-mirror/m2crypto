@@ -796,6 +796,7 @@ class X509ExtTestCase(unittest.TestCase):
     def test_multiple_extensions(self):
         # Testing for https://todo.sr.ht/~mcepl/m2crypto/9
         sub_key_id = "1C:E6:F0:58:58:32:BC:7B:BA:8E:E0:23:1B:FF:17:99:B0:4D:CF:64"
+        auth_id = "1C:E6:F0:58:58:32:BC:7B:BA:8E:E0:23:1B:FF:17:99:B0:4D:CF:64"
 
         cert_pem_string = textwrap.dedent(
             """\
@@ -841,7 +842,7 @@ class X509ExtTestCase(unittest.TestCase):
         local_aki = m2_x509_cert.get_ext("authorityKeyIdentifier")
 
         X509.new_extension("subjectKeyIdentifier", sub_key_id)
-        X509.new_extension("authorityKeyIdentifier", "keyid:always")
+        X509.new_extension("authorityKeyIdentifier", auth_id)
 
 
 class CRLTestCase(unittest.TestCase):

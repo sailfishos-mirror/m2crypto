@@ -678,6 +678,10 @@ x509v3_set_nconf(void) {
       X509V3_set_nconf(ctx, conf);
       return ctx;
 }
+
+void x509_ctx_free(X509V3_CTX *ext) {
+    OPENSSL_free(ext);
+}
 %}
 %typemap(out) X509V3_CTX * ;
 

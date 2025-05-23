@@ -789,7 +789,7 @@ class X509ExtTestCase(unittest.TestCase):
             name: str = "nsComment"
             value: str = "Hello"
 
-        ctx = m2.x509v3_set_nconf()
+        ctx = m2.x509v3_ctx_new()
         x509_ext_ptr = m2.x509v3_ext_conf(None, ctx, name, value)
         X509.X509_Extension(x509_ext_ptr, 1)
 

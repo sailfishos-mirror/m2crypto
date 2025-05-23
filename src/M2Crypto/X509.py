@@ -19,7 +19,7 @@ from typing import List, Optional, Union  # type: ignore # noqa
 FORMAT_DER = 0
 FORMAT_PEM = 1
 
-AUTH_ID_EXT_RE = re.compile(r'^([0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2})*)$')
+AUTH_ID_EXT_RE = re.compile(r"^([0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2})*)$")
 
 __g = globals()
 for x in dir(m2):
@@ -102,6 +102,9 @@ def validate_subject_key_identifier(val):
     Validate used subjectKeyIdentifier value against invalid values.
     See https://todo.sr.ht/~mcepl/m2crypto/9 for more information
     """
+    log.debug("value: {}".format(val))
+    re_test = AUTH_ID_EXT_RE.fullmatch(val)
+    log.debug("re_test: {}".format(re_test))
     if not isinstance(val, str):
         raise TypeError("Subject Key Identifier must be a string.")
     cleaned_value = val.replace(":", "").strip()
@@ -136,13 +139,6 @@ def validate_authority_key_identifier(value):
         # More complex validation needed for DNs or serials
         # For simplicity, we might just check for non-empty string here if we can't parse DNs
         pass
-    # Check if the value is a valid colon-separated hex string
-    # A simple regex for this: ^([0-9A-Fa-f]{2}:){19}[0-9A-Fa-f]{2}$ for 20 bytes
-    # Or more generally for any length of colon-separated hex pairs:
-    elif AUTH_ID_EXT_RE.fullmatch(value):
-        # You might want to add a length check here, e.g., for 20 bytes (SHA-1)
-        # if len(value.replace(':', '')) == 40: # 40 hex chars = 20 bytes
-        pass
     else:
         raise ValueError(
             f"Invalid format for Authority Key Identifier: '{value}'. "
@@ -173,20 +169,16 @@ def new_extension(
 
     validator = _EXTENSION_VALIDATORS.get(name)
     if validator:
-        try:
-            validator(value)
-        except (TypeError, ValueError) as e:
-            # raise ValueError(f"Invalid value for extension '{name}': {e}") from e
-            raise
+        validator(value)
     else:
         # Do at least some validation
         if not isinstance(value, str):
             raise TypeError(f"Value for the extension '{name}' must be a string.")
 
-    ctx = m2.x509v3_set_nconf()
+    ctx = m2.x509v3_ctx_new()
 
     if ctx is None:
-        raise X509Error('Failed to create X509V3_CTX')
+        raise X509Error("Failed to create X509V3_CTX")
 
     try:
         # Special handling for authorityKeyIdentifier to prepend 'keyid:'
@@ -200,25 +192,25 @@ def new_extension(
         if name == "authorityKeyIdentifier":
             # Check if the value is a raw hex string (already validated by validator)
             # and not already prefixed with 'keyid:' or 'issuer:'
-            if AUTH_ID_EXT_RE.fullmatch(value):
+            if not (value.startswith('keyid:') or value.startswith('issuer:')):
                 _value_for_openssl = "keyid:" + value
-            elif value.startswith('issuer:'):
-                # Ensure issuer format is correctly handled if necessary,
-                # but 'issuer:' is typically already what OpenSSL expects.
-                pass
-            # Add other known OpenSSL authorityKeyIdentifier options if needed,
-            # e.g., 'keyid:always', 'issuer:always' would pass through directly.
 
         x509_ext_ptr = m2.x509v3_ext_conf(None, ctx, name, _value_for_openssl)
         if x509_ext_ptr is None:
-                # Re-raise the X509Error from m2, it's typically more informative
-                raise X509Error('Failed to create extension {} with value {}').format(name, value)
-        m2.x509_ctx_free(ctx)
+            # Re-raise the X509Error from m2, it's typically more informative
+            if m2.x509v3_ctx_free:
+                m2.x509v3_ctx_free(ctx)
+            raise X509Error("Failed to create extension {} with value {}").format(
+                name, value
+            )
+        if m2.x509v3_ctx_free:
+            m2.x509v3_ctx_free(ctx)
         x509_ext = X509_Extension(x509_ext_ptr, _pyfree, _owner=1)
         x509_ext.set_critical(critical)
         return x509_ext
     except Exception as e:
-        m2.x509_ctx_free(ctx)
+        if m2.x509v3_ctx_free:
+            m2.x509v3_ctx_free(ctx)
         raise e
 
 

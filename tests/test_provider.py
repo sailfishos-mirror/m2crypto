@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Test file for M2Crypto.Provider."""
 
 import hashlib
 import os

@@ -101,6 +101,9 @@ def openssl_version(
     ver = None
     try:
         if sys.platform == 'win32':
+            logging.info(f"OPENSSL_PATH = {os.environ.get('OPENSSL_PATH')}")
+            logging.info(f"whole path = {os.path.join(os.environ.get('OPENSSL_PATH'), 'libcrypto*.dll')}")
+            logging.info(f"glob = {glob.glob(os.path.join(os.environ.get('OPENSSL_PATH'), 'libcrypto*.dll'))}")
             found_lib = glob.glob(
                 os.path.join(
                     os.environ.get('OPENSSL_PATH'), 'libcrypto*.dll'
@@ -322,12 +325,43 @@ class _M2CryptoBuildExt(build_ext.build_ext):
         # self.bundledlls is set
         if sys.platform == 'win32':
             ver_part = ''
-            if self.openssl_path and openssl_version(
-                self.openssl_path, 0x10100000, True
-            ):
-                ver_part += '-1_1'
+            # Get the detected OpenSSL version as a number
+            openssl_detected_ver = None
+            if self.openssl_path:
+                try:
+                    openssl_detected_ver = self.openssl_version(
+                        self.openssl_path, 0x0, True # Just check if a library is loadable and get its version
+                    )
+                except (AttributeError, FileNotFoundError):
+                    # Fallback to file parsing if ctypes fails
+                    try:
+                        file = os.path.join(
+                            self.openssl_path, 'include', 'openssl', 'opensslv.h'
+                        )
+                        with open(file) as origin_file:
+                            for line in origin_file:
+                                m = re.match(
+                                    r'^# *define\s*OPENSSL_VERSION_NUMBER\s*(0x[0-9a-fA-F]*)',
+                                    line,
+                                )
+                                if m:
+                                    openssl_detected_ver = int(m.group(1), base=16)
+                                    break
+                    except Exception: # Catch any error from file reading
+                        pass
+
+            if openssl_detected_ver is not None:
+                # OpenSSL 3.x detection
+                if openssl_detected_ver >= 0x30000000: # OpenSSL 3.0.0 or higher
+                    ver_part += '-3' # Or whatever suffix your 3.x DLLs use, e.g., '-3-x64' if they are 'libssl-3-x64.dll'
+                # OpenSSL 1.1.x detection (original logic)
+                elif openssl_detected_ver >= 0x10100000: # OpenSSL 1.1.0 or higher
+                    ver_part += '-1_1'
+                # Add more conditions for other specific versions if needed
+
             if sys.maxsize > 2**32:
-                ver_part += '-x64'
+                ver_part += '-x64' # This adds '-x64' for 64-bit systems
+
             search = list(self.library_dirs)
             if self.openssl_path:
                 search = search + [
@@ -335,17 +369,25 @@ class _M2CryptoBuildExt(build_ext.build_ext):
                     os.path.join(self.openssl_path, 'bin'),
                 ]
             libs = list(self.libraries)
-            for libname in list(libs):
+
+            for libname in list(libs): # Iterate over a copy because we modify 'libs'
+                found_lib = False
                 for search_path in search:
                     dll_name = '{0}{1}.dll'.format(libname, ver_part)
                     dll_path = os.path.join(search_path, dll_name)
                     if os.path.exists(dll_path):
-                        shutil.copy(dll_path, 'M2Crypto')
-                        libs.remove(libname)
-                        break
+                        log.info(f"Found {dll_name} at {dll_path}")
+                        shutil.copy(dll_path, os.path.join(self.build_lib, 'M2Crypto')) # Copy to the build directory
+                        libs.remove(libname) # Remove from the list of still-to-find libs
+                        found_lib = True
+                        break # Found for this libname, move to the next
+                if not found_lib:
+                    log.error(f"Did not find {libname} with suffix '{ver_part}' in any search path.")
+
+
             if libs:
                 raise Exception(
-                    "Libs not found {}".format(','.join(libs))
+                    "Libs not found {}".format(', '.join(libs))
                 )
         build_ext.build_ext.run(self)
 

@@ -16,3 +16,4 @@ MANIFEST
 src/SWIG/_m2crypto_wrap.c
 !*requirements.txt
 .env
+GEMINI.md

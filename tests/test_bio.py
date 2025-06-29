@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 Unit tests for M2Crypto.BIO.
 
@@ -12,52 +11,42 @@ import logging
 
 from M2Crypto import BIO, Rand, m2
 from tests import unittest
-from tests.fips import fips_mode
 
 log = logging.getLogger("test_bio")
 
-ciphers = [
-    "des_ede_ecb",
-    "des_ede_cbc",
-    "des_ede_cfb",
-    "des_ede_ofb",
-    "des_ede3_ecb",
-    "des_ede3_cbc",
-    "des_ede3_cfb",
-    "des_ede3_ofb",
-    "aes_128_ecb",
-    "aes_128_cbc",
-    "aes_128_cfb",
-    "aes_128_ofb",
-    "aes_192_ecb",
-    "aes_192_cbc",
-    "aes_192_cfb",
-    "aes_192_ofb",
-    "aes_256_ecb",
-    "aes_256_cbc",
-    "aes_256_cfb",
-    "aes_256_ofb",
-]
-nonfips_ciphers = [
-    "bf_ecb",
-    "bf_cbc",
-    "bf_cfb",
-    "bf_ofb",
-    # 'idea_ecb', 'idea_cbc', 'idea_cfb', 'idea_ofb',
-    "cast5_ecb",
-    "cast5_cbc",
-    "cast5_cfb",
-    "cast5_ofb",
-    # 'rc5_ecb', 'rc5_cbc', 'rc5_cfb', 'rc5_ofb',
-    "des_ecb",
-    "des_cbc",
-    "des_cfb",
-    "des_ofb",
-    "rc4",
-    "rc2_40_cbc",
-]
-if not fips_mode and m2.OPENSSL_VERSION_NUMBER < 0x30000000:  # Forbidden ciphers
-    ciphers += nonfips_ciphers
+def get_ciphers():
+    # This is a list of all ciphers that have been supported by M2Crypto.
+    # We check which ones are available in the current OpenSSL build.
+    known_ciphers = [
+        "des_ede_ecb", "des_ede_cbc", "des_ede_cfb", "des_ede_ofb",
+        "des_ede3_ecb", "des_ede3_cbc", "des_ede3_cfb", "des_ede3_ofb",
+        "aes_128_ecb", "aes_128_cbc", "aes_128_cfb", "aes_128_ofb",
+        "aes_128_ctr",
+        "aes_192_ecb", "aes_192_cbc", "aes_192_cfb", "aes_192_ofb",
+        "aes_192_ctr",
+        "aes_256_ecb", "aes_256_cbc", "aes_256_cfb", "aes_256_ofb",
+        "aes_256_ctr",
+        "bf_ecb", "bf_cbc", "bf_cfb", "bf_ofb",
+        "cast5_ecb", "cast5_cbc", "cast5_cfb", "cast5_ofb",
+        "des_ecb", "des_cbc", "des_cfb", "des_ofb",
+        "rc4", "rc2_40_cbc",
+    ]
+    available_ciphers = []
+    m2_attrs = dir(m2)
+    for cipher_name in known_ciphers:
+        if cipher_name in m2_attrs:
+            try:
+                mem = BIO.MemoryBuffer()
+                cf = BIO.CipherStream(mem)
+                # Use dummy key/iv. We only want to know if the cipher
+                # can be initialized.
+                cf.set_cipher(cipher_name, b'1234567890123456',
+                              b'1234567890123456', 1)
+                available_ciphers.append(cipher_name)
+            except BIO.BIOError:
+                log.info('Cipher %s not available, skipping.', cipher_name)
+    log.debug(f'available ciphers are:\n{available_ciphers}')
+    return available_ciphers
 
 
 class CipherStreamTestCase(unittest.TestCase):
@@ -94,7 +83,8 @@ class CipherStreamTestCase(unittest.TestCase):
         self.assertEqual(data, data2, "%s algorithm cipher test failed" % algo)
 
     def test_algo(self):
-        for algo in ciphers:
+        ciphs = get_ciphers()
+        for algo in ciphs:
             with self.subTest(algo=algo):
                 self.try_algo(algo)
 

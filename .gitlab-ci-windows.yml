@@ -31,8 +31,6 @@
   # Install Python dependencies and OpenSSL
   - echo "Install dev dependencies"; python -m pip install -r dev-requirements.txt
 
-
-
 build-test-windows:
   stage: build
   parallel:
@@ -54,18 +52,50 @@ build-test-windows:
     paths:
       - "dist/*"
       - "src/SWIG/_m2crypto_wrap.c"
-  script:
-    # Setup environment (Python, Swig, OpenSSL, etc)
-    - *setup_script
+  script: |
+    # Install Python and Swig
+    $CHOCOLATEY_PYTHON_OPTIONS = ""
+    choco install --limitoutput --yes $CHOCOLATEY_PYTHON_OPTIONS python$PYTHON_VERSION
+    choco install --limitoutput --yes swig
+    # Reload the profile so that the binaries are available in the path
+    Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
+    refreshenv
+    # Print information for debugging
+    echo "Python version and architecture:"
+    python --version
+    python -c 'import struct; print(struct.calcsize(''P'') * 8)'
+    echo "Install OpenSSL"
+    curl.exe -o "c:\\$OPENSSL_INSTALLER" -w '%{url}\n' -fL "https://slproweb.com/download/$OPENSSL_INSTALLER"
+    # checking some hashes of the OpenSSL installer would be too
+    # complicated, because we would have maintain large dictionary of
+    # all those values
+    Start-Process -FilePath "c:\\$OPENSSL_INSTALLER" -ArgumentList "/silent /verysilent /DIR=$OPENSSL_PATH" -NoNewWindow -Wait
+    $ErrorActionPreference = "Stop"
+    if (-not (Test-Path "$OPENSSL_PATH\\bin\\openssl.exe")) { throw "OpenSSL installation failed" }
+    echo "Install pywin32"; python -m pip install pywin32
+    $env:PATH = "$OPENSSL_PATH\bin;$env:PATH"
+    # Print information for debugging
+    ls "$OPENSSL_PATH"
+    ls -Recurse "$OPENSSL_PATH"
+    echo "Installed SDKs:"; if (Test-Path "C:/Program Files/Microsoft SDKs/Windows") { ls "C:/Program Files/Microsoft SDKs/Windows" }
+    echo "Installed OpenSSL version:"
+    Start-Process -FilePath "$OPENSSL_PATH\\bin\\openssl.exe" -ArgumentList "version" -Wait -NoNewWindow
+    echo "Python OpenSSL version:"; python -c 'import ssl; print(getattr(ssl, ''OPENSSL_VERSION'', None))'
+    # Install Python dependencies and OpenSSL
+    echo "Install dev dependencies"; python -m pip install -r dev-requirements.txt
     # Build wheel
-    - echo "BUNDLEDLLS is set to $env:BUNDLEDLLS"
-    - python -m pip wheel --verbose --no-build-isolation --no-deps --wheel-dir .\\dist --editable .
-    - ls ".\\dist"
+    echo "BUNDLEDLLS is set to $env:BUNDLEDLLS"
+    python -m pip wheel --verbose --no-build-isolation --no-deps --wheel-dir .\\dist .
+    ls ".\\dist"
     # Install wheel
-    - $env:PYTHONPATH_DIR = "win-amd64-cpython-$PYTHON_VERSION"
-    - python -m pip install -v --upgrade --target build/lib.$PYTHONPATH_DIR --no-compile --ignore-installed --no-deps --no-index --find-links dist m2crypto
-    # Run tests
-    - $env:PYTHONPATH = "build/lib.$PYTHONPATH_DIR"; python -munittest discover -b -v tests
+    $env:PYTHONPATH_DIR = "win-amd64-cpython-$PYTHON_VERSION"
+    python -m pip install -v --upgrade --target build/lib.$PYTHONPATH_DIR --no-compile --ignore-installed --no-deps --no-index --find-links dist m2crypto
+    # Set PYTHONPATH once
+    $env:PYTHONPATH = "build/lib.$PYTHONPATH_DIR"
+    # Optional: Add debugging section if needed
+    # powershell -File win-test-openssl.ps1
+    # Run the actual tests
+    python -m unittest discover -b -v tests
   rules:
     - if: "($CI_COMMIT_BRANCH == \"master\" || $CI_COMMIT_BRANCH =~ /^windows.*/)"  # Run for all changes to master or branches starting with "windows"
     - if: "$CI_COMMIT_TAG =~ /^\\d+\\.\\d+\\.\\d+$/"  # Also run when pushing tags for versions, e.g: 0.40.1

@@ -6,7 +6,10 @@ include: '/.gitlab-ci-windows.yml'
 
 python39:
     image: python:3.9-alpine
-    when: always
+    rules:
+      - if: "$CI_COMMIT_BRANCH =~ /^windows.*/"
+        when: never
+      - when: always
     stage: build
     script:
         - apk update
@@ -23,7 +26,10 @@ python39:
 
 python3:
     image: python:3
-    when: always
+    rules:
+      - if: "$CI_COMMIT_BRANCH =~ /^windows.*/"
+        when: never
+      - when: always
     stage: build
     script:
         - apt-get update -q -y
@@ -42,7 +48,10 @@ alpine-32bit:
     image:
         name: i386/alpine
         entrypoint: ["linux32"]
-    when: always
+    rules:
+      - if: "$CI_COMMIT_BRANCH =~ /^windows.*/"
+        when: never
+      - when: always
     stage: build
     script:
         - apk update
@@ -63,7 +72,10 @@ python3-32bit:
     image:
         name: i386/debian
         entrypoint: ["linux32"]
-    when: always
+    rules:
+      - if: "$CI_COMMIT_BRANCH =~ /^windows.*/"
+        when: never
+      - when: always
     stage: build
     script:
         - apt-get update -q -y
@@ -82,7 +94,10 @@ python3-32bit:
 
 python3-doctest:
     image: python:3
-    when: always
+    rules:
+      - if: "$CI_COMMIT_BRANCH =~ /^windows.*/"
+        when: never
+      - when: always
     stage: build
     script:
         - apt-get update -q -y
@@ -102,7 +117,10 @@ python3-doctest:
 
 fedora:
     image: quay.io/fedora/fedora:latest
-    when: always
+    rules:
+      - if: "$CI_COMMIT_BRANCH =~ /^windows.*/"
+        when: never
+      - when: always
     stage: build
     script:
         - dnf makecache
@@ -122,7 +140,10 @@ fedora:
 
 fedora-rawhide:
     image: quay.io/fedora/fedora:rawhide
-    when: always
+    rules:
+      - if: "$CI_COMMIT_BRANCH =~ /^windows.*/"
+        when: never
+      - when: always
     stage: build
     script:
         - dnf makecache
@@ -144,7 +165,10 @@ fedora-rawhide:
 leap:
     # image: registry.suse.com/bci/bci-base:latest
     image: opensuse/leap
-    when: always
+    rules:
+      - if: "$CI_COMMIT_BRANCH =~ /^windows.*/"
+        when: never
+      - when: always
     stage: build
     artifacts:
       paths:
@@ -166,7 +190,10 @@ leap:
 
 opensuse:
     image: opensuse/tumbleweed
-    when: always
+    rules:
+      - if: "$CI_COMMIT_BRANCH =~ /^windows.*/"
+        when: never
+      - when: always
     stage: build
     script:
         - zypper refresh
@@ -186,7 +213,10 @@ opensuse:
 
 build-sdist:
     image: python:3
-    when: always
+    rules:
+      - if: "$CI_COMMIT_BRANCH =~ /^windows.*/"
+        when: never
+      - when: always
     stage: build
     artifacts:
       paths:

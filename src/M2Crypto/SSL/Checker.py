@@ -17,6 +17,7 @@ __all__ = [
 
 import re
 import socket
+import ipaddress
 
 from M2Crypto import X509, m2  # noqa
 from typing import Optional, Union  # noqa
@@ -329,26 +330,14 @@ class Checker:
         >>> check._matchIPAddress(host='::1', certHost='::2')
         False
         """
+        host_str = host.decode() if isinstance(host, bytes) else host
+        certHost_str = certHost.decode() if isinstance(certHost, bytes) else certHost
         try:
-            canonical = socket.getaddrinfo(
-                host,
-                0,
-                0,
-                socket.SOCK_STREAM,
-                0,
-                socket.AI_NUMERICHOST,
+            return ipaddress.ip_address(host_str) == ipaddress.ip_address(
+                certHost_str
             )
-            certCanonical = socket.getaddrinfo(
-                certHost,
-                0,
-                0,
-                socket.SOCK_STREAM,
-                0,
-                socket.AI_NUMERICHOST,
-            )
-        except:
+        except ValueError:
             return False
-        return canonical == certCanonical
 
 
 if __name__ == "__main__":

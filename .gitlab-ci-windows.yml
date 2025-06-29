@@ -31,8 +31,8 @@ build-test-windows:
     - ARCH: ["32", "64"]
       PYTHON_VERSION: [ "310", "311", "312", "313" ]
   variables:
-    OPENSSL_INSTALLER: "Win${ARCH}OpenSSL-1_1_1w.exe"
-    OPENSSL_PATH: "C:\\OpenSSL-1-1-Win${ARCH}"
+    OPENSSL_INSTALLER: "Win${ARCH}OpenSSL-3_0_16.exe"
+    OPENSSL_PATH: "C:\\OpenSSL-3-0-Win${ARCH}"
     BUNDLEDLLS: 1
   tags:
     - saas-windows-medium-amd64

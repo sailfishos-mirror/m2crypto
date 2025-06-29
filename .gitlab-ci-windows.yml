@@ -1,7 +1,7 @@
 # Common steps that install Python, OpenSSL and Swig
 .setup_script: &setup_script
   # Install Python and Swig
-  - $CHOCOLATEY_PYTHON_OPTIONS = If ($ARCH -eq "32") {"--forcex86"} Else {""} # Used to force the installation of 32-bit Python
+  - $CHOCOLATEY_PYTHON_OPTIONS = ""
   - choco install --limitoutput --yes $CHOCOLATEY_PYTHON_OPTIONS python$PYTHON_VERSION
   - choco install --limitoutput --yes swig
   # Reload the profile so that the binaries are available in the path
@@ -24,21 +24,29 @@
   # Install Python dependencies and OpenSSL
   - echo "Install dev dependencies"; python -m pip install -r dev-requirements.txt
 
+
+
 build-test-windows:
   stage: build
   parallel:
     matrix:
-    - ARCH: ["32", "64"]
-      PYTHON_VERSION: [ "310", "311", "312", "313" ]
+      - PYTHON_VERSION: "310"
+      - PYTHON_VERSION: "311"
+      - PYTHON_VERSION: "312"
+      - PYTHON_VERSION: "313"
+      # Requires Swig >= 4.4.0 (gh#swig/swig!3159), which is not available at Chocolatey yet
+      # https://community.chocolatey.org/packages/swig
+      # - PYTHON_VERSION: "314"
   variables:
-    OPENSSL_INSTALLER: "Win${ARCH}OpenSSL-1_1_1w.exe"
-    OPENSSL_PATH: "C:\\OpenSSL-1-1-Win${ARCH}"
+    OPENSSL_INSTALLER: "Win64OpenSSL-3_0_18.exe"
+    OPENSSL_PATH: "C:\\OpenSSL-3-0-Win64"
     BUNDLEDLLS: 1
   tags:
     - saas-windows-medium-amd64
   artifacts:
     paths:
       - "dist/*"
+      - "src/SWIG/_m2crypto_wrap.c"
   script:
     # Setup environment (Python, Swig, OpenSSL, etc)
     - *setup_script
@@ -47,7 +55,7 @@ build-test-windows:
     - python -m pip wheel --verbose --no-build-isolation --no-deps --wheel-dir .\\dist --editable .
     - ls ".\\dist"
     # Install wheel
-    - $env:PYTHONPATH_DIR = If ($ARCH -eq "32") {"win32-cpython-$PYTHON_VERSION"} Else {"win-amd64-cpython-$PYTHON_VERSION"}
+    - $env:PYTHONPATH_DIR = "win-amd64-cpython-$PYTHON_VERSION"
     - python -m pip install -v --upgrade --target build/lib.$PYTHONPATH_DIR --no-compile --ignore-installed --no-deps --no-index --find-links dist m2crypto
     # Run tests
     - $env:PYTHONPATH = "build/lib.$PYTHONPATH_DIR"; python -m unittest -b -v tests.alltests.suite

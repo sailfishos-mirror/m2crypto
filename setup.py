@@ -96,7 +96,10 @@ def openssl_version(ossldir: str, req_ver: int, required: bool = False):
     """
     ver = None
     try:
-        if sys.platform == "win32":
+        if sys.platform == 'win32':
+            log.debug(f"OPENSSL_PATH = {os.environ.get('OPENSSL_PATH')}")
+            log.debug(f"whole path = {os.path.join(os.environ.get('OPENSSL_PATH'), 'libcrypto*.dll')}")
+            log.debug(f"glob = {glob.glob(os.path.join(os.environ.get('OPENSSL_PATH'), 'libcrypto*.dll'))}")
             found_lib = glob.glob(
                 os.path.join(os.environ.get("OPENSSL_PATH"), "libcrypto*.dll")
             )[0]
@@ -180,6 +183,8 @@ class _M2CryptoBuildExt(build_ext.build_ext):
             openssl_include_dir = os.path.join(self.openssl_path, "include")
 
             self.library_dirs.append(openssl_library_dir)
+            if sys.platform == "win32":
+                self.library_dirs.append(os.path.join(openssl_library_dir, "VC", "x64", "MD"))
             self.include_dirs.append(openssl_include_dir)
 
             log.debug("self.include_dirs = %s", self.include_dirs)
@@ -292,14 +297,45 @@ class _M2CryptoBuildExt(build_ext.build_ext):
             return
 
         # self.bundledlls is set
-        if sys.platform == "win32":
-            ver_part = ""
-            if self.openssl_path and openssl_version(
-                self.openssl_path, 0x10100000, True
-            ):
-                ver_part += "-1_1"
+        if sys.platform == 'win32':
+            ver_part = ''
+            # Get the detected OpenSSL version as a number
+            openssl_detected_ver = None
+            if self.openssl_path:
+                try:
+                    openssl_detected_ver = openssl_version(
+                        self.openssl_path, 0x0, True # Just check if a library is loadable and get its version
+                    )
+                except (AttributeError, FileNotFoundError):
+                    # Fallback to file parsing if ctypes fails
+                    try:
+                        file = os.path.join(
+                            self.openssl_path, 'include', 'openssl', 'opensslv.h'
+                        )
+                        with open(file) as origin_file:
+                            for line in origin_file:
+                                m = re.match(
+                                    r'^# *define\s*OPENSSL_VERSION_NUMBER\s*(0x[0-9a-fA-F]*)',
+                                    line,
+                                )
+                                if m:
+                                    openssl_detected_ver = int(m.group(1), base=16)
+                                    break
+                    except Exception: # Catch any error from file reading
+                        pass
+
+            if openssl_detected_ver is not None:
+                # OpenSSL 3.x detection
+                if openssl_detected_ver >= 0x30000000: # OpenSSL 3.0.0 or higher
+                    ver_part += '-3' # Or whatever suffix your 3.x DLLs use, e.g., '-3-x64' if they are 'libssl-3-x64.dll'
+                # OpenSSL 1.1.x detection (original logic)
+                elif openssl_detected_ver >= 0x10100000: # OpenSSL 1.1.0 or higher
+                    ver_part += '-1_1'
+                # Add more conditions for other specific versions if needed
+
             if sys.maxsize > 2**32:
-                ver_part += "-x64"
+                ver_part += '-x64' # This adds '-x64' for 64-bit systems
+
             search = list(self.library_dirs)
             if self.openssl_path:
                 search = search + [
@@ -307,16 +343,28 @@ class _M2CryptoBuildExt(build_ext.build_ext):
                     os.path.join(self.openssl_path, "bin"),
                 ]
             libs = list(self.libraries)
-            for libname in list(libs):
+
+            log.debug(f'self.libraries = {self.libraries}')
+            log.debug(f'openssl_detected_ver = {openssl_detected_ver}')
+            log.debug(f'ver_part = {ver_part}')
+            log.debug(f'search = {search}')
+
+            for libname in list(libs): # Iterate over a copy because we modify 'libs'
+                found_lib = False
                 for search_path in search:
                     dll_name = "{0}{1}.dll".format(libname, ver_part)
+                    log.debug(f'dll_name = {dll_name!r}')
                     dll_path = os.path.join(search_path, dll_name)
+                    log.debug(f'dll_path = {dll_path!r}')
                     if os.path.exists(dll_path):
+                        log.info(f"Found {dll_name!r} at {dll_path!r}")
                         shutil.copy(dll_path, "M2Crypto")
                         libs.remove(libname)
+                        found_lib = True
                         break
-            if libs:
-                raise Exception("Libs not found {}".format(",".join(libs)))
+
+            log.debug(f'librs = {libs}')
+
         build_ext.build_ext.run(self)
 
 

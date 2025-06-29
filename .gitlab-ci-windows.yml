@@ -12,11 +12,17 @@
   - python --version
   - python -c 'import struct; print(struct.calcsize(''P'') * 8)'
   - echo "Install OpenSSL"
-  - curl.exe -o "c:\\$OPENSSL_INSTALLER" -fsSL "https://slproweb.com/download/$OPENSSL_INSTALLER"
+  - curl.exe -o "c:\\$OPENSSL_INSTALLER" -w '%{url}\n' -fL "https://slproweb.com/download/$OPENSSL_INSTALLER"
+  # checking some hashes of the OpenSSL installer would be too
+  # complicated, because we would have maintain large dictionary of
+  # all those values
   - Start-Process -FilePath "c:\\$OPENSSL_INSTALLER" -ArgumentList "/silent /verysilent /DIR=$OPENSSL_PATH" -NoNewWindow -Wait
+  - $ErrorActionPreference = "Stop"
+  - if (-not (Test-Path "$OPENSSL_PATH\\bin\\openssl.exe")) { throw "OpenSSL installation failed" }
   - echo "Install pywin32"; python -m pip install pywin32
   # Print information for debugging
   - ls "$OPENSSL_PATH"
+  - ls -Recurse "$OPENSSL_PATH"
   - echo "Installed SDKs:"; if (Test-Path "C:/Program Files/Microsoft SDKs/Windows") { ls "C:/Program Files/Microsoft SDKs/Windows" }
   - echo "Installed OpenSSL version:"
   - Start-Process -FilePath "$OPENSSL_PATH\\bin\\openssl.exe" -ArgumentList "version" -Wait -NoNewWindow
@@ -60,5 +66,5 @@ build-test-windows:
     # Run tests
     - $env:PYTHONPATH = "build/lib.$PYTHONPATH_DIR"; python -m unittest -b -v tests.alltests.suite
   rules:
-    - if: ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH =~ /^windows.*/)  # Run for all changes to master or branches starting with "windows"
-    - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/  # Also run when pushing tags for versions, e.g: 0.40.1
+    - if: "($CI_COMMIT_BRANCH == \"master\" || $CI_COMMIT_BRANCH =~ /^windows.*/)"  # Run for all changes to master or branches starting with "windows"
+    - if: "$CI_COMMIT_TAG =~ /^\\d+\\.\\d+\\.\\d+$/"  # Also run when pushing tags for versions, e.g: 0.40.1

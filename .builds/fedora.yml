@@ -39,6 +39,8 @@ tasks:
      PYTHONPATH=$(readlink -f build/lib.*) python3 -mmypy --no-color-output -p M2Crypto
   - test: |
      cd m2crypto
+     export M2CRYPTO_OPENSSL_MODULE_PKCS11=/usr/lib64/ossl-modules/pkcs11.so
+     export M2CRYPTO_PKCS11_MODULE_PATH=/usr/lib64/libsofthsm2.so
      PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest -b -v tests.alltests.suite
      case $BUILD_SUBMITTER in
         *git.sr.ht*)
@@ -64,6 +66,4 @@ tasks:
      esac
 artifacts:
   - m2crypto/src/SWIG/_m2crypto_wrap.c
-  # https://is.gd/Z5VJlI
-  # - pygn/dist/pygn-*.tar.gz
-  # - pygn/dist/pygn-*.whl
+  - m2crypto/artifacts.zip

@@ -37,6 +37,7 @@ def suite():
         "tests.test_evp",
         "tests.test_init",
         "tests.test_obj",
+        "tests.test_provider",
         "tests.test_rand",
         "tests.test_rc4",
         "tests.test_rsa",

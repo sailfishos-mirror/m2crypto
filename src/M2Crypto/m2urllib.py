@@ -119,7 +119,7 @@ if 'URLopener' in globals():
 else:
     import sys
 
-    class URLopener:
+    class URLopener:  # type: ignore [no-redef]
         msg = f'Python {"%d.%d" % (sys.version_info[:2])} does not support URLopener any more.'
 
         def __init__(self):

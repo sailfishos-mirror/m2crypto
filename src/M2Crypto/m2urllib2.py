@@ -99,7 +99,7 @@ class RefCountingSSLConnection(SSL.Connection):
         return _makefile(self, mode, bufsize)
 
 
-class HTTPSHandler(AbstractHTTPHandler):
+class HTTPSHandler(AbstractHTTPHandler):  # type: ignore [no-redef]
     def __init__(
         self,
         ssl_context: Optional[SSL.Context] = None,
@@ -227,7 +227,7 @@ class HTTPSHandler(AbstractHTTPHandler):
 
 
 # Copied from urllib2 with modifications for ssl
-def build_opener(
+def build_opener(  # type: ignore [no-redef]
     ssl_context: Optional[SSL.Context] = None, *handlers
 ) -> OpenerDirector:
     """Create an opener object from a list of handlers.

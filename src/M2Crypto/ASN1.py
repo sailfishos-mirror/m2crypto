@@ -11,7 +11,7 @@ import datetime
 import time
 
 from M2Crypto import BIO, m2, types as C
-from typing import Optional, Union
+from typing import Optional, Union, Any
 
 MBSTRING_FLAG: int = 0x1000
 MBSTRING_ASC: int = MBSTRING_FLAG | 1
@@ -39,7 +39,10 @@ class ASN1_Integer:
             m2.asn1_integer_free(self.asn1int)
 
     def __int__(self) -> int:
-        return m2.asn1_integer_get(self.asn1int)
+        ret = m2.asn1_integer_get(self.asn1int)
+        if ret is None:
+            raise ValueError("ASN1_Integer value is NULL")
+        return ret
 
 
 class ASN1_String:
@@ -49,11 +52,11 @@ class ASN1_String:
         asn1str: Union[C.ASN1_String, str, bytes],
         _pyfree: int = 0,
     ):
+        self.asn1str: C.ASN1_String = m2.asn1_string_new()
         if isinstance(asn1str, str):
-            self.asn1str: C.ASN1_String = m2.asn1_string_new()
-            m2.asn1_string_set(self.asn1str, asn1str.encode())
+            encoded_str = asn1str.encode()
+            m2.asn1_string_set(self.asn1str, encoded_str)
         elif isinstance(asn1str, bytes):
-            self.asn1str: C.ASN1_String = m2.asn1_string_new()
             m2.asn1_string_set(self.asn1str, asn1str)
         else:
             self.asn1str = asn1str
@@ -131,22 +134,26 @@ class LocalTimezone(datetime.tzinfo):
             self._dstoffset = self._stdoffset
         self._dstdiff = self._dstoffset - self._stdoffset
 
-    def utcoffset(self, dt: datetime.datetime) -> datetime.timedelta:
+    def utcoffset(self, dt: Optional[datetime.datetime]) -> datetime.timedelta:
         if self._isdst(dt):
             return self._dstoffset
         else:
             return self._stdoffset
 
-    def dst(self, dt: datetime.datetime) -> datetime.timedelta:
+    def dst(self, dt: Optional[datetime.datetime]) -> datetime.timedelta:
         if self._isdst(dt):
             return self._dstdiff
         else:
             return datetime.timedelta(0)
 
-    def tzname(self, dt: datetime.datetime) -> str:
+    def tzname(self, dt: Optional[datetime.datetime]) -> str:
+        if dt is None:
+            return ""
         return time.tzname[self._isdst(dt).real]
 
-    def _isdst(self, dt: datetime.datetime) -> bool:
+    def _isdst(self, dt: Optional[datetime.datetime]) -> bool:
+        if dt is None:
+            return False
         tt = (
             dt.year,
             dt.month,
@@ -195,8 +202,9 @@ class ASN1_TIME:
             self._pyfree = _pyfree
         else:
             # that's (ASN1_TIME*)
-            self.asn1_time: bytes = m2.asn1_time_new()
+            self.asn1_time: bytes = m2.asn1_time_new()  # type: ignore [no-redef]
             self._pyfree = 1
+        self.owner: Any = None
 
     def __del__(self) -> None:
         if getattr(self, "_pyfree", 0):
@@ -212,7 +220,7 @@ class ASN1_TIME:
         assert m2.asn1_time_type_check(self.asn1_time), "'asn1_time' type error'"
         return self.asn1_time
 
-    def set_string(self, string: bytes) -> int:
+    def set_string(self, string: str) -> int:
         """
         Set time from UTC string.
 

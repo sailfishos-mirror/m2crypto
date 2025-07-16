@@ -10,7 +10,7 @@ from typing import Callable, Iterable, Optional, Union, TYPE_CHECKING
 from M2Crypto import m2, types as C
 
 if TYPE_CHECKING:
-    import SSL
+    import M2Crypto.SSL as SSL
 
 log = logging.getLogger('BIO')
 
@@ -50,6 +50,7 @@ class BIO(object):
     bio_ptr = _ptr
 
     def fileno(self) -> int:
+        assert self.bio is not None, "Uninitialized self.bio"
         return m2.bio_get_fd(self.bio)
 
     def readable(self) -> bool:

@@ -1,3 +1,4 @@
+# mypy: ignore-errors=True
 """
 Make Twisted use M2Crypto for SSL
 

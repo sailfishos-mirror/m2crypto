@@ -1,12 +1,11 @@
-
 """M2Crypto wrapper for OpenSSL RSA API.
 
 Copyright (c) 1999-2004 Ng Pheng Siong. All rights reserved."""
 
 import sys
 
-from M2Crypto import BIO, Err, m2, util
-from typing import Callable, IO, Optional, Tuple, Union  # noqa
+from M2Crypto import BIO, Err, m2, util, types as C
+from typing import Callable, IO, Optional, Tuple, Union, Any  # noqa
 
 
 class RSAError(Exception):
@@ -17,7 +16,7 @@ m2.rsa_init(RSAError)
 
 no_padding = m2.no_padding
 pkcs1_padding = m2.pkcs1_padding
-if hasattr(m2, 'sslv23_padding'):
+if hasattr(m2, "sslv23_padding"):
     sslv23_padding = m2.sslv23_padding
 pkcs1_oaep_padding = m2.pkcs1_oaep_padding
 
@@ -27,57 +26,62 @@ class RSA(object):
     RSA Key Pair.
     """
 
-    m2_rsa_free = m2.rsa_free
-
-    def __init__(self, rsa: bytes, _pyfree: int = 0) -> None:
+    def __init__(self, rsa: C.RSA, _pyfree: int = 0) -> None:
         """
-        :param rsa: binary representation of OpenSSL RSA type
+        :param rsa: OpenSSL RSA object
         """
-        assert m2.rsa_type_check(rsa), "'rsa' type error"
         self.rsa = rsa
         self._pyfree = _pyfree
-        self._check_cache = None
+        self._check_cache: Optional[int] = None
 
     def __del__(self) -> None:
-        if getattr(self, '_pyfree', 0):
-            self.m2_rsa_free(self.rsa)
+        if getattr(self, "_pyfree", 0):
+            # FIX: Call module function directly to avoid implicit 'self'
+            m2.rsa_free(self.rsa)
 
     def __len__(self) -> int:
         return int(m2.rsa_size(self.rsa) << 3)
 
     def __getattr__(self, name: str) -> bytes:
-        if name == 'e':
+        if name == "e":
             return m2.rsa_get_e(self.rsa)
-        elif name == 'n':
+        elif name == "n":
             return m2.rsa_get_n(self.rsa)
         else:
-            raise AttributeError
+            raise AttributeError(name)
 
     def pub(self) -> Tuple[bytes, bytes]:
-        assert self.check_key() == 1, 'key is not initialised'
+        if self.check_key() != 1:
+            raise RSAError("key is not initialized")
         return m2.rsa_get_e(self.rsa), m2.rsa_get_n(self.rsa)
 
     def public_encrypt(self, data: bytes, padding: int) -> bytes:
-        assert self.check_key() == 1, 'key is not initialised'
+        if self.check_key() != 1:
+            raise RSAError("key is not initialized")
         return m2.rsa_public_encrypt(self.rsa, data, padding)
 
-    def public_decrypt(self, data: bytes, padding: int) -> bytes:
-        assert self.check_key() == 1, 'key is not initialised'
+    def public_decrypt(self, data: bytes, padding: int) -> Optional[bytes]:
+        # FIX: Return type is Optional[bytes] because it can fail.
+        if self.check_key() != 1:
+            raise RSAError("key is not initialized")
         return m2.rsa_public_decrypt(self.rsa, data, padding)
 
     def private_encrypt(self, data: bytes, padding: int) -> bytes:
-        assert self.check_key() == 1, 'key is not initialised'
+        if self.check_key() != 1:
+            raise RSAError("key is not initialized")
         return m2.rsa_private_encrypt(self.rsa, data, padding)
 
-    def private_decrypt(self, data: bytes, padding: int) -> bytes:
-        assert self.check_key() == 1, 'key is not initialised'
+    def private_decrypt(self, data: bytes, padding: int) -> Optional[bytes]:
+        # FIX: Return type is Optional[bytes] because it can fail.
+        if self.check_key() != 1:
+            raise RSAError("key is not initialized")
         return m2.rsa_private_decrypt(self.rsa, data, padding)
 
     def save_key_bio(
         self,
         bio: BIO.BIO,
-        cipher: Optional[str] = 'aes_128_cbc',
-        callback: Callable = util.passphrase_callback,
+        cipher: Optional[str] = "aes_128_cbc",
+        callback: Callable[..., Any] = util.passphrase_callback,
     ) -> int:
         """
         Save the key pair to an M2Crypto.BIO.BIO object in PEM format.
@@ -93,25 +97,23 @@ class RSA(object):
                          the key.  The default is
                          util.passphrase_callback.
         """
+        if bio.bio is None:
+            raise RSAError("Uninitialized bio.bio")
         if cipher is None:
-            return m2.rsa_write_key_no_cipher(
-                self.rsa, bio._ptr(), callback
-            )
+            return m2.rsa_write_key_no_cipher(self.rsa, bio.bio, callback)
         else:
             ciph = getattr(m2, cipher, None)
             if ciph is None:
-                raise RSAError('not such cipher %s' % cipher)
+                raise RSAError("not such cipher %s" % cipher)
             else:
-                ciph = ciph()
-            return m2.rsa_write_key(
-                self.rsa, bio._ptr(), ciph, callback
-            )
+                ciph_obj = ciph()
+            return m2.rsa_write_key(self.rsa, bio.bio, ciph_obj, callback)
 
     def save_key(
         self,
         file: Union[str, bytes],
-        cipher: Optional[str] = 'aes_128_cbc',
-        callback: Callable = util.passphrase_callback,
+        cipher: Optional[str] = "aes_128_cbc",
+        callback: Callable[..., Any] = util.passphrase_callback,
     ) -> int:
         """
         Save the key pair to a file in PEM format.
@@ -127,22 +129,22 @@ class RSA(object):
                          the key.  The default is
                          util.passphrase_callback.
         """
-        with BIO.openfile(file, 'wb') as bio:
+        with BIO.openfile(file, "wb") as bio:
             return self.save_key_bio(bio, cipher, callback)
 
     save_pem = save_key
 
     def as_pem(
         self,
-        cipher: Optional[str] = 'aes_128_cbc',
-        callback: Callable = util.passphrase_callback,
+        cipher: Optional[str] = "aes_128_cbc",
+        callback: Callable[..., Any] = util.passphrase_callback,
     ) -> bytes:
         """
         Returns the key(pair) as a string in PEM format.
         """
         bio = BIO.MemoryBuffer()
         self.save_key_bio(bio, cipher, callback)
-        return bio.read()
+        return bio.read() or b""
 
     def save_key_der_bio(self, bio: BIO.BIO) -> int:
         """
@@ -150,7 +152,9 @@ class RSA(object):
 
         :param bio: M2Crypto.BIO.BIO object to save key to.
         """
-        return m2.rsa_write_key_der(self.rsa, bio._ptr())
+        if bio.bio is None:
+            raise RSAError("Uninitialized bio.bio")
+        return m2.rsa_write_key_der(self.rsa, bio.bio)
 
     def save_key_der(self, file: Union[str, bytes]) -> int:
         """
@@ -158,7 +162,7 @@ class RSA(object):
 
         :param file: Filename to save key to
         """
-        with BIO.openfile(file, 'wb') as bio:
+        with BIO.openfile(file, "wb") as bio:
             return self.save_key_der_bio(bio)
 
     def save_pub_key_bio(self, bio: BIO.BIO) -> int:
@@ -167,7 +171,9 @@ class RSA(object):
 
         :param bio: M2Crypto.BIO.BIO object to save key to.
         """
-        return m2.rsa_write_pub_key(self.rsa, bio._ptr())
+        if bio.bio is None:
+            raise RSAError("Uninitialized bio.bio")
+        return m2.rsa_write_pub_key(self.rsa, bio.bio)
 
     def save_pub_key(self, file: Union[str, bytes]) -> int:
         """
@@ -175,8 +181,8 @@ class RSA(object):
 
         :param file: Name of file to save key to.
         """
-        with BIO.openfile(file, 'wb') as bio:
-            return m2.rsa_write_pub_key(self.rsa, bio._ptr())
+        with BIO.openfile(file, "wb") as bio:
+            return self.save_pub_key_bio(bio)
 
     def check_key(self) -> int:
         """
@@ -195,7 +201,7 @@ class RSA(object):
         return self._check_cache
 
     def sign_rsassa_pss(
-        self, digest: bytes, algo: str = 'sha256', salt_length: int = 20
+        self, digest: bytes, algo: str = "sha256", salt_length: int = 20
     ) -> bytes:
         """
         Signs a digest with the private key using RSASSA-PSS
@@ -210,22 +216,22 @@ class RSA(object):
 
         :return: a string which is the signature
         """
-        hash = getattr(m2, algo, None)
+        hash_func = getattr(m2, algo, None)
 
-        if hash is None:
-            raise RSAError('not such hash algorithm %s' % algo)
+        if hash_func is None:
+            raise RSAError("not such hash algorithm %s" % algo)
 
         signature = m2.rsa_padding_add_pkcs1_pss(
-            self.rsa, digest, hash(), salt_length
+            self.rsa, digest, hash_func(), salt_length
         )
 
-        return self.private_encrypt(signature, m2.no_padding)
+        return self.private_encrypt(signature, no_padding)
 
     def verify_rsassa_pss(
         self,
         data: bytes,
         signature: bytes,
-        algo: str = 'sha256',
+        algo: str = "sha256",
         salt_length: int = 20,
     ) -> int:
         """
@@ -244,20 +250,20 @@ class RSA(object):
         :return: 1 or 0, depending on whether the signature was
                  verified or not.
         """
-        hash = getattr(m2, algo, None)
+        hash_func = getattr(m2, algo, None)
 
-        if hash is None:
-            raise RSAError('not such hash algorithm %s' % algo)
+        if hash_func is None:
+            raise RSAError("not such hash algorithm %s" % algo)
 
-        plain_signature = self.public_decrypt(
-            signature, m2.no_padding
-        )
+        plain_signature = self.public_decrypt(signature, no_padding)
+        if plain_signature is None:
+            return 0  # Decrypt failed, so verification fails
 
         return m2.rsa_verify_pkcs1_pss(
-            self.rsa, data, plain_signature, hash(), salt_length
+            self.rsa, data, plain_signature, hash_func(), salt_length
         )
 
-    def sign(self, digest: bytes, algo: str = 'sha256') -> bytes:
+    def sign(self, digest: bytes, algo: str = "sha256") -> bytes:
         """
         Signs a digest with the private key
 
@@ -269,15 +275,13 @@ class RSA(object):
 
         :return: a string which is the signature
         """
-        digest_type = getattr(m2, 'NID_' + algo, None)
+        digest_type = getattr(m2, "NID_" + algo, None)
         if digest_type is None:
-            raise ValueError('unknown algorithm', algo)
+            raise ValueError("unknown algorithm", algo)
 
         return m2.rsa_sign(self.rsa, digest, digest_type)
 
-    def verify(
-        self, data: bytes, signature: bytes, algo: str = 'sha256'
-    ) -> int:
+    def verify(self, data: bytes, signature: bytes, algo: str = "sha256") -> int:
         """
         Verifies the signature with the public key
 
@@ -292,18 +296,20 @@ class RSA(object):
         :return: 1 or 0, depending on whether the signature was
                  verified or not.
         """
-        digest_type = getattr(m2, 'NID_' + algo, None)
+        digest_type = getattr(m2, "NID_" + algo, None)
         if digest_type is None:
-            raise ValueError('unknown algorithm', algo)
+            raise ValueError("unknown algorithm", algo)
 
         return m2.rsa_verify(self.rsa, data, signature, digest_type)
 
-    def set_ex_data(self, index, data):
-        assert self.check_key() == 1, 'key is not initialised'
+    def set_ex_data(self, index: int, data: Any) -> int:
+        if self.check_key() != 1:
+            raise RSAError("key is not initialized")
         return m2.rsa_set_ex_data(self.rsa, index, data)
 
-    def get_ex_data(self, index):
-        assert self.check_key() == 1, 'key is not initialised'
+    def get_ex_data(self, index: int) -> Any:
+        if self.check_key() != 1:
+            raise RSAError("key is not initialized")
         return m2.rsa_get_ex_data(self.rsa, index)
 
 
@@ -312,35 +318,29 @@ class RSA_pub(RSA):
     Object interface to an RSA public key.
     """
 
-    def __setattr__(self, name: str, value: bytes) -> None:
-        if name in ['e', 'n']:
-            raise RSAError(
-                'use factory function new_pub_key() to set (e, n)'
-            )
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name in ["e", "n"]:
+            raise RSAError("use factory function new_pub_key() to set (e, n)")
         else:
             self.__dict__[name] = value
 
-    def private_encrypt(self, *argv) -> None:
-        raise RSAError('RSA_pub object has no private key')
+    def private_encrypt(self, *argv: Any) -> None:  # type: ignore[override]
+        raise RSAError("RSA_pub object has no private key")
 
-    def private_decrypt(self, *argv) -> None:
-        raise RSAError('RSA_pub object has no private key')
+    def private_decrypt(self, *argv: Any) -> None:  # type: ignore[override]
+        raise RSAError("RSA_pub object has no private key")
 
-    def save_key(self, file: Union[str, bytes], *args, **kw) -> int:
+    def save_key(self, file: Union[str, bytes], *args: Any, **kw: Any) -> int:
         """
         Save public key to file.
         """
         return self.save_pub_key(file)
 
-    def save_key_bio(self, bio: BIO.BIO, *args, **kw) -> int:
+    def save_key_bio(self, bio: BIO.BIO, *args: Any, **kw: Any) -> int:
         """
         Save public key to BIO.
         """
         return self.save_pub_key_bio(bio)
-
-    # save_key_der
-
-    # save_key_der_bio
 
     def check_key(self) -> int:
         return m2.rsa_check_pub_key(self.rsa)
@@ -350,13 +350,14 @@ def rsa_error() -> None:
     raise RSAError(Err.get_error_message())
 
 
-def keygen_callback(p: int, n: int) -> None:
+def keygen_callback(p: int, n: int) -> int:
     """
     Default callback for gen_key().
     """
-    ch = ['.', '+', '*', '\n']
+    ch = [".", "+", "*", "\n"]
     sys.stdout.write(ch[p])
     sys.stdout.flush()
+    return 1
 
 
 def gen_key(
@@ -378,12 +379,15 @@ def gen_key(
 
     :return: M2Crypto.RSA.RSA object.
     """
-    return RSA(m2.rsa_generate_key(bits, e, callback), 1)
+    rsa_obj = m2.rsa_generate_key(bits, e, callback)
+    if rsa_obj is None:
+        rsa_error()
+    return RSA(rsa_obj, 1)
 
 
 def load_key(
     file: Union[str, bytes],
-    callback: Callable = util.passphrase_callback,
+    callback: Callable[..., Any] = util.passphrase_callback,
 ) -> RSA:
     """
     Load an RSA key pair from file.
@@ -401,7 +405,7 @@ def load_key(
 
 
 def load_key_bio(
-    bio: BIO.BIO, callback: Callable = util.passphrase_callback
+    bio: BIO.BIO, callback: Callable[..., Any] = util.passphrase_callback
 ) -> RSA:
     """
     Load an RSA key pair from an M2Crypto.BIO.BIO object.
@@ -415,7 +419,9 @@ def load_key_bio(
 
     :return: M2Crypto.RSA.RSA object.
     """
-    rsa = m2.rsa_read_key(bio._ptr(), callback)
+    if bio.bio is None:
+        raise RSAError("Uninitialized bio.bio")
+    rsa = m2.rsa_read_key(bio.bio, callback)
     if rsa is None:
         rsa_error()
     return RSA(rsa, 1)
@@ -423,7 +429,7 @@ def load_key_bio(
 
 def load_key_string(
     string: Union[str, bytes],
-    callback: Callable = util.passphrase_callback,
+    callback: Callable[..., Any] = util.passphrase_callback,
 ) -> RSA:
     """
     Load an RSA key pair from a string.
@@ -436,7 +442,8 @@ def load_key_string(
 
     :return: M2Crypto.RSA.RSA object.
     """
-    bio = BIO.MemoryBuffer(string)
+    bytes_to_load = string.encode("utf-8") if isinstance(string, str) else string
+    bio = BIO.MemoryBuffer(bytes_to_load)
     return load_key_bio(bio, callback)
 
 
@@ -461,7 +468,9 @@ def load_pub_key_bio(bio: BIO.BIO) -> RSA_pub:
 
     :return: M2Crypto.RSA.RSA_pub object.
     """
-    rsa = m2.rsa_read_pub_key(bio._ptr())
+    if bio.bio is None:
+        raise RSAError("Uninitialized bio.bio")
+    rsa = m2.rsa_read_pub_key(bio.bio)
     if rsa is None:
         rsa_error()
     return RSA_pub(rsa, 1)

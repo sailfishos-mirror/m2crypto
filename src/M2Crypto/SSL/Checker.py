@@ -93,7 +93,7 @@ class Checker:
             raise NoCertificate('peer did not return certificate')
 
         if host is not None:
-            self.host: str = host
+            self.host = host
 
         if self.fingerprint:
             if self.digest not in ('sha256'):

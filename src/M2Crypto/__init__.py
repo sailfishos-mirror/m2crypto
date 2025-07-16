@@ -23,7 +23,7 @@ try:
     from packaging.version import Version
 except ImportError:
     try:
-        from distutils.version import StrictVersion as Version
+        from distutils.version import StrictVersion as Version  # type: ignore [no-redef]
     except ImportError:
         Version = None
 

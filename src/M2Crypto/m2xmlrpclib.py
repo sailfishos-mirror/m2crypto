@@ -1,4 +1,4 @@
-
+# mypy: ignore-errors=True
 """M2Crypto enhancement to xmlrpclib.
 
 Copyright (c) 1999-2003 Ng Pheng Siong. All rights reserved."""

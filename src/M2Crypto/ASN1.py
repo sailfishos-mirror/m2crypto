@@ -1,4 +1,3 @@
-
 """
 M2Crypto wrapper for OpenSSL ASN1 API.
 
@@ -21,11 +20,7 @@ MBSTRING_BMP: int = MBSTRING_FLAG | 2
 
 class ASN1_Integer:
 
-    m2_asn1_integer_free = m2.asn1_integer_free
-
-    def __init__(
-        self, asn1int: Union[C.ASN1_Integer, int], _pyfree: int = 0
-    ):
+    def __init__(self, asn1int: Union[C.ASN1_Integer, int], _pyfree: int = 0):
         if isinstance(asn1int, int):
             self.asn1int: C.ASN1_Integer = m2.asn1_integer_new()
             m2.asn1_integer_set(self.asn1int, asn1int)
@@ -35,23 +30,19 @@ class ASN1_Integer:
 
     def __cmp__(self, other: "ASN1_Integer") -> int:
         if not isinstance(other, ASN1_Integer):
-            raise TypeError(
-                "Comparisons supported only between ANS1_Integer objects"
-            )
+            raise TypeError("Comparisons supported only between ANS1_Integer objects")
 
         return m2.asn1_integer_cmp(self.asn1int, other.asn1int)
 
     def __del__(self) -> None:
         if self._pyfree:
-            self.m2_asn1_integer_free(self.asn1int)
+            m2.asn1_integer_free(self.asn1int)
 
     def __int__(self) -> int:
         return m2.asn1_integer_get(self.asn1int)
 
 
 class ASN1_String:
-
-    m2_asn1_string_free = m2.asn1_string_free
 
     def __init__(
         self,
@@ -77,8 +68,8 @@ class ASN1_String:
         return self.__bytes__().decode()
 
     def __del__(self) -> None:
-        if getattr(self, '_pyfree', 0):
-            self.m2_asn1_string_free(self.asn1str)
+        if getattr(self, "_pyfree", 0):
+            m2.asn1_string_free(self.asn1str)
 
     def _ptr(self):
         return self.asn1str
@@ -100,15 +91,13 @@ class ASN1_Object:
 
     m2_asn1_object_free = m2.asn1_object_free
 
-    def __init__(
-        self, asn1obj: C.ASN1_Object, _pyfree: int = 0
-    ) -> None:
+    def __init__(self, asn1obj: C.ASN1_Object, _pyfree: int = 0) -> None:
         self.asn1obj = asn1obj
         self._pyfree = _pyfree
 
     def __del__(self) -> None:
         if self._pyfree:
-            self.m2_asn1_object_free(self.asn1obj)
+            m2.asn1_object_free(self.asn1obj)
 
     def _ptr(self):
         return self.asn1obj
@@ -118,14 +107,10 @@ class _UTC(datetime.tzinfo):
     def tzname(self, dt: Optional[datetime.datetime]) -> str:
         return "UTC"
 
-    def dst(
-        self, dt: Optional[datetime.datetime]
-    ) -> datetime.timedelta:
+    def dst(self, dt: Optional[datetime.datetime]) -> datetime.timedelta:
         return datetime.timedelta(0)
 
-    def utcoffset(
-        self, dt: Optional[datetime.datetime]
-    ) -> datetime.timedelta:
+    def utcoffset(self, dt: Optional[datetime.datetime]) -> datetime.timedelta:
         return datetime.timedelta(0)
 
     def __repr__(self) -> str:
@@ -141,9 +126,7 @@ class LocalTimezone(datetime.tzinfo):
     def __init__(self) -> None:
         self._stdoffset = datetime.timedelta(seconds=-time.timezone)
         if time.daylight:
-            self._dstoffset = datetime.timedelta(
-                seconds=-time.altzone
-            )
+            self._dstoffset = datetime.timedelta(seconds=-time.altzone)
         else:
             self._dstoffset = self._stdoffset
         self._dstdiff = self._dstoffset - self._stdoffset
@@ -207,9 +190,7 @@ class ASN1_TIME:
         if asn1_time is None:
             asn1_time = asn1_utctime
         if asn1_time is not None:
-            assert m2.asn1_time_type_check(
-                asn1_time
-            ), "'asn1_time' type error'"
+            assert m2.asn1_time_type_check(asn1_time), "'asn1_time' type error'"
             self.asn1_time = asn1_time
             self._pyfree = _pyfree
         else:
@@ -218,21 +199,17 @@ class ASN1_TIME:
             self._pyfree = 1
 
     def __del__(self) -> None:
-        if getattr(self, '_pyfree', 0):
-            self.m2_asn1_time_free(self.asn1_time)
+        if getattr(self, "_pyfree", 0):
+            m2.asn1_time_free(self.asn1_time)
 
     def __str__(self) -> str:
-        assert m2.asn1_time_type_check(
-            self.asn1_time
-        ), "'asn1_time' type error'"
+        assert m2.asn1_time_type_check(self.asn1_time), "'asn1_time' type error'"
         buf = BIO.MemoryBuffer()
         m2.asn1_time_print(buf.bio_ptr(), self.asn1_time)
         return buf.read_all().decode()
 
     def _ptr(self):
-        assert m2.asn1_time_type_check(
-            self.asn1_time
-        ), "'asn1_time' type error'"
+        assert m2.asn1_time_type_check(self.asn1_time), "'asn1_time' type error'"
         return self.asn1_time
 
     def set_string(self, string: bytes) -> int:
@@ -242,9 +219,7 @@ class ASN1_TIME:
         :return:  1 if the time value is successfully set and 0
                   otherwise
         """
-        assert m2.asn1_time_type_check(
-            self.asn1_time
-        ), "'asn1_time' type error'"
+        assert m2.asn1_time_type_check(self.asn1_time), "'asn1_time' type error'"
         return m2.asn1_time_set_string(self.asn1_time, string)
 
     def set_time(self, time: int) -> C.ASN1_Time:
@@ -254,9 +229,7 @@ class ASN1_TIME:
         :return: pointer to a time structure or NULL if an error
                  occurred
         """
-        assert m2.asn1_time_type_check(
-            self.asn1_time
-        ), "'asn1_time' type error'"
+        assert m2.asn1_time_type_check(self.asn1_time), "'asn1_time' type error'"
         return m2.asn1_time_set(self.asn1_time, time)
 
     def get_datetime(self) -> datetime.datetime:
@@ -269,17 +242,15 @@ class ASN1_TIME:
         date = str(self)
 
         timezone = None
-        if ' ' not in date:
+        if " " not in date:
             raise ValueError("Invalid date: %s" % date)
-        month, rest = date.split(' ', 1)
+        month, rest = date.split(" ", 1)
         if month not in self._ssl_months:
-            raise ValueError(
-                "Invalid date %s: Invalid month: %s" % (date, month)
-            )
-        if rest.endswith(' GMT'):
+            raise ValueError("Invalid date %s: Invalid month: %s" % (date, month))
+        if rest.endswith(" GMT"):
             timezone = UTC
             rest = rest[:-4]
-        if '.' in rest:
+        if "." in rest:
             dt = datetime.datetime.strptime(rest, "%d %H:%M:%S.%f %Y")
         else:
             dt = datetime.datetime.strptime(rest, "%d %H:%M:%S %Y")

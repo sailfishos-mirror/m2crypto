@@ -16,7 +16,7 @@ from http.client import HTTPS_PORT
 from typing import Callable, Dict, Optional, Union  # noqa
 
 
-class HTTPSConnection(HTTPConnection):
+class HTTPSConnection(HTTPConnection):  # type: ignore [no-redef]
     """
     This class allows communication via SSL using M2Crypto.
     """

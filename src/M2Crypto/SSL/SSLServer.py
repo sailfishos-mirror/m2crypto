@@ -1,8 +1,6 @@
-
 """SSLServer
 
 Copyright (c) 1999-2002 Ng Pheng Siong. All rights reserved."""
-
 
 # M2Crypto
 from M2Crypto.SSL.Connection import Connection
@@ -16,12 +14,12 @@ from socketserver import (
 )
 import os
 
-if os.name != 'nt':
+if os.name != "nt":
     from socketserver import ForkingMixIn
 from socket import socket  # noqa
 from typing import Union  # noqa
 
-__all__ = ['SSLServer', 'ForkingSSLServer', 'ThreadingSSLServer']
+__all__ = ["SSLServer", "ForkingSSLServer", "ThreadingSSLServer"]
 
 
 class SSLServer(TCPServer):
@@ -60,18 +58,18 @@ class SSLServer(TCPServer):
         request: Union[socket, Connection],
         client_address: util.AddrType,
     ) -> None:
-        print('-' * 40)
+        print("-" * 40)
         import traceback
 
         traceback.print_exc()
-        print('-' * 40)
+        print("-" * 40)
 
 
 class ThreadingSSLServer(ThreadingMixIn, SSLServer):
     pass
 
 
-if os.name != 'nt':
+if os.name != "nt":
 
     class ForkingSSLServer(ForkingMixIn, SSLServer):
         pass

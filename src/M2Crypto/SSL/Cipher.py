@@ -2,16 +2,16 @@
 
 Copyright (c) 1999-2003 Ng Pheng Siong. All rights reserved."""
 
-__all__ = ['Cipher', 'Cipher_Stack']
+__all__ = ["Cipher", "Cipher_Stack"]
 
-from M2Crypto import m2
+from M2Crypto import m2, types as C
 from typing import Iterable  # noqa
 
 
 class Cipher(object):
-    cipher: str
+    cipher: C.SSL_CIPHER
 
-    def __init__(self, cipher: str) -> None:
+    def __init__(self, cipher: C.SSL_CIPHER, _pyfree: int = 0) -> None:
         self.cipher = cipher
 
     def __len__(self) -> int:
@@ -31,9 +31,9 @@ class Cipher(object):
 
 
 class Cipher_Stack(object):
-    stack: bytes
+    stack: C.STACK_OF_SSL_CIPHER
 
-    def __init__(self, stack: bytes) -> None:
+    def __init__(self, stack: C.STACK_OF_SSL_CIPHER, _pyfree: int = 0) -> None:
         """
         :param stack: binary of the C-type STACK_OF(SSL_CIPHER)
         """
@@ -44,7 +44,7 @@ class Cipher_Stack(object):
 
     def __getitem__(self, idx: int) -> Cipher:
         if not 0 <= idx < m2.sk_ssl_cipher_num(self.stack):
-            raise IndexError('index out of range')
+            raise IndexError("index out of range")
         v = m2.sk_ssl_cipher_value(self.stack, idx)
         return Cipher(v)
 

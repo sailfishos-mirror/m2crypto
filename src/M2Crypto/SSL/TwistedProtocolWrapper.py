@@ -11,11 +11,11 @@ IN THE PYTHON 3 (AND ASYNCIO) WORLD WILL BE CLEAR.
 """
 
 __all__ = [
-    'connectSSL',
-    'connectTCP',
-    'listenSSL',
-    'listenTCP',
-    'TLSProtocolWrapper',
+    "connectSSL",
+    "connectTCP",
+    "listenSSL",
+    "listenTCP",
+    "TLSProtocolWrapper",
 ]
 
 import logging
@@ -56,19 +56,15 @@ def connectSSL(
     See IReactorSSL interface in Twisted.
     """
     wrappingFactory = policies.WrappingFactory(factory)
-    wrappingFactory.protocol = (
-        lambda factory, wrappedProtocol: TLSProtocolWrapper(
-            factory,
-            wrappedProtocol,
-            startPassThrough=0,
-            client=1,
-            contextFactory=contextFactory,
-            postConnectionCheck=postConnectionCheck,
-        )
+    wrappingFactory.protocol = lambda factory, wrappedProtocol: TLSProtocolWrapper(
+        factory,
+        wrappedProtocol,
+        startPassThrough=0,
+        client=1,
+        contextFactory=contextFactory,
+        postConnectionCheck=postConnectionCheck,
     )
-    return reactor.connectTCP(
-        host, port, wrappingFactory, timeout, bindAddress
-    )
+    return reactor.connectTCP(host, port, wrappingFactory, timeout, bindAddress)
 
 
 def connectTCP(
@@ -88,19 +84,15 @@ def connectTCP(
     See IReactorTCP interface in Twisted.
     """
     wrappingFactory = policies.WrappingFactory(factory)
-    wrappingFactory.protocol = (
-        lambda factory, wrappedProtocol: TLSProtocolWrapper(
-            factory,
-            wrappedProtocol,
-            startPassThrough=1,
-            client=1,
-            contextFactory=None,
-            postConnectionCheck=postConnectionCheck,
-        )
+    wrappingFactory.protocol = lambda factory, wrappedProtocol: TLSProtocolWrapper(
+        factory,
+        wrappedProtocol,
+        startPassThrough=1,
+        client=1,
+        contextFactory=None,
+        postConnectionCheck=postConnectionCheck,
     )
-    return reactor.connectTCP(
-        host, port, wrappingFactory, timeout, bindAddress
-    )
+    return reactor.connectTCP(host, port, wrappingFactory, timeout, bindAddress)
 
 
 def listenSSL(
@@ -108,7 +100,7 @@ def listenSSL(
     factory,
     contextFactory,
     backlog=5,
-    interface='',
+    interface="",
     reactor=twisted.internet.reactor,
     postConnectionCheck=_alwaysSucceedsPostConnectionCheck,
 ):
@@ -118,26 +110,22 @@ def listenSSL(
     See IReactorSSL interface in Twisted.
     """
     wrappingFactory = policies.WrappingFactory(factory)
-    wrappingFactory.protocol = (
-        lambda factory, wrappedProtocol: TLSProtocolWrapper(
-            factory,
-            wrappedProtocol,
-            startPassThrough=0,
-            client=0,
-            contextFactory=contextFactory,
-            postConnectionCheck=postConnectionCheck,
-        )
+    wrappingFactory.protocol = lambda factory, wrappedProtocol: TLSProtocolWrapper(
+        factory,
+        wrappedProtocol,
+        startPassThrough=0,
+        client=0,
+        contextFactory=contextFactory,
+        postConnectionCheck=postConnectionCheck,
     )
-    return reactor.listenTCP(
-        port, wrappingFactory, backlog, interface
-    )
+    return reactor.listenTCP(port, wrappingFactory, backlog, interface)
 
 
 def listenTCP(
     port,
     factory,
     backlog=5,
-    interface='',
+    interface="",
     reactor=twisted.internet.reactor,
     postConnectionCheck=None,
 ):
@@ -149,19 +137,15 @@ def listenTCP(
     See IReactorTCP interface in Twisted.
     """
     wrappingFactory = policies.WrappingFactory(factory)
-    wrappingFactory.protocol = (
-        lambda factory, wrappedProtocol: TLSProtocolWrapper(
-            factory,
-            wrappedProtocol,
-            startPassThrough=1,
-            client=0,
-            contextFactory=None,
-            postConnectionCheck=postConnectionCheck,
-        )
+    wrappingFactory.protocol = lambda factory, wrappedProtocol: TLSProtocolWrapper(
+        factory,
+        wrappedProtocol,
+        startPassThrough=1,
+        client=0,
+        contextFactory=None,
+        postConnectionCheck=postConnectionCheck,
     )
-    return reactor.listenTCP(
-        port, wrappingFactory, backlog, interface
-    )
+    return reactor.listenTCP(port, wrappingFactory, backlog, interface)
 
 
 class _BioProxy(object):
@@ -248,18 +232,14 @@ class TLSProtocolWrapper(ProtocolWrapper):
         # wrappedProtocol == client/server instance
         # factory.wrappedFactory == client/server factory
 
-        self.data = b''  # Clear text to encrypt and send
-        self.encrypted = (
-            b''  # Encrypted data we need to decrypt and pass on
-        )
+        self.data = b""  # Clear text to encrypt and send
+        self.encrypted = b""  # Encrypted data we need to decrypt and pass on
         self.tlsStarted = 0  # SSL/TLS mode or pass through
         self.checked = 0  # Post connection check done or not
         self.isClient = client
         self.helloDone = 0  # True when hello has been sent
         if postConnectionCheck is None:
-            self.postConnectionCheck = (
-                _alwaysSucceedsPostConnectionCheck
-            )
+            self.postConnectionCheck = _alwaysSucceedsPostConnectionCheck
         else:
             self.postConnectionCheck = postConnectionCheck
 
@@ -270,13 +250,13 @@ class TLSProtocolWrapper(ProtocolWrapper):
         """
         Clear this instance, after which it is ready for reuse.
         """
-        if getattr(self, 'tlsStarted', 0):
+        if getattr(self, "tlsStarted", 0):
             self.sslBio = None
             self.ssl = None
             self.internalBio = None
             self.networkBio = None
-        self.data = b''
-        self.encrypted = b''
+        self.data = b""
+        self.encrypted = b""
         self.tlsStarted = 0
         self.checked = 0
         self.isClient = 1
@@ -293,7 +273,7 @@ class TLSProtocolWrapper(ProtocolWrapper):
         #       expects transports to have. This will be called automatically
         #       by Twisted in STARTTLS situations, for example with SMTP.
         if self.tlsStarted:
-            raise Exception('TLS already started')
+            raise Exception("TLS already started")
 
         self.ctx = ctx
 
@@ -312,12 +292,8 @@ class TLSProtocolWrapper(ProtocolWrapper):
         else:
             m2.ssl_set_accept_state(self.ssl._ptr())
 
-        m2.ssl_set_bio(
-            self.ssl._ptr(), self.internalBio, self.internalBio
-        )
-        m2.bio_set_ssl(
-            self.sslBio._ptr(), self.ssl._ptr(), m2.bio_noclose
-        )
+        m2.ssl_set_bio(self.ssl._ptr(), self.internalBio, self.internalBio)
+        m2.bio_set_ssl(self.sslBio._ptr(), self.ssl._ptr(), m2.bio_noclose)
 
         # Need this for writes that are larger than BIO pair buffers
         mode = m2.ssl_get_mode(self.ssl._ptr())
@@ -350,10 +326,10 @@ class TLSProtocolWrapper(ProtocolWrapper):
 
     def writeSequence(self, data: Iterable[bytes]) -> None:
         if not self.tlsStarted:
-            ProtocolWrapper.writeSequence(self, b''.join(data))
+            ProtocolWrapper.writeSequence(self, b"".join(data))
             return
 
-        self.write(b''.join(data))
+        self.write(b"".join(data))
 
     def loseConnection(self):
         # XXX Do we need to do m2.ssl_shutdown(self.ssl._ptr())?
@@ -382,7 +358,7 @@ class TLSProtocolWrapper(ProtocolWrapper):
 
                 ProtocolWrapper.dataReceived(self, decryptedData)
 
-                if decryptedData == b'' and encryptedData == b'':
+                if decryptedData == b"" and encryptedData == b"":
                     break
         except BIO.BIOError as e:
             # See http://www.openssl.org/docs/apps/verify.html#DIAGNOSTICS
@@ -398,9 +374,7 @@ class TLSProtocolWrapper(ProtocolWrapper):
         ProtocolWrapper.connectionLost(self, reason)
 
     def _check(self):
-        if not self.checked and m2.ssl_is_init_finished(
-            self.ssl._ptr()
-        ):
+        if not self.checked and m2.ssl_is_init_finished(self.ssl._ptr()):
             x509 = m2.ssl_get_peer_cert(self.ssl._ptr())
             if x509 is not None:
                 x509 = X509.X509(x509, 1)
@@ -409,7 +383,7 @@ class TLSProtocolWrapper(ProtocolWrapper):
             else:
                 host = self.transport.getPeer().host
             if not self.postConnectionCheck(x509, host):
-                raise SSLVerificationError('post connection check')
+                raise SSLVerificationError("post connection check")
             self.checked = 1
 
     def _clientHello(self):
@@ -438,15 +412,11 @@ class TLSProtocolWrapper(ProtocolWrapper):
         BIO_write() less than the amount requested or if the buffer is
         full request a retry.
         """
-        return partial(
-            m2.bio_ctrl_get_write_guarantee, self.sslBio._ptr()
-        )
+        return partial(m2.bio_ctrl_get_write_guarantee, self.sslBio._ptr())
 
     @property
     def _get_wr_guar_net(self) -> Callable[[], int]:
-        return partial(
-            m2.bio_ctrl_get_write_guarantee, self.networkBio._ptr()
-        )
+        return partial(m2.bio_ctrl_get_write_guarantee, self.networkBio._ptr())
 
     @property
     def _shoud_retry_ssl(self) -> Callable[[], int]:
@@ -490,28 +460,24 @@ class TLSProtocolWrapper(ProtocolWrapper):
     def _read_net(self) -> Callable[[int], Optional[bytes]]:
         return partial(m2.bio_read, self.networkBio._ptr())
 
-    def _encrypt(
-        self, data: bytes = b'', clientHello: int = 0
-    ) -> bytes:
+    def _encrypt(self, data: bytes = b"", clientHello: int = 0) -> bytes:
         """
         :param data:
         :param clientHello:
         :return:
         """
-        encryptedData = b''
+        encryptedData = b""
         self.data += data
 
         while 1:
-            if (
-                self._get_wr_guar_ssl() > 0 and self.data != b''
-            ) or clientHello:
+            if (self._get_wr_guar_ssl() > 0 and self.data != b"") or clientHello:
                 r = self._write_ssl(self.data)
                 if r <= 0:
                     if not self._shoud_retry_ssl():
                         raise IOError(
                             (
-                                'Data left to be written to {}, '
-                                + 'but cannot retry SSL connection!'
+                                "Data left to be written to {}, "
+                                + "but cannot retry SSL connection!"
                             ).format(self.sslBio)
                         )
                 else:
@@ -521,9 +487,7 @@ class TLSProtocolWrapper(ProtocolWrapper):
             pending = self._ctrl_pend_net()
             if pending:
                 d = self._read_net(pending)
-                if (
-                    d is not None
-                ):  # This is strange, but d can be None
+                if d is not None:  # This is strange, but d can be None
                     encryptedData += d
                 else:
                     assert self._shoud_retry_net()
@@ -531,19 +495,19 @@ class TLSProtocolWrapper(ProtocolWrapper):
                 break
         return encryptedData
 
-    def _decrypt(self, data: bytes = b'') -> bytes:
+    def _decrypt(self, data: bytes = b"") -> bytes:
         self.encrypted += data
-        decryptedData = b''
+        decryptedData = b""
 
         while 1:
-            if self._get_wr_guar_ssl() > 0 and self.encrypted != b'':
+            if self._get_wr_guar_ssl() > 0 and self.encrypted != b"":
                 r = self._write_net(self.encrypted)
                 if r <= 0:
                     if not self._shoud_retry_net():
                         raise IOError(
                             (
-                                'Data left to be written to {}, '
-                                + 'but cannot retry SSL connection!'
+                                "Data left to be written to {}, "
+                                + "but cannot retry SSL connection!"
                             ).format(self.networkBio)
                         )
                 else:
@@ -552,9 +516,7 @@ class TLSProtocolWrapper(ProtocolWrapper):
             pending = self._ctrl_pend_ssl()
             if pending:
                 d = self._read_ssl(pending)
-                if (
-                    d is not None
-                ):  # This is strange, but d can be None
+                if d is not None:  # This is strange, but d can be None
                     decryptedData += d
                 else:
                     assert self._shoud_retry_ssl()

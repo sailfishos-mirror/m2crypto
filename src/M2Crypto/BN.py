@@ -1,4 +1,3 @@
-
 """
 M2Crypto wrapper for OpenSSL BN (BIGNUM) API.
 
@@ -47,10 +46,10 @@ def randfname(length: int) -> str:
         DeprecationWarning,
         stacklevel=2,
     )
-    letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890'
+    letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890"
     lettersLen = len(letters)
     fname: list = []
     for x in range(length):
         fname += [letters[m2.bn_rand_range(lettersLen)]]
 
-    return ''.join(fname)
+    return "".join(fname)

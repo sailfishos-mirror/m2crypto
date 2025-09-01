@@ -1,4 +1,3 @@
-
 """Secure Authenticator Cookies
 
 Copyright (c) 1999-2002 Ng Pheng Siong. All rights reserved."""
@@ -13,21 +12,19 @@ from M2Crypto import Rand, m2, util
 
 from typing import Pattern, Optional, Tuple, Union  # noqa
 
-_MIX_FORMAT = 'exp=%f&data=%s&digest='
-_MIX_RE = re.compile(r'exp=(\d+\.\d+)&data=(.+)&digest=(\S*)')
+_MIX_FORMAT = "exp=%f&data=%s&digest="
+_MIX_RE = re.compile(r"exp=(\d+\.\d+)&data=(.+)&digest=(\S*)")
 
 log = logging.getLogger(__name__)
 
 
-def mix(
-    expiry: float, data: Union[str, bytes], format: str = _MIX_FORMAT
-) -> Union[str, bytes]:
+def mix(expiry: float, data: str, format: str = _MIX_FORMAT) -> str:
     return format % (expiry, data)
 
 
 def unmix(
     dough: Union[str, bytes], regex: Pattern = _MIX_RE
-) -> object:
+) -> Optional[Tuple[float, str]]:
     mo = regex.match(dough)
     if mo:
         return float(mo.group(1)), mo.group(2)
@@ -37,7 +34,7 @@ def unmix(
 
 def unmix3(
     dough: Union[str, bytes], regex: Pattern = _MIX_RE
-) -> Optional[Tuple[float, Union[str, bytes], Union[str, bytes]]]:
+) -> Optional[Tuple[float, str, str]]:
     mo = regex.match(dough)
     if mo:
         return float(mo.group(1)), mo.group(2), mo.group(3)
@@ -45,14 +42,12 @@ def unmix3(
         return None
 
 
-_TOKEN: str = '_M2AUTH_'
+_TOKEN: str = "_M2AUTH_"
 
 
 class AuthCookie:
 
-    def __init__(
-        self, expiry: float, data: str, dough: str, mac: str
-    ) -> None:
+    def __init__(self, expiry: float, data: str, dough: str, mac: str) -> None:
         """
         Create new authentication cookie
 
@@ -66,8 +61,8 @@ class AuthCookie:
         self._data = data
         self._mac = mac
         self._cookie = SimpleCookie()
-        self._cookie[_TOKEN] = '%s%s' % (dough, mac)
-        self._name = '%s%s' % (dough, mac)  # WebKit only.
+        self._cookie[_TOKEN] = "%s%s" % (dough, mac)
+        self._name = "%s%s" % (dough, mac)  # WebKit only.
 
     def expiry(self) -> float:
         """Return the cookie's expiry time."""
@@ -81,7 +76,7 @@ class AuthCookie:
         """Return the cookie's MAC."""
         return self._mac
 
-    def output(self, header: Optional[str] = "Set-Cookie:") -> str:
+    def output(self, header: str = "Set-Cookie:") -> str:
         """Return the cookie's output in "Set-Cookie" format."""
         return self._cookie.output(header=header)
 
@@ -91,9 +86,7 @@ class AuthCookie:
 
     def isExpired(self) -> bool:
         """Return 1 if the cookie has expired, 0 otherwise."""
-        return isinstance(self._expiry, (float, int)) and (
-            time.time() > self._expiry
-        )
+        return isinstance(self._expiry, (float, int)) and (time.time() > self._expiry)
 
     # Following two methods are for WebKit only.
     # I may wish to push them to WKAuthCookie, but they are part
@@ -124,13 +117,9 @@ class AuthCookieJar:
         :return: AuthCookie object
         """
         if not isinstance(expiry, (int, float)):
-            raise ValueError(
-                'Expiration time must be number, not "%s' % expiry
-            )
+            raise ValueError('Expiration time must be number, not "%s' % expiry)
         dough = mix(expiry, data)
-        return AuthCookie(
-            expiry, data, dough, self._hmac(self._key, dough)
-        )
+        return AuthCookie(expiry, data, dough, self._hmac(self._key, dough))
 
     def isGoodCookie(self, cookie: AuthCookie) -> bool:
         if cookie.isExpired():
@@ -144,23 +133,23 @@ class AuthCookieJar:
         )
 
     def isGoodCookieString(
-        self, cookie_str: Union[dict, bytes], _debug: bool = False
+        self, cookie_str: Union[dict, str], _debug: bool = False
     ) -> bool:
         c = SimpleCookie()
         c.load(cookie_str)
         if _TOKEN not in c:
-            log.debug('_TOKEN not in c (keys = %s)', dir(c))
+            log.debug("_TOKEN not in c (keys = %s)", dir(c))
             return False
         undough = unmix3(c[_TOKEN].value)
         if undough is None:
-            log.debug('undough is None')
+            log.debug("undough is None")
             return False
         exp, data, mac = undough
         c2 = self.makeCookie(exp, data)
         if _debug and (c2._mac == mac):
-            log.error('cookie_str = %s', cookie_str)
-            log.error('c2.isExpired = %s', c2.isExpired())
-            log.error('mac = %s', mac)
-            log.error('c2._mac = %s', c2._mac)
-            log.error('c2._mac == mac: %s', str(c2._mac == mac))
+            log.error("cookie_str = %s", cookie_str)
+            log.error("c2.isExpired = %s", c2.isExpired())
+            log.error("mac = %s", mac)
+            log.error("c2._mac = %s", c2._mac)
+            log.error("c2._mac == mac: %s", str(c2._mac == mac))
         return (not c2.isExpired()) and (c2._mac == mac)

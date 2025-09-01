@@ -1,4 +1,3 @@
-
 """SSL Context
 
 Copyright (c) 1999-2004 Ng Pheng Siong. All rights reserved."""
@@ -9,7 +8,7 @@ from M2Crypto.SSL.Session import Session  # noqa
 from weakref import WeakValueDictionary
 from typing import Any, Callable, Optional, Union  # noqa
 
-__all__ = ['ctxmap', 'Context', 'map']
+__all__ = ["ctxmap", "Context", "map"]
 
 
 class _ctxmap(object):
@@ -46,15 +45,15 @@ class Context(object):
 
     def __init__(
         self,
-        protocol: str = 'tls',
+        protocol: str = "tls",
         weak_crypto: Optional[int] = None,
         post_connection_check: Optional[Callable] = None,
     ) -> None:
-        proto = getattr(m2, protocol + '_method', None)
+        proto = getattr(m2, protocol + "_method", None)
         if proto is None:
             # default is 'sslv23' for older versions of OpenSSL
-            if protocol == 'tls':
-                proto = getattr(m2, 'sslv23_method')
+            if protocol == "tls":
+                proto = getattr(m2, "sslv23_method")
             else:
                 raise ValueError("no such protocol '%s'" % protocol)
         self.ctx = m2.ssl_ctx_new(proto())
@@ -62,15 +61,11 @@ class Context(object):
         self.post_connection_check = post_connection_check
         ctxmap()[int(self.ctx)] = self
         m2.ssl_ctx_set_cache_size(self.ctx, 128)
-        if weak_crypto is None and protocol in ('sslv23', 'tls'):
-            self.set_options(
-                m2.SSL_OP_ALL
-                | m2.SSL_OP_NO_SSLv2
-                | m2.SSL_OP_NO_SSLv3
-            )
+        if weak_crypto is None and protocol in ("sslv23", "tls"):
+            self.set_options(m2.SSL_OP_ALL | m2.SSL_OP_NO_SSLv2 | m2.SSL_OP_NO_SSLv3)
 
     def __del__(self) -> None:
-        if getattr(self, 'ctx', None):
+        if getattr(self, "ctx", None):
             self.m2_ssl_ctx_free(self.ctx)
 
     def close(self) -> None:
@@ -98,7 +93,7 @@ class Context(object):
             keyfile = certfile
         m2.ssl_ctx_use_privkey(self.ctx, keyfile)
         if not m2.ssl_ctx_check_privkey(self.ctx):
-            raise ValueError('public/private key mismatch')
+            raise ValueError("public/private key mismatch")
 
     def load_cert_chain(
         self,
@@ -124,11 +119,9 @@ class Context(object):
             keyfile = certchainfile
         m2.ssl_ctx_use_privkey(self.ctx, keyfile)
         if not m2.ssl_ctx_check_privkey(self.ctx):
-            raise ValueError('public/private key mismatch')
+            raise ValueError("public/private key mismatch")
 
-    def set_client_CA_list_from_file(
-        self, cafile: Union[str, bytes]
-    ) -> None:
+    def set_client_CA_list_from_file(self, cafile: Union[str, bytes]) -> None:
         """Load CA certs into the context. These CA certs are sent to the
         peer during *SSLv3 certificate request*.
 
@@ -163,12 +156,8 @@ class Context(object):
                 1 The operation succeeded.
         """
         if cafile is None and capath is None:
-            raise ValueError(
-                "cafile and capath can not both be None."
-            )
-        return m2.ssl_ctx_load_verify_locations(
-            self.ctx, cafile, capath
-        )
+            raise ValueError("cafile and capath can not both be None.")
+        return m2.ssl_ctx_load_verify_locations(self.ctx, cafile, capath)
 
     # Deprecated.
     load_verify_info = load_verify_locations
@@ -191,7 +180,7 @@ class Context(object):
         """
         ret = m2.ssl_ctx_set_session_id_context(self.ctx, id)
         if not ret:
-            raise Err.SSLError(Err.get_error_code(), '')
+            raise Err.SSLError(Err.get_error_code(), "")
 
     def set_default_verify_paths(self) -> int:
         """
@@ -213,9 +202,7 @@ class Context(object):
         """
         ret = m2.ssl_ctx_set_default_verify_paths(self.ctx)
         if not ret:
-            raise ValueError(
-                'Cannot use default SSL certificate store!'
-            )
+            raise ValueError("Cannot use default SSL certificate store!")
 
     def set_allow_unknown_ca(self, ok: Union[int, bool]) -> None:
         """Set the context to accept/reject a peer certificate if the
@@ -237,9 +224,7 @@ class Context(object):
         self,
         mode: int,
         depth: int,
-        callback: Optional[
-            Callable[[int, C.X509_STORE_CTX], int]
-        ] = None,
+        callback: Optional[Callable[[int, C.X509_STORE_CTX], int]] = None,
     ) -> None:
         """
         Set verify options. Most applications will need to call this
@@ -276,9 +261,7 @@ class Context(object):
         dhp = m2.dh_read_parameters(f.bio_ptr())
         return m2.ssl_ctx_set_tmp_dh(self.ctx, dhp)
 
-    def set_tmp_dh_callback(
-        self, callback: Optional[Callable] = None
-    ) -> None:
+    def set_tmp_dh_callback(self, callback: Optional[Callable] = None) -> None:
         """Sets the callback function for SSL.Context.
 
         :param callback: Callable to be used when a DH parameters are required.
@@ -294,22 +277,16 @@ class Context(object):
         if isinstance(rsa, RSA.RSA):
             return m2.ssl_ctx_set_tmp_rsa(self.ctx, rsa.rsa)
         else:
-            raise TypeError(
-                "Expected an instance of RSA.RSA, got %s." % rsa
-            )
+            raise TypeError("Expected an instance of RSA.RSA, got %s." % rsa)
 
-    def set_tmp_rsa_callback(
-        self, callback: Optional[Callable] = None
-    ) -> None:
+    def set_tmp_rsa_callback(self, callback: Optional[Callable] = None) -> None:
         """Sets the callback function to be used when
         a temporary/ephemeral RSA key is required.
         """
         if callback is not None:
             m2.ssl_ctx_set_tmp_rsa_callback(self.ctx, callback)
 
-    def set_info_callback(
-        self, callback: Callable = cb.ssl_info_callback
-    ) -> None:
+    def set_info_callback(self, callback: Callable = cb.ssl_info_callback) -> None:
         """Set a callback function to get state information.
 
         It can be used to get state information about the SSL

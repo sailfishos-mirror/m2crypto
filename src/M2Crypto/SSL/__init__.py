@@ -1,4 +1,3 @@
-
 """M2Crypto SSL services.
 
 Copyright (c) 1999-2004 Ng Pheng Siong. All rights reserved."""
@@ -8,33 +7,19 @@ import socket, os
 # M2Crypto
 from M2Crypto import _m2crypto as m2
 
-
-# from M2Crypto.SSL.SSLServer import (
-#     ForkingSSLServer,
-#     SSLServer,
-#     ThreadingSSLServer,
-# )
-
-
-class SSLError(Exception):
-    pass
-
-
-class SSLTimeoutError(SSLError, socket.timeout):
-    pass
-
+from .SSLError import SSLError, SSLTimeoutError
 
 m2.ssl_init(SSLError, SSLTimeoutError)
 
 # M2Crypto.SSL
-from M2Crypto.SSL.Cipher import Cipher, Cipher_Stack
-from M2Crypto.SSL.Connection import Connection
-from M2Crypto.SSL.Context import Context
-from M2Crypto.SSL.SSLServer import SSLServer, ThreadingSSLServer
+from .Cipher import Cipher, Cipher_Stack
+from .Connection import Connection
+from .Context import Context
+from .SSLServer import SSLServer, ThreadingSSLServer
 
-if os.name != 'nt':
-    from M2Crypto.SSL.SSLServer import ForkingSSLServer
-from M2Crypto.SSL.timeout import (
+if os.name != "nt":
+    from .SSLServer import ForkingSSLServer
+from .timeout import (
     timeout,
     struct_to_timeout,
     struct_size,

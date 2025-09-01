@@ -1,4 +1,3 @@
-
 """SSL callbacks
 
 Copyright (c) 1999-2003 Ng Pheng Siong. All rights reserved."""
@@ -9,17 +8,15 @@ from M2Crypto import m2, types as C
 from typing import List
 
 __all__ = [
-    'unknown_issuer',
-    'ssl_verify_callback_stub',
-    'ssl_verify_callback',
-    'ssl_verify_callback_allow_unknown_ca',
-    'ssl_info_callback',
+    "unknown_issuer",
+    "ssl_verify_callback_stub",
+    "ssl_verify_callback",
+    "ssl_verify_callback_allow_unknown_ca",
+    "ssl_info_callback",
 ]
 
 
-def ssl_verify_callback_stub(
-    ssl_ctx_ptr, x509_ptr, errnum, errdepth, ok
-):
+def ssl_verify_callback_stub(ssl_ctx_ptr, x509_ptr, errnum, errdepth, ok):
     # Deprecated
     return ok
 
@@ -47,8 +44,7 @@ def ssl_verify_callback(
     if errnum in unknown_issuer:
         if ssl_ctx.get_allow_unknown_ca():
             sys.stderr.write(
-                "policy: %s: permitted...\n"
-                % (m2.x509_get_verify_error(errnum))
+                "policy: %s: permitted...\n" % (m2.x509_get_verify_error(errnum))
             )
             sys.stderr.flush()
             ok = 1
@@ -61,9 +57,7 @@ def ssl_verify_callback(
     return ok
 
 
-def ssl_verify_callback_allow_unknown_ca(
-    ok: int, store: C.X509_STORE_CTX
-) -> int:
+def ssl_verify_callback_allow_unknown_ca(ok: int, store: C.X509_STORE_CTX) -> int:
     errnum = store.get_error()
     if errnum in unknown_issuer:
         ok = 1
@@ -82,32 +76,24 @@ def ssl_info_callback(where: int, ret: int, ssl_ptr: bytes) -> None:
         state = "SSL state unknown"
 
     if where & m2.SSL_CB_LOOP:
-        sys.stderr.write(
-            "LOOP: %s: %s\n" % (state, m2.ssl_get_state_v(ssl_ptr))
-        )
+        sys.stderr.write("LOOP: %s: %s\n" % (state, m2.ssl_get_state_v(ssl_ptr)))
         sys.stderr.flush()
         return
 
     if where & m2.SSL_CB_EXIT:
         if not ret:
-            sys.stderr.write(
-                "FAILED: %s: %s\n"
-                % (state, m2.ssl_get_state_v(ssl_ptr))
-            )
+            sys.stderr.write("FAILED: %s: %s\n" % (state, m2.ssl_get_state_v(ssl_ptr)))
             sys.stderr.flush()
         else:
-            sys.stderr.write(
-                "INFO: %s: %s\n"
-                % (state, m2.ssl_get_state_v(ssl_ptr))
-            )
+            sys.stderr.write("INFO: %s: %s\n" % (state, m2.ssl_get_state_v(ssl_ptr)))
             sys.stderr.flush()
         return
 
     if where & m2.SSL_CB_ALERT:
         if where & m2.SSL_CB_READ:
-            w = 'read'
+            w = "read"
         else:
-            w = 'write'
+            w = "write"
         sys.stderr.write(
             "ALERT: %s: %s: %s\n"
             % (

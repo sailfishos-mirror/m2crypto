@@ -2,24 +2,24 @@
 
 Copyright (c) 1999-2003 Ng Pheng Siong. All rights reserved."""
 
-__all__ = ['Session', 'load_session']
+__all__ = ["Session", "load_session"]
 
 from M2Crypto import BIO, Err, m2
-from typing import Union  # noqa
+from typing import Union, cast, TYPE_CHECKING  # noqa
 
 
 class Session(object):
 
     m2_ssl_session_free = m2.ssl_session_free
 
-    def __init__(self, session: bytes, _pyfree: int = 0) -> None:
+    def __init__(self, session, _pyfree: int = 0) -> None:
         assert session is not None
         self.session = session
         self._pyfree = _pyfree
 
     def __del__(self) -> None:
-        if getattr(self, '_pyfree', 0):
-            self.m2_ssl_session_free(self.session)
+        if getattr(self, "_pyfree", 0):
+            self.m2_ssl_session_free(cast(m2.SSL_SESSION, self.session))
 
     def _ptr(self) -> bytes:
         return self.session

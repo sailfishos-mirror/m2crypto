@@ -283,7 +283,7 @@ class File(BIO):
         return super().reset()
 
 
-def openfile(filename: str, mode: str = "rb") -> File:
+def openfile(filename: Union[str, bytes], mode: str = "rb") -> File:
     try:
         f = open(filename, mode)
     except IOError as ex:

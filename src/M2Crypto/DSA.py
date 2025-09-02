@@ -1,15 +1,14 @@
-
 """
-    M2Crypto wrapper for OpenSSL DSA API.
+M2Crypto wrapper for OpenSSL DSA API.
 
-    Copyright (c) 1999-2003 Ng Pheng Siong. All rights reserved.
+Copyright (c) 1999-2003 Ng Pheng Siong. All rights reserved.
 
-    Portions created by Open Source Applications Foundation (OSAF) are
-    Copyright (C) 2004 OSAF. All Rights Reserved.
+Portions created by Open Source Applications Foundation (OSAF) are
+Copyright (C) 2004 OSAF. All Rights Reserved.
 """
 
-from M2Crypto import BIO, m2, util
-from typing import Callable, Tuple, Union  # noqa
+from M2Crypto import BIO, m2, util, types as C
+from typing import Callable, NoReturn, Tuple, Union  # noqa
 
 
 class DSAError(Exception):
@@ -43,9 +42,7 @@ class DSA:
             print('  ** verification failed **')
     """
 
-    m2_dsa_free = m2.dsa_free
-
-    def __init__(self, dsa: bytes, _pyfree: int = 0) -> None:
+    def __init__(self, dsa: C.DSA, _pyfree: int = 0) -> None:
         """
         Use one of the factory functions to create an instance.
         :param dsa: binary representation of OpenSSL DSA type
@@ -54,8 +51,12 @@ class DSA:
         self.dsa = dsa
         self._pyfree = _pyfree
 
+    @staticmethod
+    def m2_dsa_free(dsa: C.DSA) -> None:
+        m2.dsa_free(dsa)
+
     def __del__(self) -> None:
-        if getattr(self, '_pyfree', 0):
+        if getattr(self, "_pyfree", 0):
             self.m2_dsa_free(self.dsa)
 
     def __len__(self) -> int:
@@ -75,18 +76,18 @@ class DSA:
                      one of 'p', 'q', 'g', 'pub', 'priv'.
         :return:     value of specified variable (a "byte string")
         """
-        if name in ['p', 'q', 'g', 'pub', 'priv']:
-            method = getattr(m2, 'dsa_get_%s' % (name,))
+        if name in ["p", "q", "g", "pub", "priv"]:
+            method = getattr(m2, "dsa_get_%s" % (name,))
             assert m2.dsa_type_check(self.dsa), "'dsa' type error"
             return method(self.dsa)
         else:
             raise AttributeError
 
     def __setattr__(self, name: str, value: bytes) -> None:
-        if name in ['p', 'q', 'g']:
-            raise DSAError('set (p, q, g) via set_params()')
-        elif name in ['pub', 'priv']:
-            raise DSAError('generate (pub, priv) via gen_key()')
+        if name in ["p", "q", "g"]:
+            raise DSAError("set (p, q, g) via set_params()")
+        elif name in ["pub", "priv"]:
+            raise DSAError("generate (pub, priv) via gen_key()")
         else:
             self.__dict__[name] = value
 
@@ -123,7 +124,7 @@ class DSA:
         :param filename: Save the DSA parameters to this file.
         :return:         1 (true) if successful
         """
-        with BIO.openfile(filename, 'wb') as bio:
+        with BIO.openfile(filename, "wb") as bio:
             ret = m2.dsa_write_params_bio(self.dsa, bio._ptr())
 
         return ret
@@ -140,7 +141,7 @@ class DSA:
     def save_key(
         self,
         filename: Union[str, bytes],
-        cipher: str = 'aes_128_cbc',
+        cipher: str = "aes_128_cbc",
         callback: Callable = util.passphrase_callback,
     ) -> int:
         """
@@ -151,7 +152,7 @@ class DSA:
                          to encrypt the private key.
         :return:         1 (true) if successful
         """
-        with BIO.openfile(filename, 'wb') as bio:
+        with BIO.openfile(filename, "wb") as bio:
             ret = self.save_key_bio(bio, cipher, callback)
 
         return ret
@@ -159,7 +160,7 @@ class DSA:
     def save_key_bio(
         self,
         bio: BIO.BIO,
-        cipher: str = 'aes_128_cbc',
+        cipher: str = "aes_128_cbc",
         callback: Callable = util.passphrase_callback,
     ) -> int:
         """
@@ -171,18 +172,14 @@ class DSA:
         :return:       1 (true) if successful
         """
         if cipher is None:
-            return m2.dsa_write_key_bio_no_cipher(
-                self.dsa, bio._ptr(), callback
-            )
+            return m2.dsa_write_key_bio_no_cipher(self.dsa, bio._ptr(), callback)
         else:
             ciph = getattr(m2, cipher, None)
             if ciph is None:
-                raise DSAError('no such cipher: %s' % cipher)
+                raise DSAError("no such cipher: %s" % cipher)
             else:
                 ciph = ciph()
-            return m2.dsa_write_key_bio(
-                self.dsa, bio._ptr(), ciph, callback
-            )
+            return m2.dsa_write_key_bio(self.dsa, bio._ptr(), ciph, callback)
 
     def save_pub_key(self, filename: Union[str, bytes]) -> int:
         """
@@ -192,7 +189,7 @@ class DSA:
                          to this file.
         :return:         1 (true) if successful
         """
-        with BIO.openfile(filename, 'wb') as bio:
+        with BIO.openfile(filename, "wb") as bio:
             ret = self.save_pub_key_bio(bio)
 
         return ret
@@ -216,7 +213,7 @@ class DSA:
         :return:       DSA signature, a tuple of two values, r and s,
                        both "byte strings".
         """
-        assert self.check_key(), 'key is not initialised'
+        assert self.check_key(), "key is not initialised"
         return m2.dsa_sign(self.dsa, digest)
 
     def verify(self, digest: bytes, r: bytes, s: bytes) -> int:
@@ -230,15 +227,15 @@ class DSA:
         :param s:      s value of the signature, a "byte string"
         :return:       1 (true) if verify succeeded, 0 if failed
         """
-        assert self.check_key(), 'key is not initialised'
+        assert self.check_key(), "key is not initialised"
         return m2.dsa_verify(self.dsa, digest, r, s)
 
     def sign_asn1(self, digest):
-        assert self.check_key(), 'key is not initialised'
+        assert self.check_key(), "key is not initialised"
         return m2.dsa_sign_asn1(self.dsa, digest)
 
     def verify_asn1(self, digest, blob):
-        assert self.check_key(), 'key is not initialised'
+        assert self.check_key(), "key is not initialised"
         return m2.dsa_verify_asn1(self.dsa, digest, blob)
 
     def check_key(self):
@@ -259,8 +256,8 @@ class DSA_pub(DSA):
 
     """
 
-    def sign(self, *argv) -> None:
-        raise DSAError('DSA_pub object has no private key')
+    def sign(self, digest: bytes = b"") -> NoReturn:
+        raise DSAError("DSA_pub object has no private key")
 
     sign_asn1 = sign
 
@@ -334,9 +331,7 @@ def load_params(
     return ret
 
 
-def load_params_bio(
-    bio: BIO.BIO, callback: Callable = util.passphrase_callback
-) -> DSA:
+def load_params_bio(bio: BIO.BIO, callback: Callable = util.passphrase_callback) -> DSA:
     """
     Factory function that instantiates a DSA object with DSA
     parameters from a M2Crypto.BIO object.
@@ -349,6 +344,8 @@ def load_params_bio(
     :return:         instance of DSA.
     """
     dsa = m2.dsa_read_params(bio._ptr(), callback)
+    if dsa is None:
+        raise DSAError("failed to load DSA parameters")
     return DSA(dsa, 1)
 
 
@@ -373,9 +370,7 @@ def load_key(
     return ret
 
 
-def load_key_bio(
-    bio: BIO.BIO, callback: Callable = util.passphrase_callback
-) -> DSA:
+def load_key_bio(bio: BIO.BIO, callback: Callable = util.passphrase_callback) -> DSA:
     """
     Factory function that instantiates a DSA object from a
     PEM encoded DSA key pair.
@@ -388,12 +383,12 @@ def load_key_bio(
     :return:         instance of DSA.
     """
     dsa = m2.dsa_read_key(bio._ptr(), callback)
+    if dsa is None:
+        raise DSAError("failed to load DSA key")
     return DSA(dsa, 1)
 
 
-def pub_key_from_params(
-    p: bytes, q: bytes, g: bytes, pub: bytes
-) -> DSA_pub:
+def pub_key_from_params(p: bytes, q: bytes, g: bytes, pub: bytes) -> DSA_pub:
     """
     Factory function that instantiates a DSA_pub object using
     the parameters and public key specified.
@@ -448,4 +443,6 @@ def load_pub_key_bio(
     :return:         instance of DSA_pub.
     """
     dsapub = m2.dsa_read_pub_key(bio._ptr(), callback)
+    if dsapub is None:
+        raise DSAError("failed to load DSA public key")
     return DSA_pub(dsapub, 1)

@@ -2,21 +2,22 @@
 
 Copyright (c) 1999-2004 Ng Pheng Siong. All rights reserved."""
 
+import os
 from M2Crypto import BIO, Err, RSA, X509, m2, types as C, util  # noqa
 from M2Crypto.SSL import cb  # noqa
 from M2Crypto.SSL.Session import Session  # noqa
 from weakref import WeakValueDictionary
-from typing import Any, Callable, Optional, Union  # noqa
+from typing import cast, Any, Callable, Optional, Union  # noqa
 
 __all__ = ["ctxmap", "Context", "map"]
 
 
 class _ctxmap(object):
-    singleton: Optional[WeakValueDictionary] = None
+    singleton: Optional["_ctxmap"] = None
 
     def __init__(self) -> None:
         """Simple WeakReffed list."""
-        self._ctxmap = WeakValueDictionary()
+        self._ctxmap: WeakValueDictionary[int, Any] = WeakValueDictionary()
 
     def __getitem__(self, key: int) -> Any:
         return self._ctxmap[key]
@@ -41,7 +42,9 @@ map = ctxmap
 class Context(object):
     """'Context' for SSL connections."""
 
-    m2_ssl_ctx_free = m2.ssl_ctx_free
+    @staticmethod
+    def m2_ssl_ctx_free(ctx: C.SSL_CTX) -> None:
+        m2.ssl_ctx_free(ctx)
 
     def __init__(
         self,
@@ -59,7 +62,7 @@ class Context(object):
         self.ctx = m2.ssl_ctx_new(proto())
         self.allow_unknown_ca: Union[int, bool] = 0
         self.post_connection_check = post_connection_check
-        ctxmap()[int(self.ctx)] = self
+        ctxmap()[id(self.ctx)] = self
         m2.ssl_ctx_set_cache_size(self.ctx, 128)
         if weak_crypto is None and protocol in ("sslv23", "tls"):
             self.set_options(m2.SSL_OP_ALL | m2.SSL_OP_NO_SSLv2 | m2.SSL_OP_NO_SSLv3)
@@ -69,7 +72,7 @@ class Context(object):
             self.m2_ssl_ctx_free(self.ctx)
 
     def close(self) -> None:
-        del ctxmap()[int(self.ctx)]
+        del ctxmap()[id(self.ctx)]
 
     def load_cert(
         self,
@@ -88,10 +91,13 @@ class Context(object):
                          simple terminal-style input for the passphrase.
         """
         m2.ssl_ctx_passphrase_callback(self.ctx, callback)
-        m2.ssl_ctx_use_cert(self.ctx, certfile)
+        certfile_str = os.fsdecode(certfile) if isinstance(certfile, bytes) else certfile
+        m2.ssl_ctx_use_cert(self.ctx, certfile_str)
         if not keyfile:
-            keyfile = certfile
-        m2.ssl_ctx_use_privkey(self.ctx, keyfile)
+            keyfile_str = certfile_str
+        else:
+            keyfile_str = os.fsdecode(keyfile) if isinstance(keyfile, bytes) else keyfile
+        m2.ssl_ctx_use_privkey(self.ctx, keyfile_str)
         if not m2.ssl_ctx_check_privkey(self.ctx):
             raise ValueError("public/private key mismatch")
 
@@ -114,10 +120,13 @@ class Context(object):
                               passphrase.
         """
         m2.ssl_ctx_passphrase_callback(self.ctx, callback)
-        m2.ssl_ctx_use_cert_chain(self.ctx, certchainfile)
+        certchainfile_str = os.fsdecode(certchainfile) if isinstance(certchainfile, bytes) else certchainfile
+        m2.ssl_ctx_use_cert_chain(self.ctx, certchainfile_str)
         if not keyfile:
-            keyfile = certchainfile
-        m2.ssl_ctx_use_privkey(self.ctx, keyfile)
+            keyfile_str = certchainfile_str
+        else:
+            keyfile_str = os.fsdecode(certchainfile) if isinstance(certchainfile, bytes) else certchainfile
+        m2.ssl_ctx_use_privkey(self.ctx, keyfile_str)
         if not m2.ssl_ctx_check_privkey(self.ctx):
             raise ValueError("public/private key mismatch")
 
@@ -128,7 +137,8 @@ class Context(object):
         :param cafile: File object containing one or more PEM-encoded CA
                        certificates concatenated together.
         """
-        m2.ssl_ctx_set_client_CA_list_from_file(self.ctx, cafile)
+        cafile_str = os.fsdecode(cafile) if isinstance(cafile, bytes) else cafile
+        m2.ssl_ctx_set_client_CA_list_from_file(self.ctx, cafile_str)
 
     # Deprecated.
     load_client_CA = load_client_ca = set_client_CA_list_from_file
@@ -157,7 +167,9 @@ class Context(object):
         """
         if cafile is None and capath is None:
             raise ValueError("cafile and capath can not both be None.")
-        return m2.ssl_ctx_load_verify_locations(self.ctx, cafile, capath)
+        cafile_str = os.fsdecode(cafile) if isinstance(cafile, bytes) else cafile
+        capath_str = os.fsdecode(capath) if isinstance(capath, bytes) else capath
+        return m2.ssl_ctx_load_verify_locations(self.ctx, cafile_str, capath_str)
 
     # Deprecated.
     load_verify_info = load_verify_locations
@@ -203,6 +215,7 @@ class Context(object):
         ret = m2.ssl_ctx_set_default_verify_paths(self.ctx)
         if not ret:
             raise ValueError("Cannot use default SSL certificate store!")
+        return ret
 
     def set_allow_unknown_ca(self, ok: Union[int, bool]) -> None:
         """Set the context to accept/reject a peer certificate if the
@@ -259,6 +272,8 @@ class Context(object):
         """
         f = BIO.openfile(dhpfile)
         dhp = m2.dh_read_parameters(f.bio_ptr())
+        if dhp is None:
+            raise BIO.BIOError("Could not read DH parameters")
         return m2.ssl_ctx_set_tmp_dh(self.ctx, dhp)
 
     def set_tmp_dh_callback(self, callback: Optional[Callable] = None) -> None:
@@ -317,7 +332,7 @@ class Context(object):
 
                  1 The operation succeeded.
         """
-        return m2.ssl_ctx_add_session(self.ctx, session._ptr())
+        return m2.ssl_ctx_add_session(self.ctx, cast(C.SSL_SESSION, session._ptr()))
 
     def remove_session(self, session: Session) -> int:
         """Remove the session from the context.
@@ -329,7 +344,7 @@ class Context(object):
 
                  1 The operation succeeded.
         """
-        return m2.ssl_ctx_remove_session(self.ctx, session._ptr())
+        return m2.ssl_ctx_remove_session(self.ctx, cast(C.SSL_SESSION, session._ptr()))
 
     def get_session_timeout(self) -> int:
         """Get current session timeout.
@@ -420,7 +435,7 @@ class Context(object):
         """
         return m2.ssl_ctx_set_options(self.ctx, op)
 
-    def get_cert_store(self) -> X509.X509:
+    def get_cert_store(self) -> X509.X509_Store:
         """
         Get the certificate store associated with this context.
 

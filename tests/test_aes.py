@@ -9,9 +9,9 @@ import logging
 from M2Crypto import m2
 from tests import unittest
 
-log = logging.getLogger('test_AES')
+log = logging.getLogger("test_AES")
 
-KEY_TEXT = (b'blabulka' * 3)[:16]  # 128/8 == 16
+KEY_TEXT = (b"blabulka" * 3)[:16]  # 128/8 == 16
 
 
 class AESTestCase(unittest.TestCase):
@@ -26,21 +26,21 @@ class AESTestCase(unittest.TestCase):
     def test_existing_methods(self):
         missing = []
         exp_mtds = (
-            'aes_128_cbc',
-            'aes_128_cfb',
-            'aes_128_ctr',
-            'aes_128_ecb',
-            'aes_128_ofb',
-            'aes_192_cbc',
-            'aes_192_cfb',
-            'aes_192_ctr',
-            'aes_192_ecb',
-            'aes_192_ofb',
-            'aes_256_cbc',
-            'aes_256_cfb',
-            'aes_256_ctr',
-            'aes_256_ecb',
-            'aes_256_ofb',
+            "aes_128_cbc",
+            "aes_128_cfb",
+            "aes_128_ctr",
+            "aes_128_ecb",
+            "aes_128_ofb",
+            "aes_192_cbc",
+            "aes_192_cfb",
+            "aes_192_ctr",
+            "aes_192_ecb",
+            "aes_192_ofb",
+            "aes_256_cbc",
+            "aes_256_cfb",
+            "aes_256_ctr",
+            "aes_256_ecb",
+            "aes_256_ofb",
         )
         for name in exp_mtds:
             if not hasattr(m2, name):
@@ -66,7 +66,7 @@ class AESTestCase(unittest.TestCase):
         self.assertEqual(res, 1)  # Just to make sure nothing crashed
 
     def test_crypt(self):
-        padded = b'zezulicka       '  # len(padded) % 16 == 0
+        padded = b"zezulicka       "  # len(padded) % 16 == 0
         key = m2.aes_new()
         # op == 0: encrypt
         # otherwise: decrypt (Python code will supply the value 1.)
@@ -84,11 +84,9 @@ class AESTestCase(unittest.TestCase):
 
 def suite():
     t_suite = unittest.TestSuite()
-    t_suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(AESTestCase)
-    )
+    t_suite.addTest(unittest.TestLoader().loadTestsFromTestCase(AESTestCase))
     return t_suite
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

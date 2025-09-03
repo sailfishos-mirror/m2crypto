@@ -31,13 +31,11 @@ class ThreadingTestCase(unittest.TestCase):
 
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(ThreadingTestCase)
-    )
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ThreadingTestCase))
     return suite
 
 
-if __name__ == '__main__':
-    Rand.load_file('randpool.dat', -1)
+if __name__ == "__main__":
+    Rand.load_file("randpool.dat", -1)
     unittest.TextTestRunner().run(suite())
-    Rand.save_file('randpool.dat')
+    Rand.save_file("randpool.dat")

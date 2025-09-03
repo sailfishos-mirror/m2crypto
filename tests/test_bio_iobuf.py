@@ -13,7 +13,7 @@ from tests import unittest
 class IOBufferTestCase(unittest.TestCase):
 
     def setUp(self):
-        self._data = b'abcdef\n'
+        self._data = b"abcdef\n"
         self.data = self._data * 1024
 
     def tearDown(self):
@@ -23,7 +23,7 @@ class IOBufferTestCase(unittest.TestCase):
         mb = MemoryBuffer()
         io = IOBuffer(mb)
         out = io.read()
-        self.assertEqual(out, b'')
+        self.assertEqual(out, b"")
 
     def test_init_something(self):
         mb = MemoryBuffer(self.data)
@@ -77,17 +77,15 @@ class IOBufferTestCase(unittest.TestCase):
 
     def test_read_only(self):
         mb = MemoryBuffer(self.data)
-        io = IOBuffer(mb, mode='r')
+        io = IOBuffer(mb, mode="r")
         with self.assertRaises(IOError):
             io.write(self.data)
         assert not io.writeable()
 
 
 def suite():
-    return unittest.TestLoader().loadTestsFromTestCase(
-        IOBufferTestCase
-    )
+    return unittest.TestLoader().loadTestsFromTestCase(IOBufferTestCase)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.TextTestRunner().run(suite())

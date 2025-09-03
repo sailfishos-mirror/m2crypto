@@ -1,10 +1,9 @@
-
 """M2Crypto wrapper for OpenSSL S/MIME API.
 
 Copyright (c) 1999-2003 Ng Pheng Siong. All rights reserved."""
 
-from M2Crypto import BIO, EVP, Err, X509, m2, util
-from typing import Callable, Optional, Union  # noqa
+from M2Crypto import BIO, EVP, Err, X509, m2, util, types as C
+from typing import Callable, Optional, Tuple, Union  # noqa
 
 PKCS7_TEXT: int = m2.PKCS7_TEXT
 PKCS7_NOCERTS: int = m2.PKCS7_NOCERTS
@@ -30,11 +29,7 @@ m2.pkcs7_init(PKCS7_Error)
 
 class PKCS7(object):
 
-    m2_pkcs7_free = m2.pkcs7_free
-
-    def __init__(
-        self, pkcs7: Optional[bytes] = None, _pyfree: int = 0
-    ) -> None:
+    def __init__(self, pkcs7: Optional[C.PKCS7] = None, _pyfree: int = 0) -> None:
         """PKCS7 object.
 
         :param pkcs7: binary representation of
@@ -47,14 +42,18 @@ class PKCS7(object):
             self.pkcs7 = m2.pkcs7_new()
             self._pyfree = 1
 
+    @staticmethod
+    def _m2_pkcs7_free(p7: C.PKCS7) -> None:
+        m2.pkcs7_free(p7)
+
     def __del__(self) -> None:
-        if getattr(self, '_pyfree', 0):
-            self.m2_pkcs7_free(self.pkcs7)
+        if getattr(self, "_pyfree", 0):
+            self._m2_pkcs7_free(self.pkcs7)
 
     def _ptr(self):
         return self.pkcs7
 
-    def type(self, text_name: int = 0) -> int:
+    def type(self, text_name: int = 0) -> Union[int, str]:
         if text_name:
             return m2.pkcs7_type_sn(self.pkcs7)
         else:
@@ -66,23 +65,19 @@ class PKCS7(object):
     def write_der(self, bio: BIO.BIO) -> int:
         return m2.pkcs7_write_bio_der(self.pkcs7, bio._ptr())
 
-    def get0_signers(
-        self, certs: X509.X509_Stack, flags: int = 0
-    ) -> X509.X509_Stack:
-        return X509.X509_Stack(
-            m2.pkcs7_get0_signers(self.pkcs7, certs.stack, flags), 1
-        )
+    def get0_signers(self, certs: X509.X509_Stack, flags: int = 0) -> X509.X509_Stack:
+        return X509.X509_Stack(m2.pkcs7_get0_signers(self.pkcs7, certs.stack, flags), 1)
 
 
 def load_pkcs7(p7file: Union[str, bytes]) -> PKCS7:
-    with BIO.openfile(p7file, 'r') as bio:
+    with BIO.openfile(p7file, "r") as bio:
         p7_ptr = m2.pkcs7_read_bio(bio.bio)
 
     return PKCS7(p7_ptr, 1)
 
 
 def load_pkcs7_der(p7file: Union[str, bytes]) -> PKCS7:
-    with BIO.openfile(p7file, 'rb') as bio:
+    with BIO.openfile(p7file, "rb") as bio:
         p7_ptr = m2.pkcs7_read_bio_der(bio.bio)
 
     return PKCS7(p7_ptr, 1)
@@ -98,8 +93,9 @@ def load_pkcs7_bio_der(p7_bio: BIO.BIO) -> PKCS7:
     return PKCS7(p7_ptr, 1)
 
 
-def smime_load_pkcs7(p7file: Union[str, bytes]) -> PKCS7:
-    bio = m2.bio_new_file(p7file, 'r')
+def smime_load_pkcs7(p7file: Union[str, bytes]) -> Tuple[PKCS7, Optional[BIO.BIO]]:
+    filename = p7file.decode() if isinstance(p7file, bytes) else p7file
+    bio = m2.bio_new_file(filename, "r")
 
     try:
         p7_ptr, bio_ptr = m2.smime_read_pkcs7(bio)
@@ -112,7 +108,7 @@ def smime_load_pkcs7(p7file: Union[str, bytes]) -> PKCS7:
         return PKCS7(p7_ptr, 1), BIO.BIO(bio_ptr, 1)
 
 
-def smime_load_pkcs7_bio(p7_bio: BIO.BIO) -> PKCS7:
+def smime_load_pkcs7_bio(p7_bio: BIO.BIO) -> Tuple[PKCS7, Optional[BIO.BIO]]:
     p7_ptr, bio_ptr = m2.smime_read_pkcs7(p7_bio._ptr())
     if p7_ptr is None:
         raise SMIME_Error(Err.get_error())
@@ -130,7 +126,7 @@ class Cipher(object):
     def __init__(self, algo: str) -> None:
         cipher = getattr(m2, algo, None)
         if cipher is None:
-            raise ValueError('unknown cipher', algo)
+            raise ValueError("unknown cipher", algo)
         self.cipher = cipher()
 
     def _ptr(self):
@@ -194,12 +190,10 @@ class SMIME(object):
         del self.cipher
 
     def encrypt(self, data_bio: BIO.BIO, flags: int = 0) -> PKCS7:
-        if not hasattr(self, 'cipher'):
-            raise SMIME_Error('no cipher: use set_cipher()')
-        if not hasattr(self, 'x509_stack'):
-            raise SMIME_Error(
-                'no recipient certs: use set_x509_stack()'
-            )
+        if not hasattr(self, "cipher"):
+            raise SMIME_Error("no cipher: use set_cipher()")
+        if not hasattr(self, "x509_stack"):
+            raise SMIME_Error("no recipient certs: use set_x509_stack()")
 
         pkcs7 = m2.pkcs7_encrypt(
             self.x509_stack._ptr(),
@@ -210,35 +204,29 @@ class SMIME(object):
 
         return PKCS7(pkcs7, 1)
 
-    def decrypt(
-        self, pkcs7: PKCS7, flags: int = 0
-    ) -> Optional[bytes]:
-        if not hasattr(self, 'pkey'):
-            raise SMIME_Error('no private key: use load_key()')
-        if not hasattr(self, 'x509'):
-            raise SMIME_Error(
-                'no certificate: load_key() used incorrectly?'
-            )
-        blob = m2.pkcs7_decrypt(
-            pkcs7._ptr(), self.pkey._ptr(), self.x509._ptr(), flags
-        )
+    def decrypt(self, pkcs7: PKCS7, flags: int = 0) -> Optional[bytes]:
+        if not hasattr(self, "pkey"):
+            raise SMIME_Error("no private key: use load_key()")
+        if not hasattr(self, "x509"):
+            raise SMIME_Error("no certificate: load_key() used incorrectly?")
+        blob = m2.pkcs7_decrypt(pkcs7._ptr(), self.pkey._ptr(), self.x509._ptr(), flags)
         return blob
 
     def sign(
         self,
         data_bio: BIO.BIO,
         flags: int = 0,
-        algo: Optional[str] = 'sha256',
+        algo: str = "sha256",
     ) -> PKCS7:
-        if not hasattr(self, 'pkey'):
-            raise SMIME_Error('no private key: use load_key()')
+        if not hasattr(self, "pkey"):
+            raise SMIME_Error("no private key: use load_key()")
 
         hash = getattr(m2, algo, None)
 
         if hash is None:
-            raise SMIME_Error('no such hash algorithm %s' % algo)
+            raise SMIME_Error("no such hash algorithm %s" % algo)
 
-        if hasattr(self, 'x509_stack'):
+        if hasattr(self, "x509_stack"):
             pkcs7 = m2.pkcs7_sign1(
                 self.x509._ptr(),
                 self.pkey._ptr(),
@@ -264,15 +252,11 @@ class SMIME(object):
         data_bio: Optional[BIO.BIO] = None,
         flags: int = 0,
     ) -> Optional[bytes]:
-        if not hasattr(self, 'x509_stack'):
-            raise SMIME_Error('no signer certs: use set_x509_stack()')
-        if not hasattr(self, 'x509_store'):
-            raise SMIME_Error(
-                'no x509 cert store: use set_x509_store()'
-            )
-        assert isinstance(
-            pkcs7, PKCS7
-        ), 'pkcs7 not an instance of PKCS7'
+        if not hasattr(self, "x509_stack"):
+            raise SMIME_Error("no signer certs: use set_x509_stack()")
+        if not hasattr(self, "x509_store"):
+            raise SMIME_Error("no x509 cert store: use set_x509_store()")
+        assert isinstance(pkcs7, PKCS7), "pkcs7 not an instance of PKCS7"
         p7 = pkcs7._ptr()
         if data_bio is None:
             blob = m2.pkcs7_verify0(
@@ -299,9 +283,7 @@ class SMIME(object):
         flags: int = 0,
     ) -> int:
         if data_bio is None:
-            return m2.smime_write_pkcs7(
-                out_bio._ptr(), pkcs7._ptr(), flags
-            )
+            return m2.smime_write_pkcs7(out_bio._ptr(), pkcs7._ptr(), flags)
         else:
             return m2.smime_write_pkcs7_multi(
                 out_bio._ptr(), pkcs7._ptr(), data_bio._ptr(), flags

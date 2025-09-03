@@ -13,7 +13,7 @@ from http.client import *  # noqa
 
 # This is not imported with just '*'
 from http.client import HTTPS_PORT
-from typing import Callable, Dict, Optional, Union  # noqa
+from typing import Any, Callable, Dict, Optional, Type, Union
 
 
 class HTTPSConnection(HTTPConnection):  # type: ignore [no-redef]
@@ -21,15 +21,16 @@ class HTTPSConnection(HTTPConnection):  # type: ignore [no-redef]
     This class allows communication via SSL using M2Crypto.
     """
 
+    sock: SSL.Connection
     default_port = HTTPS_PORT
 
     def __init__(
         self,
         host: str,
         port: Optional[int] = None,
-        strict: Optional[bool] = None,
-        ssl_conn_cls: SSL.Connection = SSL.Connection,
-        **ssl
+        strict: Optional[bool] = None,  # This parameter is ignored
+        ssl_conn_cls: Type[SSL.Connection] = SSL.Connection,
+        **ssl,
     ) -> None:
         """
         Represents one transaction with an HTTP server over the SSL
@@ -45,21 +46,22 @@ class HTTPSConnection(HTTPConnection):  # type: ignore [no-redef]
                     to be included with SSL.Context; if it is not
                     default ``'sslv23'`` is substituted).
         """
-        self.session: Optional[bytes] = None
+        self.session: Optional[SSL.Session.Session] = None
         self.host = host
-        self.port = port
+        if port is None:
+            self.port = self.default_port
+        else:
+            self.port = port
         self._ssl_conn_cls = ssl_conn_cls
-        keys = set(ssl.keys()) - set(
-            ('key_file', 'cert_file', 'ssl_context')
-        )
+        keys = set(ssl.keys()) - set(("key_file", "cert_file", "ssl_context"))
         if keys:
-            raise ValueError('unknown keyword argument: %s', keys)
+            raise ValueError("unknown keyword argument: %s", keys)
         try:
-            self.ssl_ctx = ssl['ssl_context']
+            self.ssl_ctx = ssl["ssl_context"]
             assert isinstance(self.ssl_ctx, SSL.Context), self.ssl_ctx
         except KeyError:
             self.ssl_ctx = SSL.Context()
-        HTTPConnection.__init__(self, host, port, strict)
+        HTTPConnection.__init__(self, host, port)
 
     def connect(self) -> None:
         error = None
@@ -111,7 +113,7 @@ class HTTPSConnection(HTTPConnection):  # type: ignore [no-redef]
         # XXX remain.
         pass
 
-    def get_session(self) -> SSL.Session.Session:
+    def get_session(self) -> Optional[SSL.Session.Session]:
         return self.sock.get_session()
 
     def set_session(self, session: SSL.Session.Session) -> None:
@@ -131,7 +133,9 @@ class ProxyHTTPSConnection(HTTPSConnection):
     through the proxy.
     """
 
-    _ports = {'http': 80, 'https': 443}
+    _ssl_conn_cls: Type[SSL.Connection]
+    ssl_ctx: SSL.Context
+    _ports = {"http": 80, "https": 443}
     _AUTH_HEADER = "Proxy-Authorization"
     _UA_HEADER = "User-Agent"
 
@@ -139,10 +143,10 @@ class ProxyHTTPSConnection(HTTPSConnection):
         self,
         host: str,
         port: Optional[int] = None,
-        strict: Optional[bool] = None,
+        strict: Optional[bool] = None,  # This parameter is now ignored
         username: Union[str, bytes, None] = None,
         password: Union[str, bytes, None] = None,
-        **ssl
+        **ssl,
     ) -> None:
         """
         Create the ProxyHTTPSConnection object.
@@ -165,44 +169,41 @@ class ProxyHTTPSConnection(HTTPSConnection):
                     to be included with SSL.Context; if it is not
                     default ``'sslv23'`` is substituted).
         """
-        HTTPSConnection.__init__(self, host, port, strict, **ssl)
+        HTTPSConnection.__init__(self, host, port, **ssl)
 
         self._username = (
-            username.encode('utf8')
-            if isinstance(username, (str,))
-            else username
+            username.encode("utf8") if isinstance(username, (str,)) else username
         )
         self._password = (
-            password.encode('utf8')
-            if isinstance(password, (str,))
-            else password
+            password.encode("utf8") if isinstance(password, (str,)) else password
         )
-        self._proxy_auth: str = None
-        self._proxy_UA: str = None
+        self._proxy_auth: Optional[str] = None
+        self._proxy_UA: Optional[str] = None
 
     def putrequest(
         self,
         method: Union[str, bytes],
         url: Union[str, bytes],
-        skip_host: int = 0,
-        skip_accept_encoding: int = 0,
+        skip_host: bool = False,
+        skip_accept_encoding: bool = False,
     ) -> None:
         """
         putrequest is called before connect, so can interpret url and get
         real host/port to be used to make CONNECT request to proxy
         """
-        proto, netloc, path, query, fragment = urlsplit(url)
+        url_str = url.decode("latin-1") if isinstance(url, bytes) else url
+        proto, netloc, path, query, fragment = urlsplit(url_str)
         if not proto:
-            raise ValueError("unknown URL type: %s" % url)
+            raise ValueError("unknown URL type: %s" % url_str)
 
         # get host & port
         try:
-            username_password, host_port = netloc.split('@')
+            _, host_port = netloc.split("@", 1)
         except ValueError:
             host_port = netloc
 
         try:
-            host, port_s = host_port.split(':')
+            host, port_s = host_port.split(":", 1)
             port = int(port_s)
         except ValueError:
             host = host_port
@@ -210,25 +211,35 @@ class ProxyHTTPSConnection(HTTPSConnection):
             try:
                 port = self._ports[proto]
             except KeyError:
-                raise ValueError("unknown protocol for: %s" % url)
+                raise ValueError("unknown protocol for: %s" % url_str)
 
-        self._real_host: str = host
-        self._real_port: int = port
-        rest = urlunsplit(('', '', path, query, fragment))
-        HTTPSConnection.putrequest(
-            self, method, rest, skip_host, skip_accept_encoding
+        self._real_host = host
+        self._real_port = port
+        rest_tuple = ("", "", path, query, fragment)
+        rest = urlunsplit(rest_tuple)
+        method_str = method.decode("ascii") if isinstance(method, bytes) else method
+        super(HTTPSConnection, self).putrequest(
+            method_str,
+            rest,
+            skip_host=skip_host,
+            skip_accept_encoding=skip_accept_encoding,
         )
 
-    def putheader(
-        self, header: Union[str, bytes], value: Union[str, bytes]
-    ) -> None:
+    def putheader(self, header: Union[str, bytes], *values: Any) -> None:
+        str_values = [
+            v.decode("latin-1") if isinstance(v, bytes) else str(v) for v in values
+        ]
+        value = " ".join(str_values)
+
+        header_str = header.decode("latin-1") if isinstance(header, bytes) else header
+
         # Store the auth header if passed in.
-        if header.lower() == self._UA_HEADER.lower():
+        if header_str.lower() == self._UA_HEADER.lower():
             self._proxy_UA = value
-        if header.lower() == self._AUTH_HEADER.lower():
+        elif header_str.lower() == self._AUTH_HEADER.lower():
             self._proxy_auth = value
         else:
-            HTTPSConnection.putheader(self, header, value)
+            super(HTTPSConnection, self).putheader(header, *values)
 
     def endheaders(self, *args, **kwargs) -> None:
         # We've recieved all of hte headers. Use the supplied username
@@ -285,15 +296,22 @@ class ProxyHTTPSConnection(HTTPSConnection):
         self.sock.set_connect_state()
         self.sock.connect_ssl()
 
-    def _encode_auth(self) -> Optional[bytes]:
+    def _encode_auth(self) -> Optional[str]:
         """Encode the username and password for use in the auth header."""
         if not (self._username and self._password):
             return None
-        # Authenticated proxy
-        userpass = "%s:%s" % (self._username, self._password)
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
-            enc_userpass = base64.encodestring(userpass).replace(
-                "\n", ""
-            )
-        return ("Basic %s" % enc_userpass).encode()
+
+        username = (
+            self._username.decode("utf-8")
+            if isinstance(self._username, bytes)
+            else self._username
+        )
+        password = (
+            self._password.decode("utf-8")
+            if isinstance(self._password, bytes)
+            else self._password
+        )
+
+        userpass = f"{username}:{password}".encode("utf-8")
+        enc_userpass = base64.b64encode(userpass).decode("ascii")
+        return f"Basic {enc_userpass}"

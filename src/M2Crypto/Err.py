@@ -1,4 +1,3 @@
-
 """M2Crypto wrapper for OpenSSL Error API.
 
 Copyright (c) 1999-2003 Ng Pheng Siong. All rights reserved."""
@@ -13,6 +12,7 @@ def get_error() -> Optional[str]:
     err_msg = err.read()
     if err_msg:
         return err_msg.decode()
+    return None
 
 
 def get_error_code() -> int:
@@ -24,18 +24,24 @@ def peek_error_code() -> int:
 
 
 def get_error_lib(err: Optional[int]) -> str:
+    if err is None:
+        return ""
     err_str = m2.err_lib_error_string(err)
-    return err_str.decode() if err_str else ''
+    return err_str if err_str else ""
 
 
 def get_error_func(err: Optional[int]) -> str:
+    if err is None:
+        return ""
     err_str = m2.err_func_error_string(err)
-    return err_str if err_str else ''
+    return err_str if err_str else ""
 
 
 def get_error_reason(err: Optional[int]) -> str:
+    if err is None:
+        return ""
     err_str = m2.err_reason_error_string(err)
-    return err_str if err_str else ''
+    return err_str if err_str else ""
 
 
 def get_error_message() -> str:
@@ -43,8 +49,10 @@ def get_error_message() -> str:
 
 
 def get_x509_verify_error(err: Optional[int]) -> str:
+    if err is None:
+        return ""
     err_str = m2.x509_get_verify_error(err)
-    return err_str if err_str else ''
+    return err_str if err_str else ""
 
 
 class SSLError(Exception):
@@ -54,7 +62,11 @@ class SSLError(Exception):
 
     def __str__(self) -> str:
         if not isinstance(self.client_addr, str):
-            s = self.client_addr.decode()
+            s = (
+                self.client_addr
+                if isinstance(self.client_addr, str)
+                else str(self.client_addr)
+            )
         else:
             s = self.client_addr
         return "%s: %s: %s" % (

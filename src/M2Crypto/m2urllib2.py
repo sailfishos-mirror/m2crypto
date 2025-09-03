@@ -16,34 +16,12 @@ import socket
 from M2Crypto import SSL, httpslib
 
 from urllib.parse import urldefrag, urlparse as url_parse
+from urllib.request import AbstractHTTPHandler
 from urllib.response import addinfourl
-from typing import Optional  # noqa
+from typing import Optional, Type  # noqa
 
 from urllib.request import *  # noqa other modules want to import
 from urllib.error import *  # noqa other modules want to import
-
-
-try:
-    mother_class = socket._fileobject
-except AttributeError:
-    mother_class = socket.SocketIO
-
-
-class _closing_fileobject(mother_class):  # noqa
-    """socket._fileobject that propagates self.close() to the socket.
-
-    Python 2.5 provides this as socket._fileobject(sock, close=True).
-    """
-
-
-# for python 3
-try:
-    AbstractHTTPHandler
-except NameError:
-    # somehow this won't get imported by the import * above
-    import urllib.request
-
-    AbstractHTTPHandler = urllib.request.AbstractHTTPHandler
 
 
 def _makefile(sock_like, mode, bufsize):
@@ -89,12 +67,12 @@ class RefCountingSSLConnection(SSL.Connection):
         call to provide a simpler, more robust shutdown path for the
         primary use case.
         """
-        if not getattr(self, '_closed', False):
+        if not getattr(self, "_closed", False):
             self._closed = True
             # Directly close the parent connection without complex logic.
             super(RefCountingSSLConnection, self).close()
 
-    def makefile(self, mode='rb', bufsize=-1):
+    def makefile(self, mode="rb", bufsize=-1):
         self._refs += 1
         return _makefile(self, mode, bufsize)
 
@@ -103,7 +81,7 @@ class HTTPSHandler(AbstractHTTPHandler):  # type: ignore [no-redef]
     def __init__(
         self,
         ssl_context: Optional[SSL.Context] = None,
-        ssl_conn_cls: SSL.Connection = RefCountingSSLConnection,
+        ssl_conn_cls: Type[SSL.Connection] = RefCountingSSLConnection,
     ):
         AbstractHTTPHandler.__init__(self)
 
@@ -130,96 +108,72 @@ class HTTPSHandler(AbstractHTTPHandler):  # type: ignore [no-redef]
         """
         host = req.host
         if not host:
-            raise URLError('no host given')
+            raise URLError("no host given")
 
         # Our change: Check to see if we're using a proxy.
         # Then create an appropriate ssl-aware connection.
         full_url = req.get_full_url()
         target_host = url_parse(full_url)[1]
 
+        # Explicitly type `h` to the base class to handle both branches.
+        h: httpslib.HTTPSConnection
+
         if target_host != host:
             request_uri = urldefrag(full_url)[0]
-            h = httpslib.ProxyHTTPSConnection(
+            # Mypy gets confused by re-defined classes, so we ignore errors.
+            h = httpslib.ProxyHTTPSConnection(  # type: ignore[call-arg]
                 host=host,
                 ssl_context=self.ctx,
                 ssl_conn_cls=self._ssl_conn_cls,
             )
         else:
             request_uri = req.selector
-            h = httpslib.HTTPSConnection(
+            # Mypy gets confused by re-defined classes, so we ignore errors.
+            h = httpslib.HTTPSConnection(  # type: ignore[call-arg]
                 host=host,
                 ssl_context=self.ctx,
                 ssl_conn_cls=self._ssl_conn_cls,
             )
-        # End our change
-        h.set_debuglevel(self._debuglevel)
+
+        # The parent class has this attribute, mypy is just confused.
+        h.set_debuglevel(self._debuglevel)  # type: ignore[attr-defined]
 
         headers = dict(req.headers)
         headers.update(req.unredirected_hdrs)
-        # We want to make an HTTP/1.1 request, but the addinfourl
-        # class isn't prepared to deal with a persistent connection.
-        # It will try to read all remaining data from the socket,
-        # which will block while the server waits for the next request.
-        # So make sure the connection gets closed after the (only)
-        # request.
         headers["Connection"] = "close"
         try:
-            h.request(
-                req.get_method(), request_uri, req.data, headers
-            )
+            h.request(req.get_method(), request_uri, req.data, headers)
             r = h.getresponse()
         except socket.error as err:
             raise URLError(err)
 
-        # This is critical to ensure that HTTP-level processing
-        # like de-chunking happens, by routing read() calls to
-        # the HTTPResponse object 'r', not the raw socket.
-        r.recv = r.read
-        # The line below is not strictly necessary but is part
-        # of the original design
-        r._decref_socketios = lambda: None
-        r.ssl = h.sock.ssl
-        r._timeout = -1.0
-        r.recv_into = r.readinto
-        fp = socket.SocketIO(r, 'rb')
+        # The HTTPResponse object 'r' is the file-like object we need.
+        # The following lines monkey-patch 'r' to add attributes that older
+        # versions of urllib expected.
+        r.recv = r.read  # type: ignore[attr-defined]
+        r.ssl = h.sock  # type: ignore[attr-defined]
 
-        resp = addinfourl(fp, r.msg, req.get_full_url())
+        # Use the modern .headers attribute, not the deprecated .msg.
+        resp = addinfourl(r, r.headers, req.get_full_url())
         resp.code = r.status
-        resp.msg = r.reason
+        resp.msg = r.reason  # type: ignore[attr-defined]
 
-        # We must keep the connection object 'h' alive for as long as the
-        # response 'resp' is alive. Otherwise, 'h' and its underlying
-        # socket 'h.sock' can be garbage collected prematurely, causing the
-        # "ValueError: I/O operation on closed file" error.
-        # We solve this by attaching the connection to the response object.
-        resp._connection = h
+        # Attach the connection to the response to prevent premature GC.
+        resp._connection = h  # type: ignore[attr-defined]
 
-        # The diagnostic logs proved that the default close() chain is broken
-        # and does not call close() on the underlying SSL connection.
-        #
-        # To fix this, we manually hijack the close() method of the returned
-        # response object to GUARANTEE that the underlying connection is closed.
-
-        # Get a direct reference to the connection we need to close.
+        # Hijack the close method to ensure the underlying SSL connection closes.
         the_connection_to_close = h.sock
-
-        # Get a reference to the original, broken close method.
         original_close = resp.close
 
-        def new_close():
+        def new_close() -> None:
             try:
-                # First, run the original close procedure to clean up
-                # the file pointers and other parts of the chain.
                 original_close()
             finally:
-                # CRUCIALLY, ensure our underlying connection is told to close.
-                # This will now correctly call RefCountingSSLConnection.close()
-                # on the right object, setting the _closed flag.
                 if the_connection_to_close:
                     the_connection_to_close.close()
 
-        # Replace the response object's close method with our reliable one.
-        resp.close = new_close
+        # Tell mypy to ignore the assignment to a method.
+        resp.close = new_close  # type: ignore[method-assign]
 
         return resp
 
@@ -265,11 +219,11 @@ def build_opener(  # type: ignore [no-redef]
         default_classes.remove(klass)
 
     for klass in default_classes:
-        opener.add_handler(klass())
+        opener.add_handler(klass())  # type: ignore[call-arg]
 
     # Add the HTTPS handler with ssl_context
     if HTTPSHandler not in skip:
-        opener.add_handler(HTTPSHandler(ssl_context))
+        opener.add_handler(HTTPSHandler(ssl_context))  # type: ignore[arg-type]
 
     for h in handlers:
         if isclass(h):

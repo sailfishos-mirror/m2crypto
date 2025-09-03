@@ -1104,6 +1104,7 @@ class Urllib2SSLClientTestCase(BaseSSLClientTestCase):
             self.assertFalse(ssl_conn._closed)
             r.close()
             self.assertTrue(ssl_conn._closed)
+
             # TODO This should be assertEqual 1, but we leak sock
             # somewhere. Not sure how to fix it.
             log.debug("get_referrers = %d", len(gc.get_referrers(s[0])))

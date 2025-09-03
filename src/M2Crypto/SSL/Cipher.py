@@ -23,7 +23,7 @@ class Cipher(object):
     def __str__(self) -> str:
         return "%s-%s" % (self.name(), len(self))
 
-    def version(self) -> int:
+    def version(self) -> str:
         return m2.ssl_cipher_get_version(self.cipher)
 
     def name(self) -> str:

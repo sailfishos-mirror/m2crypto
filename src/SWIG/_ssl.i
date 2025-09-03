@@ -371,6 +371,10 @@ void ssl_ctx_set_verify(SSL_CTX *ctx, int mode, PyObject *pyfunc) {
     SSL_CTX_set_verify(ctx, mode, ssl_verify_callback);
 }
 
+void x509_store_ctx_set_error(X509_STORE_CTX *ctx, int err) {
+    X509_STORE_CTX_set_error(ctx, err);
+}
+
 int ssl_ctx_set_session_id_context(SSL_CTX *ctx, PyObject *sid_ctx) {
     const void *buf = NULL;
     int len = 0;

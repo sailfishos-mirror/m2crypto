@@ -1,4 +1,3 @@
-
 """
 M2Crypto threading support, required for multithreaded applications.
 

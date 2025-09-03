@@ -23,9 +23,7 @@ class SSL_Transport(Transport):
         Transport.user_agent,
     )
 
-    def __init__(
-        self, ssl_context: Optional[SSL.Context] = None, *args, **kw
-    ) -> None:
+    def __init__(self, ssl_context: Optional[SSL.Context] = None, *args, **kw) -> None:
         Transport.__init__(self, *args, **kw)
         if ssl_context is None:
             self.ssl_ctx = SSL.Context()
@@ -42,9 +40,7 @@ class SSL_Transport(Transport):
         # Handle username and password.
         user_passwd, host_port = m2urllib.splituser(host)
         _host, _port = m2urllib.splitport(host_port)
-        h = httpslib.HTTPSConnection(
-            _host, int(_port), ssl_context=self.ssl_ctx
-        )
+        h = httpslib.HTTPSConnection(_host, int(_port), ssl_context=self.ssl_ctx)
         if verbose:
             h.set_debuglevel(1)
 
@@ -62,7 +58,7 @@ class SSL_Transport(Transport):
         # Authorisation.
         if user_passwd is not None:
             auth = base64.encodestring(user_passwd).strip()
-            h.putheader('Authorization', 'Basic %s' % auth)
+            h.putheader("Authorization", "Basic %s" % auth)
 
         h.endheaders()
 

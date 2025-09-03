@@ -15,11 +15,11 @@ from tests.test_ec_curves import tested_curve
 
 class ECDHTestCase(unittest.TestCase):
 
-    privkey = 'tests/ec.priv.pem'
+    privkey = "tests/ec.priv.pem"
 
     def test_init_junk(self):
         with self.assertRaises(TypeError):
-            EC.EC('junk')
+            EC.EC("junk")
 
     def test_compute_key(self):
         a = EC.load_key(self.privkey)
@@ -45,7 +45,7 @@ def suite():
     return unittest.TestLoader().loadTestsFromTestCase(ECDHTestCase)
 
 
-if __name__ == '__main__':
-    Rand.load_file('randpool.dat', -1)
+if __name__ == "__main__":
+    Rand.load_file("randpool.dat", -1)
     unittest.TextTestRunner().run(suite())
-    Rand.save_file('randpool.dat')
+    Rand.save_file("randpool.dat")

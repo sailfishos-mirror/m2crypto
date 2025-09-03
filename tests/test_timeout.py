@@ -21,9 +21,7 @@ MAX_SEC_OTHER = 2**31 - 1
 
 class TimeoutTestCase(unittest.TestCase):
 
-    def timeout_test(
-        self, sec, microsec, exp_sec=None, exp_microsec=None
-    ):
+    def timeout_test(self, sec, microsec, exp_sec=None, exp_microsec=None):
         """
         Test that the timeout values (sec, microsec) are the same after
         round tripping through a pack / unpack cycle.
@@ -61,7 +59,7 @@ class TimeoutTestCase(unittest.TestCase):
         self.timeout_test(123, 0)
 
     def test_timeout_max_0(self):
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             self.timeout_test(MAX_SEC_WIN32, 0)
         else:
             self.timeout_test(MAX_SEC_OTHER, 0)
@@ -73,52 +71,50 @@ class TimeoutTestCase(unittest.TestCase):
         self.timeout_test(123, 456000)
 
     def test_timeout_2_3000000(self):
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             self.timeout_test(2, 3000000, 5, 0)
         else:
             self.timeout_test(2, 3000000)
 
     def test_timeout_2_2499000(self):
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             self.timeout_test(2, 2499000, 4, 499000)
         else:
             self.timeout_test(2, 2499000)
 
     def test_timeout_2_2999000(self):
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             self.timeout_test(2, 2999000, 4, 999000)
         else:
             self.timeout_test(2, 2999000)
 
     def test_timeout_max_456000(self):
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             self.timeout_test(MAX_SEC_WIN32, 456000)
         else:
             self.timeout_test(MAX_SEC_OTHER, 456000)
 
     def test_timeout_0_456(self):
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             self.timeout_test(0, 456, None, 0)
         else:
             self.timeout_test(0, 456)
 
     def test_timeout_123_456(self):
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             self.timeout_test(123, 456, None, 0)
         else:
             self.timeout_test(123, 456)
 
     def test_timeout_max_456(self):
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             self.timeout_test(MAX_SEC_WIN32, 456, None, 0)
         else:
             self.timeout_test(MAX_SEC_OTHER, 456)
 
     def test_timeout_1_499(self):
-        if sys.platform == 'win32':
-            self.timeout_test(
-                123, 499, None, 0
-            )  # 499 us rounds down to 0
+        if sys.platform == "win32":
+            self.timeout_test(123, 499, None, 0)  # 499 us rounds down to 0
         else:
             self.timeout_test(123, 499)
 
@@ -126,10 +122,8 @@ class TimeoutTestCase(unittest.TestCase):
         # We use 501 for this test and not 500 because 0.5 is not exactly
         # represented in binary floating point numbers, and because 0.5
         # rounds differently between py2 and py3. See Python round() docs.
-        if sys.platform == 'win32':
-            self.timeout_test(
-                123, 501, None, 1000
-            )  # 501 us rounds up to 1000
+        if sys.platform == "win32":
+            self.timeout_test(123, 501, None, 1000)  # 501 us rounds up to 1000
         else:
             self.timeout_test(123, 501)
 
@@ -140,11 +134,9 @@ class TimeoutTestCase(unittest.TestCase):
 
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(TimeoutTestCase)
-    )
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(TimeoutTestCase))
     return suite
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.TextTestRunner().run(suite())

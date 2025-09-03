@@ -10,7 +10,7 @@ from tests import unittest
 
 class DHTestCase(unittest.TestCase):
 
-    params = 'tests/dhparam.pem'
+    params = "tests/dhparam.pem"
 
     def genparam_callback(self, *args):
         pass
@@ -20,7 +20,7 @@ class DHTestCase(unittest.TestCase):
 
     def test_init_junk(self):
         with self.assertRaises(TypeError):
-            DH.DH('junk')
+            DH.DH("junk")
 
     def test_gen_params(self):
         a = DH.gen_params(1024, 2, self.genparam_callback)
@@ -35,15 +35,15 @@ class DHTestCase(unittest.TestCase):
         bio = BIO.MemoryBuffer()
         a.print_params(bio)
         params = bio.read()
-        self.assertTrue(params.find(b'(1024 bit)'))
-        self.assertTrue(params.find(b'generator: 2 (0x2)'))
+        self.assertTrue(params.find(b"(1024 bit)"))
+        self.assertTrue(params.find(b"generator: 2 (0x2)"))
 
     def test_load_params(self):
-        a = DH.load_params('tests/dhparams.pem')
+        a = DH.load_params("tests/dhparams.pem")
         self.assertEqual(a.check_params(), 0)
 
     def test_compute_key(self):
-        a = DH.load_params('tests/dhparams.pem')
+        a = DH.load_params("tests/dhparams.pem")
         b = DH.set_params(a.p, a.g)
         a.gen_key()
         b.gen_key()
@@ -53,16 +53,16 @@ class DHTestCase(unittest.TestCase):
         self.assertEqual(len(a), 128)
 
         with self.assertRaises(DH.DHError):
-            setattr(a, 'p', 1)
+            setattr(a, "p", 1)
         with self.assertRaises(DH.DHError):
-            setattr(a, 'priv', 1)
+            setattr(a, "priv", 1)
 
 
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase(DHTestCase)
 
 
-if __name__ == '__main__':
-    Rand.load_file('randpool.dat', -1)
+if __name__ == "__main__":
+    Rand.load_file("randpool.dat", -1)
     unittest.TextTestRunner().run(suite())
-    Rand.save_file('randpool.dat')
+    Rand.save_file("randpool.dat")

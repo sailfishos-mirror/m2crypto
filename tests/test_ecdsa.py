@@ -21,11 +21,11 @@ log = logging.getLogger(__name__)
 
 class ECDSATestCase(unittest.TestCase):
 
-    errkey = 'tests/rsa.priv.pem'
-    privkey = 'tests/ec.priv.pem'
-    pubkey = 'tests/ec.pub.pem'
+    errkey = "tests/rsa.priv.pem"
+    privkey = "tests/ec.priv.pem"
+    pubkey = "tests/ec.pub.pem"
 
-    data = hashlib.sha256(b'Can you spell subliminal channel?').digest()
+    data = hashlib.sha256(b"Can you spell subliminal channel?").digest()
 
     def setUp(self):
         assert os.path.exists(self.errkey) and os.access(
@@ -103,7 +103,7 @@ def suite():
     return unittest.TestLoader().loadTestsFromTestCase(ECDSATestCase)
 
 
-if __name__ == '__main__':
-    Rand.load_file('randpool.dat', -1)
+if __name__ == "__main__":
+    Rand.load_file("randpool.dat", -1)
     unittest.TextTestRunner().run(suite())
-    Rand.save_file('randpool.dat')
+    Rand.save_file("randpool.dat")

@@ -24,8 +24,8 @@ def time_limit(timeout, func, exc_msg, *args, **kwargs):
     # Python >=3.8 on MacOS changed start_method to 'spawn' as default.
     #   This creates a new context with the previous 'fork'
     #   start_method. Fixes issue #286.
-    if system() == 'Darwin' and version_info >= (3, 8):
-        start_method = 'fork'
+    if system() == "Darwin" and version_info >= (3, 8):
+        start_method = "fork"
     else:
         # use default context
         start_method = None
@@ -42,7 +42,7 @@ def time_limit(timeout, func, exc_msg, *args, **kwargs):
 class MemoryBufferTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.data = b'abcdef' * 64
+        self.data = b"abcdef" * 64
 
     def tearDown(self):
         pass
@@ -115,25 +115,23 @@ class MemoryBufferTestCase(unittest.TestCase):
         time_limit(
             timeout_secs,
             run_test,
-            'The readline() should not timeout!',
+            "The readline() should not timeout!",
         )
 
 
 def run_test(*args, **kwargs):
     sep = os.linesep.encode()
-    with MemoryBuffer(b'hello' + sep + b'world' + sep) as mb:
+    with MemoryBuffer(b"hello" + sep + b"world" + sep) as mb:
         assert mb.readable()
-        assert mb.readline() == b'hello' + sep
-        assert mb.readline() == b'world' + sep
-    with MemoryBuffer(b'hello' + sep + b'world' + sep) as mb:
-        assert mb.readlines() == [b'hello' + sep, b'world' + sep]
+        assert mb.readline() == b"hello" + sep
+        assert mb.readline() == b"world" + sep
+    with MemoryBuffer(b"hello" + sep + b"world" + sep) as mb:
+        assert mb.readlines() == [b"hello" + sep, b"world" + sep]
 
 
 def suite():
-    return unittest.TestLoader().loadTestsFromTestCase(
-        MemoryBufferTestCase
-    )
+    return unittest.TestLoader().loadTestsFromTestCase(MemoryBufferTestCase)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.TextTestRunner().run(suite())

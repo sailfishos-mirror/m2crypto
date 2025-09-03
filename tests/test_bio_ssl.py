@@ -43,15 +43,10 @@ class HandshakeClient(threading.Thread):
         while not handshake_complete:
             ret = sslbio.do_handshake()
             if ret <= 0:
-                if (
-                    not sslbio.should_retry()
-                    or not sslbio.should_read()
-                ):
+                if not sslbio.should_retry() or not sslbio.should_read():
                     err_string = Err.get_error()
                     print(err_string)
-                    sys.exit(
-                        "unrecoverable error in handshake - client"
-                    )
+                    sys.exit("unrecoverable error in handshake - client")
                 else:
                     output_token = writebio.read()
                     if output_token is not None:
@@ -139,13 +134,8 @@ class SSLTestCase(unittest.TestCase):
 
             ret = self.sslbio.do_handshake()
             if ret <= 0:
-                if (
-                    not self.sslbio.should_retry()
-                    or not self.sslbio.should_read()
-                ):
-                    sys.exit(
-                        "unrecoverable error in handshake - server"
-                    )
+                if not self.sslbio.should_retry() or not self.sslbio.should_read():
+                    sys.exit("unrecoverable error in handshake - server")
             else:
                 handshake_complete = True
 
@@ -162,9 +152,9 @@ def suite():
     return unittest.TestLoader().loadTestsFromTestCase(SSLTestCase)
 
 
-if __name__ == '__main__':
-    Rand.load_file('randpool.dat', -1)
+if __name__ == "__main__":
+    Rand.load_file("randpool.dat", -1)
     m2threading.init()
     unittest.TextTestRunner().run(suite())
     m2threading.cleanup()
-    Rand.save_file('randpool.dat')
+    Rand.save_file("randpool.dat")

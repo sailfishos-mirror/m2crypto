@@ -18,56 +18,48 @@ class RandTestCase(unittest.TestCase):
     def test_bytes(self):
         with self.assertRaises(MemoryError):
             Rand.rand_bytes(-1)
-        self.assertEqual(Rand.rand_bytes(0), b'')
+        self.assertEqual(Rand.rand_bytes(0), b"")
         self.assertEqual(len(Rand.rand_bytes(1)), 1)
 
     def test_pseudo_bytes(self):
         with warnings.catch_warnings():
-            warnings.simplefilter('ignore', DeprecationWarning)
+            warnings.simplefilter("ignore", DeprecationWarning)
             with self.assertRaises(MemoryError):
                 Rand.rand_pseudo_bytes(-1)
-            self.assertEqual(Rand.rand_pseudo_bytes(0), (b'', 1))
+            self.assertEqual(Rand.rand_pseudo_bytes(0), (b"", 1))
             a, b = Rand.rand_pseudo_bytes(1)
             self.assertEqual(len(a), 1)
             self.assertEqual(b, 1)
 
     def test_file_name(self):
-        if os.name == 'nt':
+        if os.name == "nt":
             is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
             rand_env = (
-                'RANDFILE',
-                'HOME',
-                'USERPROFILE',
-                'SYSTEMROOT',
+                "RANDFILE",
+                "HOME",
+                "USERPROFILE",
+                "SYSTEMROOT",
             )
         else:
-            rand_env = ('RANDFILE', 'HOME')
+            rand_env = ("RANDFILE", "HOME")
             is_admin = False
         key = next((k for k in rand_env if os.environ.get(k)), None)
         if is_admin and m2.OPENSSL_VERSION_NUMBER < 0x1010000F:
-            path = 'C:\\'
+            path = "C:\\"
         else:
             path = os.path.join(os.environ[key])
-        self.assertIsNotNone(
-            key, "Could not find required environment"
-        )
-        rand_file = os.path.abspath(os.path.join(path, '.rnd'))
-        self.assertEqual(
-            os.path.abspath(Rand.rand_file_name()), rand_file
-        )
+        self.assertIsNotNone(key, "Could not find required environment")
+        rand_file = os.path.abspath(os.path.join(path, ".rnd"))
+        self.assertEqual(os.path.abspath(Rand.rand_file_name()), rand_file)
 
     def test_load_save(self):
         try:
-            os.remove('tests/randpool.dat')
+            os.remove("tests/randpool.dat")
         except OSError:
             pass
-        self.assertIn(
-            Rand.load_file('tests/randpool.dat', -1), [0, -1]
-        )
-        self.assertEqual(Rand.save_file('tests/randpool.dat'), 1024)
-        self.assertEqual(
-            Rand.load_file('tests/randpool.dat', -1), 1024
-        )
+        self.assertIn(Rand.load_file("tests/randpool.dat", -1), [0, -1])
+        self.assertEqual(Rand.save_file("tests/randpool.dat"), 1024)
+        self.assertEqual(Rand.load_file("tests/randpool.dat", -1), 1024)
 
     def test_seed_add(self):
         self.assertIsNone(Rand.rand_seed(os.urandom(1024)))
@@ -84,21 +76,17 @@ class RandTestCase(unittest.TestCase):
         self.assertIn(
             status,
             [0, 1],
-            'Illegal value of RAND.rand_status {0}!'.format(status),
+            "Illegal value of RAND.rand_status {0}!".format(status),
         )
         if status == 0:
-            warnings.warn(
-                'RAND_status reports insufficient seeding of PRNG!'
-            )
+            warnings.warn("RAND_status reports insufficient seeding of PRNG!")
 
 
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(RandTestCase)
-    )
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(RandTestCase))
     return suite
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.TextTestRunner().run(suite())

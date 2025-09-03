@@ -12,20 +12,14 @@ Taken from CA managment code
 
 def x509_name2list(name):
     for i in range(0, name.entry_count()):
-        yield X509.X509_Name_Entry(
-            m2.x509_name_get_entry(name._ptr(), i), _pyfree=0
-        )
+        yield X509.X509_Name_Entry(m2.x509_name_get_entry(name._ptr(), i), _pyfree=0)
 
 
 def x509_name_entry2tuple(entry):
     bio = BIO.MemoryBuffer()
-    m2.asn1_string_print(
-        bio._ptr(), m2.x509_name_entry_get_data(entry._ptr())
-    )
+    m2.asn1_string_print(bio._ptr(), m2.x509_name_entry_get_data(entry._ptr()))
     return (
-        m2.obj_obj2txt(
-            m2.x509_name_entry_get_object(entry._ptr()), 0
-        ).decode(),
+        m2.obj_obj2txt(m2.x509_name_entry_get_object(entry._ptr()), 0).decode(),
         bio.getvalue().decode(),
     )
 
@@ -41,9 +35,7 @@ def tuple2x509_name_entry(tup):
     )
     if not _x509_ne:
         raise ValueError("Invalid object indentifier: %s" % obj)
-    return X509.X509_Name_Entry(
-        _x509_ne, _pyfree=1
-    )  # Prevent memory leaks
+    return X509.X509_Name_Entry(_x509_ne, _pyfree=1)  # Prevent memory leaks
 
 
 class ObjectsTestCase(unittest.TestCase):
@@ -100,18 +92,18 @@ class ObjectsTestCase(unittest.TestCase):
     def test_x509_name(self):
         n = X509.X509_Name()
         # It seems this actually needs to be a real 2 letter country code
-        n.C = b'US'
-        n.SP = b'State or Province'
-        n.L = b'locality name'
-        n.O = b'orhanization name'
-        n.OU = b'org unit'
-        n.CN = b'common name'
-        n.Email = b'bob@example.com'
-        n.serialNumber = b'1234'
-        n.SN = b'surname'
-        n.GN = b'given name'
+        n.C = b"US"
+        n.SP = b"State or Province"
+        n.L = b"locality name"
+        n.O = b"orhanization name"
+        n.OU = b"org unit"
+        n.CN = b"common name"
+        n.Email = b"bob@example.com"
+        n.serialNumber = b"1234"
+        n.SN = b"surname"
+        n.GN = b"given name"
 
-        n.givenName = b'name given'
+        n.givenName = b"name given"
         self.assertEqual(len(n), 11, len(n))
 
         # Thierry: this call to list seems extraneous...
@@ -128,23 +120,21 @@ class ObjectsTestCase(unittest.TestCase):
         self.assertEqual(n.as_text(), n1.as_text(), n1.as_text())
 
     # Detailed OpenSSL error message is visible in Python error message:
-    @unittest.skipIf(
-        m2.OPENSSL_VERSION_NUMBER >= 0x30000000, "Failing on OpenSSL3"
-    )
+    @unittest.skipIf(m2.OPENSSL_VERSION_NUMBER >= 0x30000000, "Failing on OpenSSL3")
     def test_detailed_error_message(self):
         from M2Crypto import SMIME, X509
 
         s = SMIME.SMIME()
-        x509 = X509.load_cert('tests/recipient.pem')
+        x509 = X509.load_cert("tests/recipient.pem")
         sk = X509.X509_Stack()
         sk.push(x509)
         s.set_x509_stack(sk)
 
         st = X509.X509_Store()
-        st.load_info('tests/recipient.pem')
+        st.load_info("tests/recipient.pem")
         s.set_x509_store(st)
 
-        p7, data = SMIME.smime_load_pkcs7('tests/sample-p7.pem')
+        p7, data = SMIME.smime_load_pkcs7("tests/sample-p7.pem")
         self.assertIsInstance(p7, SMIME.PKCS7, p7)
 
         try:
@@ -159,13 +149,11 @@ class ObjectsTestCase(unittest.TestCase):
 
 def suite():
     t_suite = unittest.TestSuite()
-    t_suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(ObjectsTestCase)
-    )
+    t_suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ObjectsTestCase))
     return t_suite
 
 
-if __name__ == '__main__':
-    Rand.load_file('randpool.dat', -1)
+if __name__ == "__main__":
+    Rand.load_file("randpool.dat", -1)
     unittest.TextTestRunner().run(suite())
-    Rand.save_file('randpool.dat')
+    Rand.save_file("randpool.dat")

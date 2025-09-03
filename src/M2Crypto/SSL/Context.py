@@ -91,12 +91,16 @@ class Context(object):
                          simple terminal-style input for the passphrase.
         """
         m2.ssl_ctx_passphrase_callback(self.ctx, callback)
-        certfile_str = os.fsdecode(certfile) if isinstance(certfile, bytes) else certfile
+        certfile_str = (
+            os.fsdecode(certfile) if isinstance(certfile, bytes) else certfile
+        )
         m2.ssl_ctx_use_cert(self.ctx, certfile_str)
         if not keyfile:
             keyfile_str = certfile_str
         else:
-            keyfile_str = os.fsdecode(keyfile) if isinstance(keyfile, bytes) else keyfile
+            keyfile_str = (
+                os.fsdecode(keyfile) if isinstance(keyfile, bytes) else keyfile
+            )
         m2.ssl_ctx_use_privkey(self.ctx, keyfile_str)
         if not m2.ssl_ctx_check_privkey(self.ctx):
             raise ValueError("public/private key mismatch")
@@ -120,12 +124,20 @@ class Context(object):
                               passphrase.
         """
         m2.ssl_ctx_passphrase_callback(self.ctx, callback)
-        certchainfile_str = os.fsdecode(certchainfile) if isinstance(certchainfile, bytes) else certchainfile
+        certchainfile_str = (
+            os.fsdecode(certchainfile)
+            if isinstance(certchainfile, bytes)
+            else certchainfile
+        )
         m2.ssl_ctx_use_cert_chain(self.ctx, certchainfile_str)
         if not keyfile:
             keyfile_str = certchainfile_str
         else:
-            keyfile_str = os.fsdecode(certchainfile) if isinstance(certchainfile, bytes) else certchainfile
+            keyfile_str = (
+                os.fsdecode(certchainfile)
+                if isinstance(certchainfile, bytes)
+                else certchainfile
+            )
         m2.ssl_ctx_use_privkey(self.ctx, keyfile_str)
         if not m2.ssl_ctx_check_privkey(self.ctx):
             raise ValueError("public/private key mismatch")

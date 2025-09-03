@@ -21,6 +21,11 @@ import socket
 from M2Crypto import X509, m2  # noqa
 from typing import Optional, Union  # noqa
 
+try:
+    from re import Pattern
+except ImportError:
+    from typing import Pattern
+
 
 class SSLVerificationError(Exception):
     pass
@@ -64,17 +69,22 @@ class WrongHost(SSLVerificationError):
         self.fieldName = fieldName
 
     def __str__(self) -> str:
+        actual = (
+            self.actualHost.decode()
+            if isinstance(self.actualHost, bytes)
+            else self.actualHost
+        )
         return "Peer certificate %s does not match host, expected %s, got %s" % (
             self.fieldName,
             self.expectedHost,
-            self.actualHost,
+            actual,
         )
 
 
 class Checker:
 
     # COMPATIBILITY: re.Pattern is available only from Python 3.7+
-    numericIpMatch: object = re.compile(r"^[0-9]+(\.[0-9]+)*$")
+    numericIpMatch: Pattern[str] = re.compile(r"^[0-9]+(\.[0-9]+)*$")
 
     def __init__(
         self,
@@ -223,16 +233,23 @@ class Checker:
         >>> check.useSubjectAltNameOnly
         False
         """
+        host_str = host.decode() if isinstance(host, bytes) else host
+        san_str = (
+            subjectAltName.decode()
+            if isinstance(subjectAltName, bytes)
+            else subjectAltName
+        )
+
         self.useSubjectAltNameOnly = False
-        for certHost in subjectAltName.split(","):
+        for certHost in san_str.split(","):
             certHost = certHost.lower().strip()
             if certHost[:4] == "dns:":
                 self.useSubjectAltNameOnly = True
-                if self._match(host, certHost[4:]):
+                if self._match(host_str, certHost[4:]):
                     return True
             elif certHost[:11] == "ip address:":
                 self.useSubjectAltNameOnly = True
-                if self._matchIPAddress(host, certHost[11:]):
+                if self._matchIPAddress(host_str, certHost[11:]):
                     return True
         return False
 

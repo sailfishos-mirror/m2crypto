@@ -710,7 +710,7 @@ def x509_name_add_entry_by_txt(
     name: C.X509_NAME,
     field: str,
     type: int,
-    value: bytes,
+    value: str,
     length: int,
     loc: int,
     set: int,

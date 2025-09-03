@@ -941,7 +941,7 @@ class X509_Store_Context(object):
         return X509_Stack(m2.x509_store_ctx_get1_chain(self.ctx), 1, 1)
 
 
-def x509_store_default_cb(ok: int, ctx: X509_Store_Context) -> int:
+def x509_store_default_cb(ok: int, ctx: C.X509_STORE_CTX) -> int:
     return ok
 
 

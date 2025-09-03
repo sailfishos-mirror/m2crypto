@@ -6,20 +6,19 @@ Copyright (c) 2014-2017 Matej Cepl. All rights reserved.
 See LICENCE for the license information.
 """
 
-
 from M2Crypto import m2
 from typing import Tuple, Union  # noqa
 
 
 __all__ = [
-    'rand_seed',
-    'rand_add',
-    'load_file',
-    'save_file',
-    'rand_bytes',
-    'rand_pseudo_bytes',
-    'rand_file_name',
-    'rand_status',
+    "rand_seed",
+    "rand_add",
+    "load_file",
+    "save_file",
+    "rand_bytes",
+    "rand_pseudo_bytes",
+    "rand_file_name",
+    "rand_status",
 ]
 
 
@@ -91,12 +90,8 @@ def load_file(filename: Union[str, bytes], max_bytes: int) -> int:
     :param max_bytes:
     :return: the number of bytes read.
     """
-    filename = (
-        filename.decode() if isinstance(filename, bytes) else filename
-    )
-    return m2.rand_load_file(
-        filename, max_bytes
-    )  # pylint: disable=no-member
+    filename = filename.decode() if isinstance(filename, bytes) else filename
+    return m2.rand_load_file(filename, max_bytes)  # pylint: disable=no-member
 
 
 def save_file(filename: Union[str, bytes]) -> int:
@@ -110,6 +105,8 @@ def save_file(filename: Union[str, bytes]) -> int:
     :return: returns the number of bytes written, and -1 if the bytes
          written were generated without appropriate seed.
     """
+    if isinstance(filename, bytes):
+        filename = filename.decode()
     return m2.rand_save_file(filename)  # pylint: disable=no-member
 
 
@@ -147,8 +144,8 @@ def rand_pseudo_bytes(num: int) -> Tuple[bytes, int]:
 
     if m2.OPENSSL_VERSION_NUMBER >= 0x10100000:
         warnings.warn(
-            'The underlying OpenSSL method has been '
-            + 'deprecated. Use Rand.rand_bytes instead.',
+            "The underlying OpenSSL method has been "
+            + "deprecated. Use Rand.rand_bytes instead.",
             DeprecationWarning,
         )
 

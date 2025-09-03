@@ -22,17 +22,17 @@ if win32process:
     from M2Crypto import Rand
 
     def find_openssl():
-        plist = os.environ['PATH'].split(';')
+        plist = os.environ["PATH"].split(";")
         for p in plist:
             try:
                 path_dir = os.listdir(p)
-                if 'openssl.exe' in path_dir:
-                    return os.path.join(p, 'openssl.exe')
+                if "openssl.exe" in path_dir:
+                    return os.path.join(p, "openssl.exe")
             except OSError:
                 pass
         return None
 
-    srv_host = 'localhost'
+    srv_host = "localhost"
     srv_port = 64000
 
     class SSLWinClientTestCase(test_ssl.BaseSSLClientTestCase):
@@ -43,11 +43,11 @@ if win32process:
         def start_server(self, args):
             # openssl must be started in the tests directory for it
             # to find the .pem files
-            os.chdir('tests')
+            os.chdir("tests")
             try:
                 hproc, _, _, _ = win32process.CreateProcess(
                     self.openssl,
-                    ' '.join(args),
+                    " ".join(args),
                     None,
                     None,
                     0,
@@ -57,7 +57,7 @@ if win32process:
                     self.startupinfo,
                 )
             finally:
-                os.chdir('..')
+                os.chdir("..")
             time.sleep(0.3)
             return hproc
 
@@ -65,18 +65,16 @@ if win32process:
             win32process.TerminateProcess(hproc, 0)
 
     def suite():
-        return unittest.TestLoader().loadTestsFromTestCase(
-            SSLWinClientTestCase
-        )
+        return unittest.TestLoader().loadTestsFromTestCase(SSLWinClientTestCase)
 
     def zap_servers():
         pass
 
-    if __name__ == '__main__':
+    if __name__ == "__main__":
         try:
             if find_openssl() is not None:
-                Rand.load_file('randpool.dat', -1)
+                Rand.load_file("randpool.dat", -1)
                 unittest.TextTestRunner().run(suite())
-                Rand.save_file('randpool.dat')
+                Rand.save_file("randpool.dat")
         finally:
             zap_servers()

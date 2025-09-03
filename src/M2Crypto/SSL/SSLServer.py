@@ -16,25 +16,27 @@ import os
 
 if os.name != "nt":
     from socketserver import ForkingMixIn
-from socket import socket  # noqa
-from typing import Union  # noqa
+import socket as std_socket
+from typing import Union, Optional
 
 __all__ = ["SSLServer", "ForkingSSLServer", "ThreadingSSLServer"]
 
 
 class SSLServer(TCPServer):
+    socket: Connection  # type: ignore[assignment]
+
     def __init__(
         self,
         server_address: util.AddrType,
-        RequestHandlerClass: BaseRequestHandler,
-        ssl_context: Context,  # noqa
+        RequestHandlerClass: "BaseRequestHandler",
+        ssl_context: "Context",
         bind_and_activate: bool = True,
     ) -> None:
         """
         Superclass says: Constructor. May be extended, do not override.
         This class says: Ho-hum.
         """
-        BaseServer.__init__(self, server_address, RequestHandlerClass)
+        BaseServer.__init__(self, server_address, RequestHandlerClass)  # type: ignore[arg-type]
         self.ssl_ctx = ssl_context
         self.socket = Connection(self.ssl_ctx)
         if bind_and_activate:
@@ -53,10 +55,10 @@ class SSLServer(TCPServer):
         except SSLError:
             self.handle_error(request, client_address)
 
-    def handle_error(
+    def handle_error(  # type: ignore[override]
         self,
-        request: Union[socket, Connection],
-        client_address: util.AddrType,
+        request: Optional[Union[std_socket.socket, Connection]],
+        client_address: Optional[util.AddrType],
     ) -> None:
         print("-" * 40)
         import traceback

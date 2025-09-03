@@ -702,6 +702,10 @@ x509v3_ext_conf(void *conf, X509V3_CTX *ctx, char *name, char *value) {
 %}
 %typemap(out) X509_EXTENSION * ;
 
+%typemap(in) X509_STORE_CTX * {
+  $1 = ($1_type)SWIG_Python_MustGetPtr($input, SWIG_TypeQuery("$1_basetype *"), 1, 0);
+}
+
 %inline %{
 /* X509_EXTENSION_free() might be a macro, didn't find definition. */
 void x509_extension_free(X509_EXTENSION *ext) {
@@ -755,9 +759,8 @@ void *x509_store_ctx_get_app_data(X509_STORE_CTX *ctx) {
   return X509_STORE_CTX_get_app_data(ctx);
 }
 
-/* X509_STORE_CTX_get_app_data is a macro. */
-void *x509_store_ctx_get_ex_data(X509_STORE_CTX *ctx, int idx) {
-  return X509_STORE_CTX_get_ex_data(ctx, idx);
+SSL *x509_store_ctx_get_ex_data(X509_STORE_CTX *ctx, int idx) {
+  return (SSL *)X509_STORE_CTX_get_ex_data(ctx, idx);
 }
 
 void x509_store_set_verify_cb(X509_STORE *store, PyObject *pyfunc) {

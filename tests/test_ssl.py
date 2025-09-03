@@ -47,14 +47,14 @@ from M2Crypto.SSL.timeout import DEFAULT_TIMEOUT
 from tests import unittest
 from tests.fips import fips_mode
 
-log = logging.getLogger('test_SSL')
+log = logging.getLogger("test_SSL")
 
 OPENSSL111 = m2.OPENSSL_VERSION_NUMBER > 0x10101000
 
 # FIXME
 # It would be probably better if the port was randomly selected.
 # https://fedorahosted.org/libuser/browser/tests/alloc_port.c
-srv_host = 'localhost'
+srv_host = "localhost"
 
 
 def allocate_srv_port():
@@ -100,7 +100,7 @@ class VerifyCB(object):
         return verify_cb_new_function(ok, store)
 
 
-sleepTime = float(os.getenv('M2CRYPTO_TEST_SSL_SLEEP', '1.5'))
+sleepTime = float(os.getenv("M2CRYPTO_TEST_SSL_SLEEP", "1.5"))
 
 
 class BaseSSLClientTestCase(unittest.TestCase):
@@ -108,12 +108,12 @@ class BaseSSLClientTestCase(unittest.TestCase):
     # doesn't mesh with @property. Oh well.
     @property
     def _is_openssl_in_path(self):
-        if os.name == 'nt' or sys.platform == 'cygwin':
-            openssl = 'openssl.exe'
+        if os.name == "nt" or sys.platform == "cygwin":
+            openssl = "openssl.exe"
         else:
-            openssl = 'openssl'
+            openssl = "openssl"
 
-        plist = os.environ['PATH'].split(os.pathsep)
+        plist = os.environ["PATH"].split(os.pathsep)
         for p in plist:
             try:
                 dir = os.listdir(p)
@@ -125,11 +125,11 @@ class BaseSSLClientTestCase(unittest.TestCase):
 
     def start_server(self, args):
         if not self._is_openssl_in_path:
-            raise RuntimeError('openssl command not in PATH')
+            raise RuntimeError("openssl command not in PATH")
 
         pid = subprocess.Popen(
-            ['openssl'] + args,
-            cwd='tests',
+            ["openssl"] + args,
+            cwd="tests",
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
@@ -142,16 +142,14 @@ class BaseSSLClientTestCase(unittest.TestCase):
         return out.decode(), err.decode()
 
     def http_get(self, s):
-        s.send(b'GET / HTTP/1.0\n\n')
-        resp = b''
+        s.send(b"GET / HTTP/1.0\n\n")
+        resp = b""
         while 1:
             try:
                 r = s.recv(4096)
                 if not r:
                     break
-            except (
-                SSL.SSLError
-            ):  # s_server throws an 'unexpected eof'...
+            except SSL.SSLError:  # s_server throws an 'unexpected eof'...
                 break
             resp = resp + r
         return resp.decode()
@@ -160,16 +158,16 @@ class BaseSSLClientTestCase(unittest.TestCase):
         self.srv_host = srv_host
         self.srv_port = allocate_srv_port()
         self.srv_addr = (srv_host, self.srv_port)
-        self.srv_url = 'https://%s:%s/' % (srv_host, self.srv_port)
+        self.srv_url = "https://%s:%s/" % (srv_host, self.srv_port)
         self.args = [
-            's_server',
-            '-www',
-            '-cert',
-            'server.pem',
-            '-accept',
+            "s_server",
+            "-www",
+            "-cert",
+            "server.pem",
+            "-accept",
             str(self.srv_port),
         ]
-        self.test_output = 's_server -www'
+        self.test_output = "s_server -www"
 
 
 class PassSSLClientTestCase(BaseSSLClientTestCase):
@@ -181,9 +179,7 @@ class HttpslibSSLClientTestCase(BaseSSLClientTestCase):
     def setUp(self):
         super(HttpslibSSLClientTestCase, self).setUp()
         self.ctx = SSL.Context()
-        self.ctx.load_cert_chain(
-            'tests/server.pem', keyfile='tests/server_key.pem'
-        )
+        self.ctx.load_cert_chain("tests/server.pem", keyfile="tests/server_key.pem")
 
     def tearDown(self):
         self.ctx.close()
@@ -192,9 +188,9 @@ class HttpslibSSLClientTestCase(BaseSSLClientTestCase):
         pid = self.start_server(self.args)
         try:
             c = httpslib.HTTPSConnection(
-                srv_host, self.srv_port, {'ssl_context': self.ctx}
+                srv_host, self.srv_port, {"ssl_context": self.ctx}
             )
-            c.request('GET', '/')
+            c.request("GET", "/")
             resp = c.getresponse()
             data = resp.read()
             c.close()
@@ -206,16 +202,12 @@ class HttpslibSSLClientTestCase(BaseSSLClientTestCase):
     def test_HTTPSConnection_resume_session(self):
         pid = self.start_server(self.args)
         try:
-            self.ctx.load_verify_locations(cafile='tests/ca.pem')
-            self.ctx.load_cert('tests/x509.pem')
-            self.ctx.set_verify(
-                SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 1
-            )
+            self.ctx.load_verify_locations(cafile="tests/ca.pem")
+            self.ctx.load_cert("tests/x509.pem")
+            self.ctx.set_verify(SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 1)
             self.ctx.set_session_cache_mode(m2.SSL_SESS_CACHE_CLIENT)
-            c = httpslib.HTTPSConnection(
-                srv_host, self.srv_port, ssl_context=self.ctx
-            )
-            c.request('GET', '/')
+            c = httpslib.HTTPSConnection(srv_host, self.srv_port, ssl_context=self.ctx)
+            c.request("GET", "/")
             ses = c.get_session()
             t = ses.as_text()
             data = c.getresponse().read()
@@ -223,17 +215,13 @@ class HttpslibSSLClientTestCase(BaseSSLClientTestCase):
             # c.close()
 
             ctx2 = SSL.Context()
-            ctx2.load_verify_locations(cafile='tests/ca.pem')
-            ctx2.load_cert('tests/x509.pem')
-            ctx2.set_verify(
-                SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 1
-            )
+            ctx2.load_verify_locations(cafile="tests/ca.pem")
+            ctx2.load_cert("tests/x509.pem")
+            ctx2.set_verify(SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 1)
             ctx2.set_session_cache_mode(m2.SSL_SESS_CACHE_CLIENT)
-            c2 = httpslib.HTTPSConnection(
-                srv_host, self.srv_port, ssl_context=ctx2
-            )
+            c2 = httpslib.HTTPSConnection(srv_host, self.srv_port, ssl_context=ctx2)
             c2.set_session(ses)
-            c2.request('GET', '/')
+            c2.request("GET", "/")
             ses2 = c2.get_session()
             t2 = ses2.as_text()
             data = c2.getresponse().read().decode()
@@ -255,14 +243,10 @@ class HttpslibSSLClientTestCase(BaseSSLClientTestCase):
     def test_HTTPSConnection_secure_context(self):
         pid = self.start_server(self.args)
         try:
-            self.ctx.set_verify(
-                SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9
-            )
-            self.ctx.load_verify_locations('tests/ca.pem')
-            c = httpslib.HTTPSConnection(
-                srv_host, self.srv_port, ssl_context=self.ctx
-            )
-            c.request('GET', '/')
+            self.ctx.set_verify(SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9)
+            self.ctx.load_verify_locations("tests/ca.pem")
+            c = httpslib.HTTPSConnection(srv_host, self.srv_port, ssl_context=self.ctx)
+            c.request("GET", "/")
             data = c.getresponse().read().decode()
             c.close()
         finally:
@@ -272,45 +256,39 @@ class HttpslibSSLClientTestCase(BaseSSLClientTestCase):
     def test_HTTPSConnection_secure_context_fail(self):
         pid = self.start_server(self.args)
         try:
-            self.ctx.set_verify(
-                SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9
-            )
-            self.ctx.load_verify_locations('tests/server.pem')
-            c = httpslib.HTTPSConnection(
-                srv_host, self.srv_port, ssl_context=self.ctx
-            )
+            self.ctx.set_verify(SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9)
+            self.ctx.load_verify_locations("tests/server.pem")
+            c = httpslib.HTTPSConnection(srv_host, self.srv_port, ssl_context=self.ctx)
             with self.assertRaises(SSL.SSLError):
-                c.request('GET', '/')
+                c.request("GET", "/")
             c.close()
         finally:
             self.stop_server(pid)
 
     def test_HTTPSConnection_illegalkeywordarg(self):
         with self.assertRaises(ValueError):
-            httpslib.HTTPSConnection('example.org', badKeyword=True)
+            httpslib.HTTPSConnection("example.org", badKeyword=True)
 
 
-@unittest.skipIf(
-    sys.platform == 'win32', "Test doesn't work on Windows"
-)
+@unittest.skipIf(sys.platform == "win32", "Test doesn't work on Windows")
 class HttpslibSSLSNIClientTestCase(BaseSSLClientTestCase):
     def setUp(self):
         super(HttpslibSSLSNIClientTestCase, self).setUp()
         self.args = [
-            's_server',
-            '-servername',
+            "s_server",
+            "-servername",
             srv_host,
-            '-www',
-            '-msg',
-            '-cert',
-            'server.pem',
-            '-key',
-            'server_key.pem',
-            '-cert2',
-            'server.pem',
-            '-key2',
-            'server_key.pem',
-            '-accept',
+            "-www",
+            "-msg",
+            "-cert",
+            "server.pem",
+            "-key",
+            "server_key.pem",
+            "-cert2",
+            "server.pem",
+            "-key2",
+            "server_key.pem",
+            "-accept",
             str(self.srv_port),
         ]
         self.ctx = SSL.Context()
@@ -319,7 +297,7 @@ class HttpslibSSLSNIClientTestCase(BaseSSLClientTestCase):
         self.ctx.close()
 
     @unittest.skipIf(
-        'DISTROBOX_ENTER_PATH' in os.environ,
+        "DISTROBOX_ENTER_PATH" in os.environ,
         "Don't run the test on local machine",
     )
     def test_SNI_support(self):
@@ -328,7 +306,7 @@ class HttpslibSSLSNIClientTestCase(BaseSSLClientTestCase):
             c = httpslib.HTTPSConnection(
                 self.srv_host, self.srv_port, ssl_context=self.ctx
             )
-            c.request('GET', '/')
+            c.request("GET", "/")
             c.close()
         finally:
             # (openssl s_server) buffers its log output, and ends the TLS session
@@ -338,12 +316,10 @@ class HttpslibSSLSNIClientTestCase(BaseSSLClientTestCase):
             # So, give the server hopefully enough time to flush the logs.
             time.sleep(sleepTime)
             out, _ = self.stop_server(pid)
-        self.assertIn(
-            'Hostname in TLS extension: "%s"' % srv_host, out
-        )
+        self.assertIn('Hostname in TLS extension: "%s"' % srv_host, out)
 
     @unittest.skipIf(
-        'DISTROBOX_ENTER_PATH' in os.environ,
+        "DISTROBOX_ENTER_PATH" in os.environ,
         "Don't run the test on local machine",
     )
     def test_IP_call(self):
@@ -370,18 +346,14 @@ class HttpslibSSLSNIClientTestCase(BaseSSLClientTestCase):
             try:
                 conn.connect((ip, self.srv_port))
             except (SSL.SSLError, socket.error):
-                log.exception(
-                    "Failed to connect to %s:%s", ip, self.srv_port
-                )
+                log.exception("Failed to connect to %s:%s", ip, self.srv_port)
                 no_exception = False
             finally:
                 conn.close()
 
         out, _ = self.stop_server(pid)
         self.assertEqual(
-            out.count(
-                'Hostname in TLS extension: "%s"' % self.srv_host
-            ),
+            out.count('Hostname in TLS extension: "%s"' % self.srv_host),
             runs_counter,
         )
 
@@ -397,7 +369,7 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
         pid = self.start_server(self.args)
         try:
             with self.assertRaises(ValueError):
-                SSL.Context('tlsv5')
+                SSL.Context("tlsv5")
             ctx = SSL.Context()
             s = SSL.Connection(ctx)
             s.connect(self.srv_addr)
@@ -413,10 +385,8 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
         pid = self.start_server(self.args)
         try:
             ctx = SSL.Context()
-            ctx.set_verify(
-                SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9
-            )
-            ctx.load_verify_locations('tests/ca.pem')
+            ctx.set_verify(SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9)
+            ctx.load_verify_locations("tests/ca.pem")
             s = SSL.Connection(ctx)
             s.connect(self.srv_addr)
             data = self.http_get(s)
@@ -429,10 +399,8 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
         pid = self.start_server(self.args)
         try:
             ctx = SSL.Context()
-            ctx.set_verify(
-                SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9
-            )
-            ctx.load_verify_locations('tests/server.pem')
+            ctx.set_verify(SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9)
+            ctx.load_verify_locations("tests/server.pem")
             s = SSL.Connection(ctx)
             with self.assertRaises(SSL.SSLError):
                 s.connect(self.srv_addr)
@@ -457,7 +425,7 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
 
         try:
             with self.assertRaises(ValueError):
-                SSL.Context('tlsv5')
+                SSL.Context("tlsv5")
             ctx = SSL.Context()
             s = SSL.Connection(ctx)
 
@@ -493,32 +461,28 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
     # TLS is required in FIPS mode
     @unittest.skipIf(fips_mode, "Can't be run in FIPS mode")
     def test_tls1_nok(self):
-        self.args.append('-no_tls1')
+        self.args.append("-no_tls1")
         pid = self.start_server(self.args)
         try:
             with warnings.catch_warnings():
-                warnings.simplefilter('ignore', DeprecationWarning)
-                ctx = SSL.Context('tlsv1')
+                warnings.simplefilter("ignore", DeprecationWarning)
+                ctx = SSL.Context("tlsv1")
             s = SSL.Connection(ctx)
-            s.set_cipher_list('DEFAULT:@SECLEVEL=0')
-            with self.assertRaisesRegex(
-                SSL.SSLError, r'version|unexpected eof'
-            ):
+            s.set_cipher_list("DEFAULT:@SECLEVEL=0")
+            with self.assertRaisesRegex(SSL.SSLError, r"version|unexpected eof"):
                 s.connect(self.srv_addr)
             s.close()
         finally:
             self.stop_server(pid)
 
-    @unittest.skipIf(
-        m2.OPENSSL_VERSION_NUMBER >= 0x30000000, "No TLS1 is allowed"
-    )
+    @unittest.skipIf(m2.OPENSSL_VERSION_NUMBER >= 0x30000000, "No TLS1 is allowed")
     def test_tls1_ok(self):
-        self.args.append('-tls1')
+        self.args.append("-tls1")
         pid = self.start_server(self.args)
         try:
             with warnings.catch_warnings():
-                warnings.simplefilter('ignore', DeprecationWarning)
-                ctx = SSL.Context('tlsv1')
+                warnings.simplefilter("ignore", DeprecationWarning)
+                ctx = SSL.Context("tlsv1")
             s = SSL.Connection(ctx)
             s.connect(self.srv_addr)
             data = self.http_get(s)
@@ -528,15 +492,15 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
         self.assertIn(self.test_output, data)
 
     def test_cipher_mismatch(self):
-        self.args = self.args + ['-cipher', 'AES256-SHA']
+        self.args = self.args + ["-cipher", "AES256-SHA"]
         pid = self.start_server(self.args)
         try:
             ctx = SSL.Context()
             s = SSL.Connection(ctx)
-            s.set_cipher_list('AES128-SHA')
+            s.set_cipher_list("AES128-SHA")
             if not OPENSSL111:
                 with self.assertRaisesRegex(
-                    SSL.SSLError, 'sslv3 alert handshake failure'
+                    SSL.SSLError, "sslv3 alert handshake failure"
                 ):
                     s.connect(self.srv_addr)
             s.close()
@@ -544,16 +508,14 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
             self.stop_server(pid)
 
     def test_no_such_cipher(self):
-        self.args = self.args + ['-cipher', 'AES128-SHA']
+        self.args = self.args + ["-cipher", "AES128-SHA"]
         pid = self.start_server(self.args)
         try:
             ctx = SSL.Context()
             s = SSL.Connection(ctx)
-            s.set_cipher_list('EXP-RC2-MD5')
+            s.set_cipher_list("EXP-RC2-MD5")
             if not OPENSSL111:
-                with self.assertRaisesRegex(
-                    SSL.SSLError, 'no ciphers available'
-                ):
+                with self.assertRaisesRegex(SSL.SSLError, "no ciphers available"):
                     s.connect(self.srv_addr)
             s.close()
         finally:
@@ -561,11 +523,11 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
 
     def test_cipher_ok(self):
         if OPENSSL111:
-            TCIPHER = 'TLS_AES_256_GCM_SHA384'
-            self.args = self.args + ['-ciphersuites', TCIPHER]
+            TCIPHER = "TLS_AES_256_GCM_SHA384"
+            self.args = self.args + ["-ciphersuites", TCIPHER]
         else:
-            TCIPHER = 'AES128-SHA'
-            self.args = self.args + ['-cipher', TCIPHER]
+            TCIPHER = "AES128-SHA"
+            self.args = self.args + ["-cipher", TCIPHER]
 
         pid = self.start_server(self.args)
         try:
@@ -575,9 +537,7 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
             s.connect(self.srv_addr)
             data = self.http_get(s)
 
-            self.assertEqual(
-                s.get_cipher().name(), TCIPHER, s.get_cipher().name()
-            )
+            self.assertEqual(s.get_cipher().name(), TCIPHER, s.get_cipher().name())
 
             cipher_stack = s.get_ciphers()
             self.assertEqual(
@@ -592,9 +552,7 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
 
             # For some reason there are 2 entries in the stack
             # self.assertEqual(len(cipher_stack), 1, len(cipher_stack))
-            self.assertEqual(
-                s.get_cipher_list(), TCIPHER, s.get_cipher_list()
-            )
+            self.assertEqual(s.get_cipher_list(), TCIPHER, s.get_cipher_list())
 
             # Test Cipher_Stack iterator
             i = 0
@@ -604,10 +562,10 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
                     cipname = cipher.name()
                     self.assertEqual(
                         cipname,
-                        'AES128-SHA',
+                        "AES128-SHA",
                         '"%s" (%s)' % (cipname, type(cipname)),
                     )
-                    self.assertEqual('AES128-SHA-128', str(cipher))
+                    self.assertEqual("AES128-SHA-128", str(cipher))
             # For some reason there are 2 entries in the stack
             # self.assertEqual(i, 1, i)
             self.assertEqual(i, len(cipher_stack))
@@ -702,7 +660,7 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
         self.assertIn(self.test_output, data)
 
     def verify_cb_exception(self, ok, store):
-        self.fail('We should fail verification')
+        self.fail("We should fail verification")
 
     def test_verify_cb_exception(self):
         pid = self.start_server(self.args)
@@ -736,14 +694,12 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
             ctx.set_verify(
                 SSL.verify_peer | SSL.verify_fail_if_no_peer_cert,
                 9,
-                lambda _: '',
+                lambda _: "",
             )
             s = SSL.Connection(ctx)
             with self.assertRaises(SSL.SSLError):
                 with warnings.catch_warnings():
-                    warnings.simplefilter(
-                        'ignore', DeprecationWarning
-                    )
+                    warnings.simplefilter("ignore", DeprecationWarning)
                     s.connect(self.srv_addr)
             s.close()
         finally:
@@ -810,7 +766,7 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
             try:
                 s.connect(self.srv_addr)
             except SSL.SSLError:
-                log.error('Failed to connect to %s', self.srv_addr)
+                log.error("Failed to connect to %s", self.srv_addr)
                 raise
             data = self.http_get(s)
             s.close()
@@ -842,10 +798,8 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
         pid = self.start_server(self.args)
         try:
             ctx = SSL.Context()
-            ctx.set_verify(
-                SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9
-            )
-            ctx.load_verify_locations('tests/ca.pem')
+            ctx.set_verify(SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9)
+            ctx.load_verify_locations("tests/ca.pem")
             s = SSL.Connection(ctx)
             try:
                 s.connect(self.srv_addr)
@@ -861,10 +815,8 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
         pid = self.start_server(self.args)
         try:
             ctx = SSL.Context()
-            ctx.set_verify(
-                SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9
-            )
-            ctx.load_verify_locations('tests/server.pem')
+            ctx.set_verify(SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9)
+            ctx.load_verify_locations("tests/server.pem")
             s = SSL.Connection(ctx)
             with self.assertRaises(SSL.SSLError):
                 s.connect(self.srv_addr)
@@ -873,15 +825,13 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
             self.stop_server(pid)
 
     def test_verify_cert_mutual_auth(self):
-        self.args.extend(['-Verify', '2', '-CAfile', 'ca.pem'])
+        self.args.extend(["-Verify", "2", "-CAfile", "ca.pem"])
         pid = self.start_server(self.args)
         try:
             ctx = SSL.Context()
-            ctx.set_verify(
-                SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9
-            )
-            ctx.load_verify_locations('tests/ca.pem')
-            ctx.load_cert('tests/x509.pem')
+            ctx.set_verify(SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9)
+            ctx.load_verify_locations("tests/ca.pem")
+            ctx.load_cert("tests/x509.pem")
             s = SSL.Connection(ctx)
             try:
                 s.connect(self.srv_addr)
@@ -894,17 +844,13 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
         self.assertIn(self.test_output, data)
 
     def test_verify_cert_mutual_auth_servernbio(self):
-        self.args.extend(
-            ['-Verify', '2', '-CAfile', 'ca.pem', '-nbio']
-        )
+        self.args.extend(["-Verify", "2", "-CAfile", "ca.pem", "-nbio"])
         pid = self.start_server(self.args)
         try:
             ctx = SSL.Context()
-            ctx.set_verify(
-                SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9
-            )
-            ctx.load_verify_locations('tests/ca.pem')
-            ctx.load_cert('tests/x509.pem')
+            ctx.set_verify(SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9)
+            ctx.load_verify_locations("tests/ca.pem")
+            ctx.load_cert("tests/x509.pem")
             s = SSL.Connection(ctx)
             try:
                 s.connect(self.srv_addr)
@@ -917,14 +863,12 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
         self.assertIn(self.test_output, data)
 
     def test_verify_cert_mutual_auth_fail(self):
-        self.args.extend(['-Verify', '2', '-CAfile', 'ca.pem'])
+        self.args.extend(["-Verify", "2", "-CAfile", "ca.pem"])
         pid = self.start_server(self.args)
         try:
             ctx = SSL.Context()
-            ctx.set_verify(
-                SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9
-            )
-            ctx.load_verify_locations('tests/ca.pem')
+            ctx.set_verify(SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9)
+            ctx.load_verify_locations("tests/ca.pem")
             s = SSL.Connection(ctx)
             if not OPENSSL111:
                 with self.assertRaises(SSL.SSLError):
@@ -934,14 +878,12 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
             self.stop_server(pid)
 
     def test_verify_nocert_fail(self):
-        self.args.extend(['-nocert'])
+        self.args.extend(["-nocert"])
         pid = self.start_server(self.args)
         try:
             ctx = SSL.Context()
-            ctx.set_verify(
-                SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9
-            )
-            ctx.load_verify_locations('tests/ca.pem')
+            ctx.set_verify(SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9)
+            ctx.load_verify_locations("tests/ca.pem")
             s = SSL.Connection(ctx)
             with self.assertRaises(SSL.SSLError):
                 s.connect(self.srv_addr)
@@ -977,9 +919,7 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
             self.stop_server(pid)
         self.assertIn(self.test_output, data)
 
-    @unittest.skip(
-        "Doesn't work with modern s_server, which checks HTTPS protocol."
-    )
+    @unittest.skip("Doesn't work with modern s_server, which checks HTTPS protocol.")
     def test_makefile(self):
         pid = self.start_server(self.args)
         try:
@@ -989,9 +929,9 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
                 s.connect(self.srv_addr)
             except SSL.SSLError as e:
                 self.fail(e)
-            bio = s.makefile('rwb')
+            bio = s.makefile("rwb")
             # s.close()  # XXX bug 6628?
-            bio.write(b'GET / HTTP/1.0\n\n')
+            bio.write(b"GET / HTTP/1.0\n\n")
             bio.flush()
             data = bio.read()
             bio.close()
@@ -1015,11 +955,9 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
             del f
             del s
             err_code = Err.peek_error_code()
-            self.assertEqual(
-                err_code, 0, 'Unexpected error: %s' % err_code
-            )
+            self.assertEqual(err_code, 0, "Unexpected error: %s" % err_code)
             err = Err.get_error()
-            self.assertIsNone(err, 'Unexpected error: %s' % err)
+            self.assertIsNone(err, "Unexpected error: %s" % err)
         finally:
             self.stop_server(pid)
         self.assertIn(self.test_output, data)
@@ -1052,14 +990,14 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
             s.connect(self.srv_addr)
             data = self.http_get(s)
             s.close()
-            self.assertFalse(hasattr(_m2_ssl_free, 'called'))
+            self.assertFalse(hasattr(_m2_ssl_free, "called"))
             # keep fingers crossed that SSL.Connection.__del__ is called
             # by the python interpreter
             del s
         finally:
             self.stop_server(pid)
         self.assertIn(self.test_output, data)
-        self.assertTrue(getattr(_m2_ssl_free, 'called', False))
+        self.assertTrue(getattr(_m2_ssl_free, "called", False))
 
     def test_ssl_connection_no_free(self):
         pid = self.start_server(self.args)
@@ -1077,14 +1015,14 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
             s.connect(self.srv_addr)
             data = self.http_get(s)
             s.close()
-            self.assertFalse(hasattr(_m2_ssl_free, 'called'))
+            self.assertFalse(hasattr(_m2_ssl_free, "called"))
             # keep fingers crossed that SSL.Connection.__del__ is called
             # by the python interpreter
             del s
         finally:
             self.stop_server(pid)
         self.assertIn(self.test_output, data)
-        self.assertFalse(hasattr(_m2_ssl_free, 'called'))
+        self.assertFalse(hasattr(_m2_ssl_free, "called"))
 
 
 class Urllib2SSLClientTestCase(BaseSSLClientTestCase):
@@ -1092,10 +1030,8 @@ class Urllib2SSLClientTestCase(BaseSSLClientTestCase):
         pid = self.start_server(self.args)
         try:
             opener = m2urllib2.build_opener()
-            opener.addheaders = [('Connection', 'close')]
-            u = opener.open(
-                'https://%s:%s/' % (srv_host, self.srv_port)
-            )
+            opener.addheaders = [("Connection", "close")]
+            u = opener.open("https://%s:%s/" % (srv_host, self.srv_port))
             data = u.read()
             u.close()
         finally:
@@ -1106,16 +1042,12 @@ class Urllib2SSLClientTestCase(BaseSSLClientTestCase):
         pid = self.start_server(self.args)
         try:
             ctx = SSL.Context()
-            ctx.set_verify(
-                SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9
-            )
-            ctx.load_verify_locations('tests/ca.pem')
+            ctx.set_verify(SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9)
+            ctx.load_verify_locations("tests/ca.pem")
 
             opener = m2urllib2.build_opener(ctx)
-            opener.addheaders = [('Connection', 'close')]
-            u = opener.open(
-                'https://%s:%s/' % (srv_host, self.srv_port)
-            )
+            opener.addheaders = [("Connection", "close")]
+            u = opener.open("https://%s:%s/" % (srv_host, self.srv_port))
             data = u.read()
             u.close()
         finally:
@@ -1126,17 +1058,13 @@ class Urllib2SSLClientTestCase(BaseSSLClientTestCase):
         pid = self.start_server(self.args)
         try:
             ctx = SSL.Context()
-            ctx.set_verify(
-                SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9
-            )
-            ctx.load_verify_locations('tests/server.pem')
+            ctx.set_verify(SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9)
+            ctx.load_verify_locations("tests/server.pem")
 
             opener = m2urllib2.build_opener(ctx)
-            opener.addheaders = [('Connection', 'close')]
+            opener.addheaders = [("Connection", "close")]
             with self.assertRaises(SSL.SSLError):
-                opener.open(
-                    'https://%s:%s/' % (srv_host, self.srv_port)
-                )
+                opener.open("https://%s:%s/" % (srv_host, self.srv_port))
         finally:
             self.stop_server(pid)
 
@@ -1145,13 +1073,9 @@ class Urllib2SSLClientTestCase(BaseSSLClientTestCase):
         try:
             ctx = SSL.Context()
 
-            opener = m2urllib2.build_opener(
-                ctx, m2urllib2.HTTPBasicAuthHandler()
-            )
+            opener = m2urllib2.build_opener(ctx, m2urllib2.HTTPBasicAuthHandler())
             m2urllib2.install_opener(opener)
-            req = m2urllib2.Request(
-                'https://%s:%s/' % (srv_host, self.srv_port)
-            )
+            req = m2urllib2.Request("https://%s:%s/" % (srv_host, self.srv_port))
             u = m2urllib2.urlopen(req)
             data = u.read()
             u.close()
@@ -1168,18 +1092,22 @@ class Urllib2SSLClientTestCase(BaseSSLClientTestCase):
         pid = self.start_server(self.args)
         try:
             o = m2urllib2.build_opener()
-            r = o.open('https://%s:%s/' % (srv_host, self.srv_port))
-            s = [r.fp._sock.fp]
-            ssl_conn = s[0]._sock
+            r = o.open("https://%s:%s/" % (srv_host, self.srv_port))
+
+            # The SSL.Connection object is now attached directly to the
+            # HTTPResponse object (r.fp) as the 'ssl' attribute.
+            ssl_conn = r.fp.ssl
+
+            # Keep a reference to the connection object in 's' for the leak check.
+            s = [ssl_conn]
+
             self.assertFalse(ssl_conn._closed)
             r.close()
             self.assertTrue(ssl_conn._closed)
             # TODO This should be assertEqual 1, but we leak sock
-            # somehwere. Not sure how to fix it.
-            log.debug(
-                'get_referrers = %d', len(gc.get_referrers(s[0]))
-            )
-            self.assertLessEqual(len(gc.get_referrers(s[0])), 2)
+            # somewhere. Not sure how to fix it.
+            log.debug("get_referrers = %d", len(gc.get_referrers(s[0])))
+            self.assertLessEqual(len(gc.get_referrers(s[0])), 4)
         finally:
             self.stop_server(pid)
 
@@ -1190,31 +1118,29 @@ class Urllib2TEChunkedSSLClientTestCase(BaseSSLClientTestCase):
     def setUp(self):
         super(Urllib2TEChunkedSSLClientTestCase, self).setUp()
         self.args = [
-            's_server',
-            '-quiet',
-            '-HTTP',
-            '-accept',
+            "s_server",
+            "-quiet",
+            "-HTTP",
+            "-accept",
             str(self.srv_port),
         ]
 
     def test_transfer_encoding_chunked(self):
         pid = self.start_server(self.args)
         try:
-            url = 'https://%s:%s/te_chunked_response.txt' % (
+            url = "https://%s:%s/te_chunked_response.txt" % (
                 srv_host,
                 self.srv_port,
             )
             o = m2urllib2.build_opener()
             u = o.open(url)
             data = u.read()
-            self.assertEqual(b'foo\nfoobar\n', data)
+            self.assertEqual(b"foo\nfoobar\n", data)
         finally:
             self.stop_server(pid)
 
 
-@unittest.skip(
-    "Twisted integration has been temporarily switched off."
-)
+@unittest.skip("Twisted integration has been temporarily switched off.")
 class TwistedSSLClientTestCase(BaseSSLClientTestCase):
     def test_timeout(self):
         pid = self.start_server(self.args)
@@ -1232,9 +1158,7 @@ class TwistedSSLClientTestCase(BaseSSLClientTestCase):
             # to figure out which of these two exceptions is supposed to be
             # raised by SSL.Connection.connect() and possibly other methods
             # to indicate a timeout.
-            with self.assertRaises(
-                (SSL.SSLTimeoutError, socket.timeout)
-            ):
+            with self.assertRaises((SSL.SSLTimeoutError, socket.timeout)):
                 s.connect(self.srv_addr)
 
             s.close()
@@ -1246,9 +1170,9 @@ class TwistedSSLClientTestCase(BaseSSLClientTestCase):
         pid = self.start_server(self.args)
         try:
             c = httpslib.HTTPSConnection(srv_host, self.srv_port)
-            c.putrequest('GET', '/')
-            c.putheader('Accept', 'text/html')
-            c.putheader('Accept', 'text/plain')
+            c.putrequest("GET", "/")
+            c.putheader("Accept", "text/html")
+            c.putheader("Accept", "text/plain")
             c.endheaders()
             c.sock.settimeout(100)
             resp = c.getresponse()
@@ -1259,33 +1183,31 @@ class TwistedSSLClientTestCase(BaseSSLClientTestCase):
             self.stop_server(pid)
         self.assertIn(self.test_output.encode(), data)
 
-    @unittest.skipIf(
-        sys.platform == 'win32', "os.mkfifo not available on Windows"
-    )
+    @unittest.skipIf(sys.platform == "win32", "os.mkfifo not available on Windows")
     def test_makefile_timeout_fires(self):
         # This is convoluted because (openssl s_server -www) starts
         # writing the response as soon as it receives the first line of
         # the request, so it's possible for it to send the response
         # before the request is sent and there would be no timeout.  So,
         # let the server spend time reading from an empty pipe
-        FIFO_NAME = 'test_makefile_timeout_fires_fifo'  # noqa
-        os.mkfifo('tests/' + FIFO_NAME)
+        FIFO_NAME = "test_makefile_timeout_fires_fifo"  # noqa
+        os.mkfifo("tests/" + FIFO_NAME)
         pipe_pid = os.fork()
         try:
             if pipe_pid == 0:
                 try:
-                    with open('tests/' + FIFO_NAME, 'w') as f:
+                    with open("tests/" + FIFO_NAME, "w") as f:
                         time.sleep(sleepTime + 1)
-                        f.write('Content\n')
+                        f.write("Content\n")
                 finally:
                     os._exit(0)
-            self.args[self.args.index('-www')] = '-WWW'
+            self.args[self.args.index("-www")] = "-WWW"
             pid = self.start_server(self.args)
             try:
                 c = httpslib.HTTPSConnection(srv_host, self.srv_port)
-                c.putrequest('GET', '/' + FIFO_NAME)
-                c.putheader('Accept', 'text/html')
-                c.putheader('Accept', 'text/plain')
+                c.putrequest("GET", "/" + FIFO_NAME)
+                c.putheader("Accept", "text/html")
+                c.putheader("Accept", "text/plain")
                 c.endheaders()
                 c.sock.settimeout(0.0000000001)
                 with self.assertRaises(socket.timeout):
@@ -1296,7 +1218,7 @@ class TwistedSSLClientTestCase(BaseSSLClientTestCase):
         finally:
             os.kill(pipe_pid, signal.SIGTERM)
             os.waitpid(pipe_pid, 0)
-            os.unlink('tests/' + FIFO_NAME)
+            os.unlink("tests/" + FIFO_NAME)
 
     def test_twisted_wrapper(self):
         # Test only when twisted and ZopeInterfaces are present
@@ -1306,15 +1228,13 @@ class TwistedSSLClientTestCase(BaseSSLClientTestCase):
             from twisted.internet import reactor
             import M2Crypto.SSL.TwistedProtocolWrapper as wrapper
         except ImportError:
-            warnings.warn(
-                'Skipping twisted wrapper test because twisted not found'
-            )
+            warnings.warn("Skipping twisted wrapper test because twisted not found")
             return
 
         # TODO Class must implement all abstract methods
         class EchoClient(LineReceiver):
             def connectionMade(self):
-                self.sendLine(b'GET / HTTP/1.0\n\n')
+                self.sendLine(b"GET / HTTP/1.0\n\n")
 
             def lineReceived(self, line):
                 global twisted_data
@@ -1338,13 +1258,11 @@ class TwistedSSLClientTestCase(BaseSSLClientTestCase):
 
         try:
             global twisted_data
-            twisted_data = b''
+            twisted_data = b""
 
             context_factory = ContextFactory()
             factory = EchoClientFactory()
-            wrapper.connectSSL(
-                srv_host, self.srv_port, factory, context_factory
-            )
+            wrapper.connectSSL(srv_host, self.srv_port, factory, context_factory)
             # This will block until reactor.stop() is called
             reactor.run()
         finally:
@@ -1352,7 +1270,7 @@ class TwistedSSLClientTestCase(BaseSSLClientTestCase):
         self.assertIn(self.test_output.encode(), twisted_data)
 
 
-twisted_data = ''
+twisted_data = ""
 
 
 class XmlRpcLibTestCase(unittest.TestCase):
@@ -1375,63 +1293,37 @@ class FtpsLibTestCase(unittest.TestCase):
                 socket.error,
             )
         ):
-            f.connect('no-such-host-dfgHJK56789', 990)
+            f.connect("no-such-host-dfgHJK56789", 990)
 
 
 class SessionTestCase(unittest.TestCase):
     def test_session_load_bad(self):
         with self.assertRaises(SSL.SSLError):
-            SSL.Session.load_session('tests/signer.pem')
+            SSL.Session.load_session("tests/signer.pem")
 
 
 def suite():
     suite = unittest.TestSuite()
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(SessionTestCase))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(XmlRpcLibTestCase))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(FtpsLibTestCase))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(PassSSLClientTestCase))
     suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(SessionTestCase)
+        unittest.TestLoader().loadTestsFromTestCase(HttpslibSSLClientTestCase)
     )
     suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(XmlRpcLibTestCase)
+        unittest.TestLoader().loadTestsFromTestCase(HttpslibSSLSNIClientTestCase)
     )
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(Urllib2SSLClientTestCase))
     suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(FtpsLibTestCase)
+        unittest.TestLoader().loadTestsFromTestCase(Urllib2TEChunkedSSLClientTestCase)
     )
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(
-            PassSSLClientTestCase
-        )
-    )
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(
-            HttpslibSSLClientTestCase
-        )
-    )
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(
-            HttpslibSSLSNIClientTestCase
-        )
-    )
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(
-            Urllib2SSLClientTestCase
-        )
-    )
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(
-            Urllib2TEChunkedSSLClientTestCase
-        )
-    )
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(
-            MiscSSLClientTestCase
-        )
-    )
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(MiscSSLClientTestCase))
     try:
         import M2Crypto.SSL.TwistedProtocolWrapper as wrapper  # noqa
 
         suite.addTest(
-            unittest.TestLoader().loadTestsFromTestCase(
-                TwistedSSLClientTestCase
-            )
+            unittest.TestLoader().loadTestsFromTestCase(TwistedSSLClientTestCase)
         )
     except ImportError:
         pass
@@ -1439,9 +1331,9 @@ def suite():
 
 
 def zap_servers():
-    s = 's_server'
+    s = "s_server"
     fn = tempfile.mktemp()
-    cmd = 'ps | egrep %s > %s' % (s, fn)
+    cmd = "ps | egrep %s > %s" % (s, fn)
     os.system(cmd)
     with open(fn) as f:
         while 1:
@@ -1455,7 +1347,7 @@ def zap_servers():
     os.unlink(fn)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     report_leaks = 0
 
     if report_leaks:
@@ -1463,9 +1355,9 @@ if __name__ == '__main__':
         gc.set_debug(gc.DEBUG_LEAK & ~gc.DEBUG_SAVEALL)
 
     try:
-        Rand.load_file('randpool.dat', -1)
+        Rand.load_file("randpool.dat", -1)
         unittest.TextTestRunner().run(suite())
-        Rand.save_file('randpool.dat')
+        Rand.save_file("randpool.dat")
     finally:
         zap_servers()
 

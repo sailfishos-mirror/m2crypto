@@ -1,9 +1,8 @@
-
 """M2Crypto wrapper for OpenSSL DH API.
 
 Copyright (c) 1999-2003 Ng Pheng Siong. All rights reserved."""
 
-from M2Crypto import BIO, m2
+from M2Crypto import BIO, m2, types as C
 from M2Crypto.util import genparam_callback
 from typing import Callable, Optional, Union  # noqa
 
@@ -18,15 +17,17 @@ m2.dh_init(DHError)
 class DH(object):
     """Object interface to the Diffie-Hellman key exchange protocol."""
 
-    m2_dh_free = m2.dh_free
-
-    def __init__(self, dh: bytes, _pyfree: int = 0) -> None:
+    def __init__(self, dh: C.DH, _pyfree: int = 0) -> None:
         assert m2.dh_type_check(dh)
         self.dh = dh
         self._pyfree = _pyfree
 
+    @staticmethod
+    def m2_dh_free(dh: C.DH) -> None:
+        m2.dh_free(dh)
+
     def __del__(self) -> None:
-        if getattr(self, '_pyfree', 0):
+        if getattr(self, "_pyfree", 0):
             self.m2_dh_free(self.dh)
 
     def __len__(self) -> int:
@@ -34,18 +35,18 @@ class DH(object):
         return int(m2.dh_size(self.dh))
 
     def __getattr__(self, name: str) -> bytes:
-        if name in ('p', 'g', 'pub', 'priv'):
-            method = getattr(m2, 'dh_get_%s' % (name,))
+        if name in ("p", "g", "pub", "priv"):
+            method = getattr(m2, "dh_get_%s" % (name,))
             assert m2.dh_type_check(self.dh), "'dh' type error"
             return method(self.dh)
         else:
             raise AttributeError
 
-    def __setattr__(self, name: str, value: bytes) -> bytes:
-        if name in ('p', 'g'):
-            raise DHError('set (p, g) via set_params()')
-        elif name in ('pub', 'priv'):
-            raise DHError('generate (pub, priv) via gen_key()')
+    def __setattr__(self, name: str, value: bytes) -> None:
+        if name in ("p", "g"):
+            raise DHError("set (p, g) via set_params()")
+        elif name in ("pub", "priv"):
+            raise DHError("generate (pub, priv) via gen_key()")
         else:
             self.__dict__[name] = value
 
@@ -72,7 +73,7 @@ class DH(object):
 def gen_params(
     plen: int,
     g: int,
-    callback: Optional[Callable] = genparam_callback,
+    callback: Callable = genparam_callback,
 ) -> DH:
     dh_parms = m2.dh_generate_parameters(plen, g, callback)
     dh_obj = DH(dh_parms, 1)
@@ -85,7 +86,10 @@ def load_params(file: Union[str, bytes]) -> DH:
 
 
 def load_params_bio(bio: BIO.BIO) -> DH:
-    return DH(m2.dh_read_parameters(bio._ptr()), 1)
+    dh_ptr = m2.dh_read_parameters(bio._ptr())
+    if dh_ptr is None:
+        raise DHError("Failed to load DH parameters.")
+    return DH(dh_ptr, 1)
 
 
 def set_params(p: bytes, g: bytes) -> DH:

@@ -1,4 +1,3 @@
-
 """
 M2Crypto wrapper for OpenSSL ECDH/ECDSA API.
 
@@ -9,7 +8,7 @@ Copyright (c) 1999-2003 Ng Pheng Siong. All rights reserved.
 Portions copyright (c) 2005-2006 Vrije Universiteit Amsterdam.
 All rights reserved."""
 
-from typing import Callable, Dict, Optional, Tuple, Union  # noqa
+from typing import Callable, Dict, List, NoReturn, Optional, Tuple, Union  # noqa
 from M2Crypto import BIO, Err, EVP, m2, types as C, util
 
 EC_Key = bytes
@@ -132,22 +131,24 @@ class EC(object):
     Object interface to a EC key pair.
     """
 
-    m2_ec_key_free = m2.ec_key_free
-
-    def __init__(self, ec: C.EC, _pyfree: int = 0) -> None:
+    def __init__(self, ec: C.EC_KEY, _pyfree: int = 0) -> None:
         assert m2.ec_key_type_check(ec), "'ec' type error"
         self.ec = ec
         self._pyfree = _pyfree
 
+    @staticmethod
+    def m2_ec_key_free(ec: C.EC_KEY) -> None:
+        m2.ec_key_free(ec)
+
     def __del__(self) -> None:
-        if getattr(self, '_pyfree', 0):
+        if getattr(self, "_pyfree", 0):
             self.m2_ec_key_free(self.ec)
 
     def __len__(self) -> int:
         assert m2.ec_key_type_check(self.ec), "'ec' type error"
         return m2.ec_key_keylen(self.ec)
 
-    def gen_key(self) -> int:
+    def gen_key(self) -> None:
         """
         Generates the key pair from its parameters. Use::
 
@@ -194,13 +195,13 @@ class EC(object):
         shared key in binary as a buffer object. No Key Derivation Function is
         applied.
         """
-        assert self.check_key(), 'key is not initialised'
+        assert self.check_key(), "key is not initialised"
         return m2.ecdh_compute_key(self.ec, pub_key.ec)
 
     def save_key_bio(
         self,
         bio: BIO.BIO,
-        cipher: Optional[str] = 'aes_128_cbc',
+        cipher: Optional[str] = "aes_128_cbc",
         callback: Callable = util.passphrase_callback,
     ) -> int:
         """
@@ -218,21 +219,17 @@ class EC(object):
                          util.passphrase_callback.
         """
         if cipher is None:
-            return m2.ec_key_write_bio_no_cipher(
-                self.ec, bio._ptr(), callback
-            )
+            return m2.ec_key_write_bio_no_cipher(self.ec, bio._ptr(), callback)
         else:
             ciph = getattr(m2, cipher, None)
             if ciph is None:
-                raise ValueError('not such cipher %s' % cipher)
-            return m2.ec_key_write_bio(
-                self.ec, bio._ptr(), ciph(), callback
-            )
+                raise ValueError("not such cipher %s" % cipher)
+            return m2.ec_key_write_bio(self.ec, bio._ptr(), ciph(), callback)
 
     def save_key(
         self,
         file: Union[str, bytes],
-        cipher: Optional[str] = 'aes_128_cbc',
+        cipher: Optional[str] = "aes_128_cbc",
         callback: Callable = util.passphrase_callback,
     ) -> int:
         """
@@ -249,7 +246,7 @@ class EC(object):
                          the key.  The default is
                          util.passphrase_callback.
         """
-        with BIO.openfile(file, 'wb') as bio:
+        with BIO.openfile(file, "wb") as bio:
             return self.save_key_bio(bio, cipher, callback)
 
     def save_pub_key_bio(self, bio: BIO.BIO) -> int:
@@ -266,12 +263,12 @@ class EC(object):
 
         :param file: Name of filename to save key to.
         """
-        with BIO.openfile(file, 'wb') as bio:
+        with BIO.openfile(file, "wb") as bio:
             return m2.ec_key_write_pubkey(self.ec, bio._ptr())
 
     def as_pem(
         self,
-        cipher: str = 'aes_128_cbc',
+        cipher: str = "aes_128_cbc",
         callback: Callable = util.passphrase_callback,
     ) -> bytes:
         """
@@ -297,7 +294,7 @@ class EC_pub(EC):
     ((don't like this implementation inheritance))
     """
 
-    def __init__(self, ec: C.EC, _pyfree: int = 0) -> None:
+    def __init__(self, ec: C.EC_KEY, _pyfree: int = 0) -> None:
         EC.__init__(self, ec, _pyfree)
         self.der: Optional[bytes] = None
 
@@ -305,7 +302,7 @@ class EC_pub(EC):
         """
         Returns the public key in DER format as a buffer object.
         """
-        assert self.check_key(), 'key is not initialised'
+        assert self.check_key(), "key is not initialised"
         if self.der is None:
             self.der = m2.ec_key_get_public_der(self.ec)
         return self.der
@@ -314,7 +311,7 @@ class EC_pub(EC):
         """
         Returns the public key as a byte string.
         """
-        assert self.check_key(), 'key is not initialised'
+        assert self.check_key(), "key is not initialised"
         return m2.ec_key_get_public_key(self.ec)
 
     def as_pem(self):
@@ -327,9 +324,8 @@ class EC_pub(EC):
             self.save_key_bio(bio)
             return bio.read()
 
-    save_key = EC.save_pub_key
-
-    save_key_bio = EC.save_pub_key_bio
+    save_key: Callable = EC.save_pub_key  # type: ignore[assignment]
+    save_key_bio: Callable = EC.save_pub_key_bio  # type: ignore[assignment]
 
 
 def gen_params(curve: int) -> EC:
@@ -339,10 +335,9 @@ def gen_params(curve: int) -> EC:
 
     :param curve: This is the OpenSSL nid of the curve to use.
     """
-    assert curve in [x['NID'] for x in m2.ec_get_builtin_curves()], (
-        'Elliptic curve %s is not available on this system.'
-        % m2.obj_nid2sn(curve)
-    )
+    assert curve in [
+        x["NID"] for x in m2.ec_get_builtin_curves()
+    ], "Elliptic curve %s is not available on this system." % m2.obj_nid2sn(curve)
     return EC(m2.ec_key_new_by_curve_name(curve), 1)
 
 
@@ -363,9 +358,7 @@ def load_key(
         return load_key_bio(bio, callback)
 
 
-def load_key_string(
-    string: str, callback: Callable = util.passphrase_callback
-) -> EC:
+def load_key_string(string: str, callback: Callable = util.passphrase_callback) -> EC:
     """
     Load an EC key pair from a string.
 
@@ -377,13 +370,11 @@ def load_key_string(
 
     :return: M2Crypto.EC.EC object.
     """
-    with BIO.MemoryBuffer(string) as bio:
+    with BIO.MemoryBuffer(string.encode()) as bio:
         return load_key_bio(bio, callback)
 
 
-def load_key_bio(
-    bio: BIO.BIO, callback: Callable = util.passphrase_callback
-) -> EC:
+def load_key_bio(bio: BIO.BIO, callback: Callable = util.passphrase_callback) -> EC:
     """
     Factory function that instantiates a EC object.
 
@@ -397,7 +388,7 @@ def load_key_bio(
     if key is None:
         raise IOError(
             "Cannot read EC key pair from PEM file {}.".format(
-                bio.fname
+                getattr(bio, "fname", "in-memory buffer")
             )
         )
     return EC(key, 1)
@@ -432,7 +423,7 @@ def load_key_string_pubkey(
     """
     from M2Crypto.EVP import load_key_bio_pubkey
 
-    with BIO.MemoryBuffer(string) as bio:
+    with BIO.MemoryBuffer(string.encode()) as bio:
         return load_key_bio_pubkey(bio, callback)
 
 
@@ -451,7 +442,7 @@ def load_pub_key_bio(bio: BIO.BIO) -> EC_pub:
     return EC_pub(ec, 1)
 
 
-def ec_error() -> EC_pub:
+def ec_error() -> NoReturn:
     raise ECError(Err.get_error_message())
 
 
@@ -462,12 +453,12 @@ def pub_key_from_der(der: bytes) -> EC_pub:
     return EC_pub(m2.ec_key_from_pubkey_der(der), 1)
 
 
-def pub_key_from_params(curve: bytes, bytes: bytes) -> EC_pub:
+def pub_key_from_params(curve: int, bytes: bytes) -> EC_pub:
     """
     Create EC_pub from curve name and octet string.
     """
     return EC_pub(m2.ec_key_from_pubkey_params(curve, bytes), 1)
 
 
-def get_builtin_curves() -> Tuple[Dict[str, Union[int, str]]]:
+def get_builtin_curves() -> List[Dict[str, Union[int, str]]]:
     return m2.ec_get_builtin_curves()

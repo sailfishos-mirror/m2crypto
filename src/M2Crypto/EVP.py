@@ -393,8 +393,10 @@ class PKey(object):
         instance is holding.
         """
         ec_ptr = m2.pkey_get1_ec(self.pkey)
+        if ec_ptr is None:
+            raise ValueError("Not an EC key")
 
-        ec = EC.EC_pub(ec_ptr)
+        ec = EC.EC_pub(ec_ptr, 1)
         return ec
 
     def save_key(

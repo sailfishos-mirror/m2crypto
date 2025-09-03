@@ -1,4 +1,3 @@
-
 import platform
 import struct
 import sys
@@ -11,7 +10,7 @@ def suite():
 
     def my_import(name):
         # See http://docs.python.org/lib/built-in-funcs.html#l2h-6
-        components = name.split('.')
+        components = name.split(".")
         try:
             # python setup.py test
             mod = __import__(name)
@@ -23,61 +22,52 @@ def suite():
         return mod
 
     modules_to_test = [
-        'tests.test_aes',
-        'tests.test_asn1',
-        'tests.test_bio',
-        'tests.test_bio_membuf',
-        'tests.test_bio_file',
-        'tests.test_bio_iobuf',
-        'tests.test_bio_ssl',
-        'tests.test_bn',
-        'tests.test_authcookie',
-        'tests.test_dh',
-        'tests.test_dsa',
-        'tests.test_err',
-        'tests.test_evp',
-        'tests.test_init',
-        'tests.test_obj',
-        'tests.test_rand',
-        'tests.test_rc4',
-        'tests.test_rsa',
-        'tests.test_smime',
-        'tests.test_ssl_offline',
-        'tests.test_threading',
-        'tests.test_x509',
-        'tests.test_util',
-        'tests.test_timeout',
+        "tests.test_aes",
+        "tests.test_asn1",
+        "tests.test_bio",
+        "tests.test_bio_membuf",
+        "tests.test_bio_file",
+        "tests.test_bio_iobuf",
+        "tests.test_bio_ssl",
+        "tests.test_bn",
+        "tests.test_authcookie",
+        "tests.test_dh",
+        "tests.test_dsa",
+        "tests.test_err",
+        "tests.test_evp",
+        "tests.test_init",
+        "tests.test_obj",
+        "tests.test_rand",
+        "tests.test_rc4",
+        "tests.test_rsa",
+        "tests.test_smime",
+        "tests.test_ssl_offline",
+        "tests.test_threading",
+        "tests.test_x509",
+        "tests.test_util",
+        "tests.test_timeout",
     ]
-    if os.name == 'posix':
-        modules_to_test.append('tests.test_ssl')
-    elif os.name == 'nt':
-        modules_to_test.append('tests.test_ssl_win')
-    if (
-        m2.OPENSSL_VERSION_NUMBER >= 0x90800F
-        and m2.OPENSSL_NO_EC == 0
-    ):
-        modules_to_test.append('tests.test_ecdh')
-        modules_to_test.append('tests.test_ecdsa')
-        modules_to_test.append('tests.test_ec_curves')
+    if os.name == "posix":
+        modules_to_test.append("tests.test_ssl")
+    elif os.name == "nt":
+        modules_to_test.append("tests.test_ssl_win")
+    if m2.OPENSSL_VERSION_NUMBER >= 0x90800F and m2.OPENSSL_NO_EC == 0:
+        modules_to_test.append("tests.test_ecdh")
+        modules_to_test.append("tests.test_ecdsa")
+        modules_to_test.append("tests.test_ec_curves")
     alltests = unittest.TestSuite()
     for module in map(my_import, modules_to_test):
         alltests.addTest(module.suite())
 
     print(
-        'Version of OpenSSL is {0:x} ({1:s})'.format(
+        "Version of OpenSSL is {0:x} ({1:s})".format(
             m2.OPENSSL_VERSION_NUMBER, m2.OPENSSL_VERSION_TEXT
         )
     )
     print(
-        '(struct.calcsize("P") * 8) == 32 : {}'.format(
-            (struct.calcsize("P") * 8) == 32
-        )
+        '(struct.calcsize("P") * 8) == 32 : {}'.format((struct.calcsize("P") * 8) == 32)
     )
-    print(
-        "not(sys.maxsize > 2**32) : {}".format(
-            not (sys.maxsize > 2**32)
-        )
-    )
+    print("not(sys.maxsize > 2**32) : {}".format(not (sys.maxsize > 2**32)))
     print("libc_ver = {}".format(platform.libc_ver()))
 
     return alltests
@@ -86,23 +76,21 @@ def suite():
 def dump_garbage():
     import gc
 
-    print('\nGarbage:')
+    print("\nGarbage:")
     gc.collect()
     if len(gc.garbage):
 
-        print('\nLeaked objects:')
+        print("\nLeaked objects:")
         for x in gc.garbage:
             s = str(x)
             if len(s) > 77:
-                s = s[:73] + '...'
-            print(type(x), '\n  ', s)
+                s = s[:73] + "..."
+            print(type(x), "\n  ", s)
 
-        print('There were %d leaks.' % len(gc.garbage))
+        print("There were %d leaks." % len(gc.garbage))
     else:
-        print('Python garbage collector did not detect any leaks.')
-        print(
-            'However, it is still possible there are leaks in the C code.'
-        )
+        print("Python garbage collector did not detect any leaks.")
+        print("However, it is still possible there are leaks in the C code.")
 
 
 def runall(report_leaks=0):
@@ -119,11 +107,11 @@ def runall(report_leaks=0):
     from M2Crypto import Rand
 
     try:
-        Rand.load_file('tests/randpool.dat', -1)
+        Rand.load_file("tests/randpool.dat", -1)
         unittest.TextTestRunner(verbosity=2).run(suite())
-        Rand.save_file('tests/randpool.dat')
+        Rand.save_file("tests/randpool.dat")
     finally:
-        if os.name == 'posix':
+        if os.name == "posix":
             from .test_ssl import zap_servers
 
             zap_servers()

@@ -9,6 +9,6 @@ except ImportError:
 
 
 logging.basicConfig(
-    format='%(levelname)s:%(funcName)s:%(message)s',
+    format="%(levelname)s:%(funcName)s:%(message)s",
     level=logging.DEBUG,
 )

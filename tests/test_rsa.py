@@ -12,26 +12,24 @@ from M2Crypto import BIO, RSA, Rand, X509, m2
 from tests import unittest
 from tests.fips import fips_mode
 
-log = logging.getLogger('test_RSA')
+log = logging.getLogger("test_RSA")
 
 
 class RSATestCase(unittest.TestCase):
 
-    errkey = 'tests/dsa.priv.pem'
-    privkey = 'tests/rsa.priv.pem'
-    privkey2 = 'tests/rsa.priv2.pem'
-    pubkey = 'tests/rsa.pub.pem'
+    errkey = "tests/dsa.priv.pem"
+    privkey = "tests/rsa.priv.pem"
+    privkey2 = "tests/rsa.priv2.pem"
+    pubkey = "tests/rsa.pub.pem"
 
-    data = hashlib.sha256(
-        b'The magic words are squeamish ossifrage.'
-    ).digest()
+    data = hashlib.sha256(b"The magic words are squeamish ossifrage.").digest()
 
-    e_padding_ok = ('pkcs1_padding', 'pkcs1_oaep_padding')
+    e_padding_ok = ("pkcs1_padding", "pkcs1_oaep_padding")
 
-    s_padding_ok = ('pkcs1_padding',)
-    s_padding_nok = ('no_padding', 'pkcs1_oaep_padding')
-    if hasattr(m2, 'sslv23_padding'):
-        s_padding_nok += ('sslv23_padding',)
+    s_padding_ok = ("pkcs1_padding",)
+    s_padding_nok = ("no_padding", "pkcs1_oaep_padding")
+    if hasattr(m2, "sslv23_padding"):
+        s_padding_nok += ("sslv23_padding",)
 
     def gen_callback(self, *args):
         pass
@@ -41,11 +39,11 @@ class RSATestCase(unittest.TestCase):
 
     def pp_callback(self, *args):
         # The passphrase for rsa.priv2.pem is 'qwerty'.
-        return b'qwerty'
+        return b"qwerty"
 
     def pp2_callback(self, *args):
         # Misbehaving passphrase callback.
-        return b'blabla'
+        return b"blabla"
 
     def test_rsa_exceptions(self):
         with self.assertRaises(RSA.RSAError):
@@ -58,9 +56,7 @@ class RSATestCase(unittest.TestCase):
     def test_loadkey_pp(self):
         rsa = RSA.load_key(self.privkey2, self.pp_callback)
         self.assertEqual(len(rsa), 2048)
-        self.assertEqual(
-            rsa.e, b'\000\000\000\003\001\000\001'
-        )  # aka 65537 aka 0xf4
+        self.assertEqual(rsa.e, b"\000\000\000\003\001\000\001")  # aka 65537 aka 0xf4
         self.assertEqual(rsa.check_key(), 1)
 
     def test_loadkey_pp_bad_cb(self):
@@ -72,29 +68,27 @@ class RSATestCase(unittest.TestCase):
         self.maxDiff = None
         rsa = RSA.load_key(self.privkey)
         self.assertEqual(len(rsa), 2048)
-        self.assertEqual(
-            rsa.e, b'\000\000\000\003\001\000\001'
-        )  # aka 65537 aka 0xf4
+        self.assertEqual(rsa.e, b"\000\000\000\003\001\000\001")  # aka 65537 aka 0xf4
         log.debug("rsa.n = %s", repr(rsa.n))
         self.assertEqual(
             rsa.n,
-            b'\x00\x00\x01\x01\x00\xc9\xb76\x91\x86\xcb\x9a!' +
-            b'w\x9c\xfb\x8c\xe8\xaa\xe7\xecT\xb02s\x00\xfav' +
-            b'\x0b\xe4\xb7I\xa4\xf2\x8f\xe1\xaf\x93\xeevxT{' +
-            b'\xc2\xb0\t\x05x?\xe6|\xfd\xf5\x86\x0b\xd2\x97\xc4\xc3\x99\x88h' +
-            b'\xd4n{~`\x8a\xe4\xe73\n\xe6\x94\x1bTr\x9a\xa5\xf5+\xbe\x81\xacV' +
-            b'\x0c\xb6s\xa3\x94\xacT.\xbf\xd3\t\x06[\x8a\x918\x01\xcf\xcb' +
-            b'\x95\xce\x1b\xf3\xd4\xcf\xaf3qo\xf1\t\xe2\x16\xab\r\xdd\r_>' +
-            b'\xc7\xa1\x88\xf4\x10\'\xe54S\x1a\x9c\xf3\xa1\xaf\xddw\xec{' +
-            b'\x9f\xefvCS\xc2\xa6\xba\xcb\xa1-{\xee\xd4\xa2hiY\x7f)\xb3{' +
-            b'\x1d\xf3\x19NX\x01t\xbe\x83\xaa\x17\xc0\xaax\x97\x10\xe9"y' +
-            b'\x9e\x1d\'i\xfe\'\xec\xb0\xd8:\xd42\\a\xea\xeb\x19\x1e\xab|' +
-            b'\xad\xb8\xda\x1b\xb7,.o"\x84\xa4\xd3\xff\xc2\xff\xf6iH>C\x14z' +
-            b'\xea\xc6f6\xa5\x96N^\x8c\xdej\xferN\xad\'\x9e\xcf6\x06A,\xa7W=' +
-            b'\xa1\x07\xc5\xfb\xbb2\xd5;V\x14\xe7'
+            b"\x00\x00\x01\x01\x00\xc9\xb76\x91\x86\xcb\x9a!"
+            + b"w\x9c\xfb\x8c\xe8\xaa\xe7\xecT\xb02s\x00\xfav"
+            + b"\x0b\xe4\xb7I\xa4\xf2\x8f\xe1\xaf\x93\xeevxT{"
+            + b"\xc2\xb0\t\x05x?\xe6|\xfd\xf5\x86\x0b\xd2\x97\xc4\xc3\x99\x88h"
+            + b"\xd4n{~`\x8a\xe4\xe73\n\xe6\x94\x1bTr\x9a\xa5\xf5+\xbe\x81\xacV"
+            + b"\x0c\xb6s\xa3\x94\xacT.\xbf\xd3\t\x06[\x8a\x918\x01\xcf\xcb"
+            + b"\x95\xce\x1b\xf3\xd4\xcf\xaf3qo\xf1\t\xe2\x16\xab\r\xdd\r_>"
+            + b"\xc7\xa1\x88\xf4\x10'\xe54S\x1a\x9c\xf3\xa1\xaf\xddw\xec{"
+            + b"\x9f\xefvCS\xc2\xa6\xba\xcb\xa1-{\xee\xd4\xa2hiY\x7f)\xb3{"
+            + b'\x1d\xf3\x19NX\x01t\xbe\x83\xaa\x17\xc0\xaax\x97\x10\xe9"y'
+            + b"\x9e\x1d'i\xfe'\xec\xb0\xd8:\xd42\\a\xea\xeb\x19\x1e\xab|"
+            + b'\xad\xb8\xda\x1b\xb7,.o"\x84\xa4\xd3\xff\xc2\xff\xf6iH>C\x14z'
+            + b"\xea\xc6f6\xa5\x96N^\x8c\xdej\xferN\xad'\x9e\xcf6\x06A,\xa7W="
+            + b"\xa1\x07\xc5\xfb\xbb2\xd5;V\x14\xe7",
         )
         with self.assertRaises(AttributeError):
-            getattr(rsa, 'nosuchprop')
+            getattr(rsa, "nosuchprop")
         self.assertEqual(rsa.check_key(), 1)
 
     def test_loadkey_bio(self):
@@ -102,25 +96,19 @@ class RSATestCase(unittest.TestCase):
             keybio = BIO.MemoryBuffer(f.read())
         rsa = RSA.load_key_bio(keybio)
         self.assertEqual(len(rsa), 2048)
-        self.assertEqual(
-            rsa.e, b'\000\000\000\003\001\000\001'
-        )  # aka 65537 aka 0xf4
+        self.assertEqual(rsa.e, b"\000\000\000\003\001\000\001")  # aka 65537 aka 0xf4
         self.assertEqual(rsa.check_key(), 1)
 
     def test_keygen(self):
         rsa = RSA.gen_key(1024, 65537, self.gen_callback)
         self.assertEqual(len(rsa), 1024)
-        self.assertEqual(
-            rsa.e, b'\000\000\000\003\001\000\001'
-        )  # aka 65537 aka 0xf4
+        self.assertEqual(rsa.e, b"\000\000\000\003\001\000\001")  # aka 65537 aka 0xf4
         self.assertEqual(rsa.check_key(), 1)
 
     def test_keygen_bad_cb(self):
         rsa = RSA.gen_key(1024, 65537, self.gen2_callback)
         self.assertEqual(len(rsa), 1024)
-        self.assertEqual(
-            rsa.e, b'\000\000\000\003\001\000\001'
-        )  # aka 65537 aka 0xf4
+        self.assertEqual(rsa.e, b"\000\000\000\003\001\000\001")  # aka 65537 aka 0xf4
         self.assertEqual(rsa.check_key(), 1)
 
     def test_private_encrypt(self):
@@ -143,7 +131,7 @@ class RSATestCase(unittest.TestCase):
     @unittest.skipIf(
         m2.OPENSSL_VERSION_NUMBER < 0x1010103F
         or m2.OPENSSL_VERSION_NUMBER >= 0x30000000,
-        'Relies on fix which happened only in OpenSSL 1.1.1c',
+        "Relies on fix which happened only in OpenSSL 1.1.1c",
     )
     def test_public_encrypt(self):
         priv = RSA.load_key(self.privkey)
@@ -156,7 +144,7 @@ class RSATestCase(unittest.TestCase):
 
         # no_padding
         m2.err_clear_error()
-        with self.assertRaisesRegex(RSA.RSAError, 'data too small'):
+        with self.assertRaisesRegex(RSA.RSAError, "data too small"):
             priv.public_encrypt(self.data, RSA.no_padding)
 
         # Type-check the data to be encrypted.
@@ -171,11 +159,9 @@ class RSATestCase(unittest.TestCase):
     def test_loadpub(self):
         rsa = RSA.load_pub_key(self.pubkey)
         self.assertEqual(len(rsa), 2048)
-        self.assertEqual(
-            rsa.e, b'\000\000\000\003\001\000\001'
-        )  # aka 65537 aka 0xf4
+        self.assertEqual(rsa.e, b"\000\000\000\003\001\000\001")  # aka 65537 aka 0xf4
         with self.assertRaises(RSA.RSAError):
-            setattr(rsa, 'e', '\000\000\000\003\001\000\001')
+            setattr(rsa, "e", "\000\000\000\003\001\000\001")
         with self.assertRaises(RSA.RSAError):
             rsa.private_decrypt(1)
         assert rsa.check_key()
@@ -187,7 +173,7 @@ class RSATestCase(unittest.TestCase):
     def test_savepub(self):
         rsa = RSA.load_pub_key(self.pubkey)
         assert rsa.as_pem()  # calls save_key_bio
-        f = 'tests/rsa_test.pub'
+        f = "tests/rsa_test.pub"
         try:
             self.assertEqual(rsa.save_key(f), 1)
         finally:
@@ -201,40 +187,40 @@ class RSATestCase(unittest.TestCase):
         with self.assertRaises(RSA.RSAError):
             m2.rsa_set_en(
                 rsa.rsa,
-                b'\000\000\000\003\001\000\001',
-                b'\000\000\000\003\001',
+                b"\000\000\000\003\001\000\001",
+                b"\000\000\000\003\001",
             )
 
     def test_set_n(self):
         rsa = m2.rsa_new()
-        m2.rsa_set_n(rsa, b'\000\000\000\003\001\000\001')
+        m2.rsa_set_n(rsa, b"\000\000\000\003\001\000\001")
 
         n = m2.rsa_get_n(rsa)
         e = m2.rsa_get_e(rsa)
 
-        self.assertEqual(n, b'\000\000\000\003\001\000\001')
-        self.assertEqual(e, b'\x00\x00\x00\x00')
+        self.assertEqual(n, b"\000\000\000\003\001\000\001")
+        self.assertEqual(e, b"\x00\x00\x00\x00")
 
     def test_set_e(self):
         rsa = m2.rsa_new()
-        m2.rsa_set_e(rsa, b'\000\000\000\003\001\000\001')
+        m2.rsa_set_e(rsa, b"\000\000\000\003\001\000\001")
 
         n = m2.rsa_get_n(rsa)
         e = m2.rsa_get_e(rsa)
 
-        self.assertEqual(e, b'\000\000\000\003\001\000\001')
-        self.assertEqual(n, b'\x00\x00\x00\x00')
+        self.assertEqual(e, b"\000\000\000\003\001\000\001")
+        self.assertEqual(n, b"\x00\x00\x00\x00")
 
     def test_set_n_then_set_e(self):
         rsa = m2.rsa_new()
-        m2.rsa_set_n(rsa, b'\000\000\000\004\020\011\006\006')
-        m2.rsa_set_e(rsa, b'\000\000\000\003\001\000\001')
+        m2.rsa_set_n(rsa, b"\000\000\000\004\020\011\006\006")
+        m2.rsa_set_e(rsa, b"\000\000\000\003\001\000\001")
 
         n = m2.rsa_get_n(rsa)
         e = m2.rsa_get_e(rsa)
 
-        self.assertEqual(e, b'\000\000\000\003\001\000\001')
-        self.assertEqual(n, b'\000\000\000\004\020\011\006\006')
+        self.assertEqual(e, b"\000\000\000\003\001\000\001")
+        self.assertEqual(n, b"\000\000\000\004\020\011\006\006")
 
     def test_newpub(self):
         old = RSA.load_pub_key(self.pubkey)
@@ -242,19 +228,19 @@ class RSATestCase(unittest.TestCase):
         self.assertTrue(new.check_key())
         self.assertEqual(len(new), 2048)
         # aka 65537 aka 0xf4
-        self.assertEqual(new.e, b'\000\000\000\003\001\000\001')
+        self.assertEqual(new.e, b"\000\000\000\003\001\000\001")
 
     def test_sign_and_verify(self):
         """
         Testing signing and verifying digests
         """
-        algos = {'sha256': '', 'ripemd160': '', 'md5': ''}
+        algos = {"sha256": "", "ripemd160": "", "md5": ""}
 
         if m2.OPENSSL_VERSION_NUMBER >= 0x90800F:
-            algos['sha224'] = ''
-            algos['sha256'] = ''
-            algos['sha384'] = ''
-            algos['sha512'] = ''
+            algos["sha224"] = ""
+            algos["sha256"] = ""
+            algos["sha384"] = ""
+            algos["sha512"] = ""
 
         message = b"This is the message string"
         digest = hashlib.sha256(message).digest()
@@ -269,7 +255,7 @@ class RSATestCase(unittest.TestCase):
             self.assertEqual(
                 verify,
                 1,
-                'verification failed with algorithm %s' % algo,
+                "verification failed with algorithm %s" % algo,
             )
 
     if m2.OPENSSL_VERSION_NUMBER >= 0x90708F:
@@ -285,16 +271,16 @@ class RSATestCase(unittest.TestCase):
             message = b"This is the message string"
             import hashlib
 
-            algos = {'sha256': 43}
+            algos = {"sha256": 43}
             if not fips_mode:
-                algos['md5'] = 47
-                algos['ripemd160'] = 43
+                algos["md5"] = 47
+                algos["ripemd160"] = 43
 
             if m2.OPENSSL_VERSION_NUMBER >= 0x90800F:
-                algos['sha224'] = 35
-                algos['sha256'] = 31
-                algos['sha384'] = 15
-                algos['sha512'] = 0
+                algos["sha224"] = 35
+                algos["sha256"] = 31
+                algos["sha384"] = 15
+                algos["sha512"] = 0
 
             for algo, salt_max in algos.items():
                 try:
@@ -312,17 +298,15 @@ class RSATestCase(unittest.TestCase):
                 if salt_max is None or digest is None:
                     continue
                 for salt_length in range(0, salt_max):
-                    signature = rsa.sign_rsassa_pss(
-                        digest, algo, salt_length
-                    )
+                    signature = rsa.sign_rsassa_pss(digest, algo, salt_length)
                     verify = rsa2.verify_rsassa_pss(
                         digest, signature, algo, salt_length
                     )
                     self.assertEqual(
                         verify,
                         1,
-                        'verification failed with algorithm '
-                        '%s salt length %d' % (algo, salt_length),
+                        "verification failed with algorithm "
+                        "%s salt length %d" % (algo, salt_length),
                     )
 
     def test_sign_bad_method(self):
@@ -330,19 +314,19 @@ class RSATestCase(unittest.TestCase):
         Testing calling sign with an unsupported message digest algorithm
         """
         rsa = RSA.load_key(self.privkey)
-        digest = 'a' * 16
+        digest = "a" * 16
         with self.assertRaises(ValueError):
-            rsa.sign(digest, 'bad_digest_method')
+            rsa.sign(digest, "bad_digest_method")
 
     def test_verify_bad_method(self):
         """
         Testing calling verify with an unsupported message digest algorithm
         """
         rsa = RSA.load_key(self.privkey)
-        digest = b'a' * 16
-        signature = rsa.sign(digest, 'sha256')
+        digest = b"a" * 16
+        signature = rsa.sign(digest, "sha256")
         with self.assertRaises(ValueError):
-            rsa.verify(digest, signature, 'bad_digest_method')
+            rsa.verify(digest, signature, "bad_digest_method")
 
     def test_verify_mismatched_algo(self):
         """
@@ -352,9 +336,9 @@ class RSATestCase(unittest.TestCase):
         rsa = RSA.load_key(self.privkey)
         message = b"This is the message string"
         digest = hashlib.sha256(message).digest()
-        signature = rsa.sign(digest, 'sha256')
+        signature = rsa.sign(digest, "sha256")
         with self.assertRaises(RSA.RSAError):
-            rsa.verify(digest, signature, 'md5')
+            rsa.verify(digest, signature, "md5")
 
     def test_sign_fail(self):
         """
@@ -401,7 +385,7 @@ def suite():
     return unittest.TestLoader().loadTestsFromTestCase(RSATestCase)
 
 
-if __name__ == '__main__':
-    Rand.load_file('randpool.dat', -1)
+if __name__ == "__main__":
+    Rand.load_file("randpool.dat", -1)
     unittest.TextTestRunner().run(suite())
-    Rand.save_file('randpool.dat')
+    Rand.save_file("randpool.dat")

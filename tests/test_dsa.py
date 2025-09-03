@@ -12,13 +12,13 @@ from tests import unittest
 
 class DSATestCase(unittest.TestCase):
 
-    errkey = 'tests/rsa.priv.pem'
-    privkey = 'tests/dsa.priv.pem'
-    pubkey = 'tests/dsa.pub.pem'
-    param = 'tests/dsa.param.pem'
+    errkey = "tests/rsa.priv.pem"
+    privkey = "tests/dsa.priv.pem"
+    pubkey = "tests/dsa.pub.pem"
+    param = "tests/dsa.param.pem"
 
-    data = hashlib.sha256(b'Can you spell subliminal channel?').digest()
-    different_data = hashlib.sha256(b'I can spell.').digest()
+    data = hashlib.sha256(b"Can you spell subliminal channel?").digest()
+    different_data = hashlib.sha256(b"I can spell.").digest()
 
     def callback(self, *args):
         pass
@@ -31,8 +31,8 @@ class DSATestCase(unittest.TestCase):
         dsa = DSA.load_key(self.privkey)
         self.assertEqual(len(dsa), 1024)
         with self.assertRaises(AttributeError):
-            getattr(dsa, 'foobar')
-        for k in ('p', 'q', 'g', 'priv', 'pub'):
+            getattr(dsa, "foobar")
+        for k in ("p", "q", "g", "priv", "pub"):
             with self.assertRaises(DSA.DSAError):
                 setattr(dsa, k, 1)
 
@@ -115,7 +115,7 @@ def suite():
     return unittest.TestLoader().loadTestsFromTestCase(DSATestCase)
 
 
-if __name__ == '__main__':
-    Rand.load_file('randpool.dat', -1)
+if __name__ == "__main__":
+    Rand.load_file("randpool.dat", -1)
     unittest.TextTestRunner().run(suite())
-    Rand.save_file('randpool.dat')
+    Rand.save_file("randpool.dat")

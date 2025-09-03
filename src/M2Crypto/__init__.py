@@ -1,4 +1,3 @@
-
 """
 M2Crypto is the most complete Python wrapper for OpenSSL
 featuring RSA, DSA, DH, EC, HMACs, message digests, symmetric
@@ -16,23 +15,24 @@ Copyright (C) 2004-2007 OSAF. All Rights Reserved.
 
 Copyright 2008-2011 Heikki Toivonen. All rights reserved.
 """
-__version__: str = '0.46.0'
+
+__version__: str = "0.46.0"
 version: str = __version__
 
 try:
     from packaging.version import Version
 except ImportError:
     try:
-        from distutils.version import StrictVersion as Version  # type: ignore [no-redef]
+        from distutils.version import StrictVersion as Version  # type: ignore [no-redef, import-not-found]
     except ImportError:
-        Version = None
+        Version = None  # type: ignore[misc, assignment]
 
 if Version is not None:
     version_info: tuple = (0, 0, 0)
     __ver: Version = Version(__version__)
-    if hasattr(__ver, u'_version'):
+    if hasattr(__ver, "_version"):
         version_info = tuple(__ver._version[1])
-    elif hasattr(__ver, u'version'):
+    elif hasattr(__ver, "version"):
         version_info = __ver.version
 
 from M2Crypto import m2

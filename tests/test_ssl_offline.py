@@ -1,4 +1,3 @@
-
 """Unit tests for M2Crypto.SSL offline parts
 
 Copyright (C) 2006 Open Source Applications Foundation. All Rights Reserved.
@@ -18,12 +17,12 @@ class CheckerTestCase(unittest.TestCase):
 
         check = SSL.Checker.Checker(
             host=srv_host,
-            peerCertHash='9917962167CFDB8BCFAC775093E79A1113B3DA146EA4E1EB1FEFC6E58770D158',
+            peerCertHash="9917962167CFDB8BCFAC775093E79A1113B3DA146EA4E1EB1FEFC6E58770D158",
         )
-        x509 = X509.load_cert('tests/server.pem')
+        x509 = X509.load_cert("tests/server.pem")
         self.assertTrue(check(x509, srv_host))
         with self.assertRaises(SSL.Checker.WrongHost):
-            check(x509, 'example.com')
+            check(x509, "example.com")
 
         doctest.testmod(SSL.Checker)
 
@@ -50,11 +49,9 @@ class ContextTestCase(unittest.TestCase):
 
     def test_certstore(self):
         ctx = SSL.Context()
-        ctx.set_verify(
-            SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9
-        )
-        ctx.load_verify_locations('tests/ca.pem')
-        ctx.load_cert('tests/x509.pem')
+        ctx.set_verify(SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9)
+        ctx.load_verify_locations("tests/ca.pem")
+        ctx.load_cert("tests/x509.pem")
 
         store = ctx.get_cert_store()
         self.assertIsInstance(store, X509.X509_Store)
@@ -62,16 +59,12 @@ class ContextTestCase(unittest.TestCase):
 
 def suite():
     t_suite = unittest.TestSuite()
-    t_suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(CheckerTestCase)
-    )
-    t_suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(ContextTestCase)
-    )
+    t_suite.addTest(unittest.TestLoader().loadTestsFromTestCase(CheckerTestCase))
+    t_suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ContextTestCase))
     return t_suite
 
 
-if __name__ == '__main__':
-    Rand.load_file('randpool.dat', -1)
+if __name__ == "__main__":
+    Rand.load_file("randpool.dat", -1)
     unittest.TextTestRunner().run(suite())
-    Rand.save_file('randpool.dat')
+    Rand.save_file("randpool.dat")

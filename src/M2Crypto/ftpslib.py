@@ -31,7 +31,7 @@ from ftplib import *  # noqa
 from M2Crypto import SSL
 
 
-class FTP_TLS(FTP):
+class FTP_TLS(FTP):  # type: ignore [no-redef]
     """Python OO interface to client-side FTP/TLS."""
 
     def __init__(self, host=None, ssl_ctx=None):
@@ -45,7 +45,7 @@ class FTP_TLS(FTP):
 
     def auth_tls(self):
         """Secure the control connection per AUTH TLS, aka AUTH TLS-C."""
-        self.voidcmd('AUTH TLS')
+        self.voidcmd("AUTH TLS")
         s = SSL.Connection(self.ssl_ctx, self.sock)
         s.setup_ssl()
         s.set_connect_state()
@@ -59,13 +59,13 @@ class FTP_TLS(FTP):
 
     def prot_p(self):
         """Set up secure data connection."""
-        self.voidcmd('PBSZ 0')
-        self.voidcmd('PROT P')
+        self.voidcmd("PBSZ 0")
+        self.voidcmd("PROT P")
         self.prot = 1
 
     def prot_c(self):
         """Set up data connection in the clear."""
-        self.voidcmd('PROT C')
+        self.voidcmd("PROT C")
         self.prot = 0
 
     def ntransfercmd(self, cmd, rest=None):

@@ -44,9 +44,7 @@ class BNTestCase(unittest.TestCase):
             r128 = BN.rand(128, top=0)
             r256 = BN.rand(256, top=0)
             r512 = BN.rand(512, top=0)
-            assert (
-                r8 < r16 < r32 < r64 < r128 < r256 < r512 < (r512 + 1)
-            )
+            assert r8 < r16 < r32 < r64 < r128 < r256 < r512 < (r512 + 1)
 
     def test_rand_range(self):
         # small range
@@ -65,10 +63,10 @@ class BNTestCase(unittest.TestCase):
             assert 0 <= r < r512
 
     def test_randfname(self):
-        m = re.compile('^[a-zA-Z0-9]{8}$')
+        m = re.compile("^[a-zA-Z0-9]{8}$")
         for _ in range(loops):
             with warnings.catch_warnings():
-                warnings.simplefilter('ignore', DeprecationWarning)
+                warnings.simplefilter("ignore", DeprecationWarning)
                 r = BN.randfname(8)
             assert m.match(r)
 
@@ -77,7 +75,7 @@ def suite():
     return unittest.TestLoader().loadTestsFromTestCase(BNTestCase)
 
 
-if __name__ == '__main__':
-    Rand.load_file('randpool.dat', -1)
+if __name__ == "__main__":
+    Rand.load_file("randpool.dat", -1)
     unittest.TextTestRunner().run(suite())
-    Rand.save_file('randpool.dat')
+    Rand.save_file("randpool.dat")

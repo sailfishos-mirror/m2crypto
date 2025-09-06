@@ -291,7 +291,7 @@ PyObject *m2_PyFile_Name(PyObject *pyfile) {
 
 /* Yes, __FUNCTION__ is a non-standard symbol, but it is supported by
  * both gcc and MSVC. */
-#define m2_PyErr_Msg(type) m2_PyErr_Msg_Caller(type, (const char*) __FUNCTION__)
+#define m2_PyErr_Msg(type) m2_PyErr_Msg_Caller(type, (const char*) __func__)
 
 static void m2_PyErr_Msg_Caller(PyObject *err_type, const char* caller) {
     const char *err_reason;
@@ -300,7 +300,11 @@ static void m2_PyErr_Msg_Caller(PyObject *err_type, const char* caller) {
     /* This max size of a (longer than ours) OpenSSL error string is hardcoded
      * in OpenSSL's crypto/err/err_prn.c:ERR_print_errors_cb() */
     char err_msg[4096];
-    unsigned long err_code = ERR_get_error_line_data(NULL, NULL, &data, &flags);
+    unsigned long err_code;
+    size_t len;
+
+    /* Get the first error with detailed line/data info */
+    err_code = ERR_get_error_line_data(NULL, NULL, &data, &flags);
 
     if (err_code != 0) {
         err_reason = ERR_reason_error_string(err_code);
@@ -308,6 +312,14 @@ static void m2_PyErr_Msg_Caller(PyObject *err_type, const char* caller) {
             snprintf(err_msg, sizeof(err_msg), "%s (%s)", err_reason, data);
         else
             snprintf(err_msg, sizeof(err_msg), "%s", err_reason);
+
+        /* Now, drain any remaining errors from the stack */
+        while ((err_code = ERR_get_error()) != 0) {
+            len = strlen(err_msg);
+            if (len < sizeof(err_msg) - 2) { // Ensure space for separator and new error
+                snprintf(err_msg + len, sizeof(err_msg) - len, "; %s", ERR_reason_error_string(err_code));
+            }
+        }
 
         PyErr_SetString(err_type, err_msg);
     } else {

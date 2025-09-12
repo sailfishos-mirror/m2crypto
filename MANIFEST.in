@@ -1,14 +1,25 @@
+# include source code for Swig
 include src/SWIG/*.i
 include src/SWIG/*.h
 include src/SWIG/*.def
+
+# include tests, contribute and documentation files
 recursive-include tests *.py *.pem *.der *.b64 README *.pgp *.dat *.p7* *.crt *.txt
 recursive-include doc *
 recursive-include contrib *
-recursive-include system_shadowing *
+
+# don't include patatt registry
 recursive-exclude .keys *
+
+# include workaround for reading sys/select.h ending with wrong types
+recursive-include system_shadowing *
+
+# include package documentation files
 include INSTALL.rst
 include README.rst
 include CHANGES
 include LICENCE
+
+# include Swig-generated files
 include src/SWIG/_m2crypto_wrap.c
 include src/M2Crypto/m2crypto.py

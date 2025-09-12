@@ -8,6 +8,10 @@
  *
  */
 
+%pythoncode %{
+# mypy: disable-error-code="import-not-found"
+%}
+
 %module(threads=1) m2crypto
 /* We really don't need threadblock (PyGILState_Ensure() etc.) anywhere.
    Disable threadallow as well, only enable it for operations likely to

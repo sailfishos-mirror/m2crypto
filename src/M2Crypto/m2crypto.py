@@ -11,6 +11,6 @@ try:
     if __package__ or "." in __name__:
         from ._m2crypto import *
     else:
-        from _m2crypto import *
+        from _m2crypto import *  # type: ignore[import-not-found, misc]
 except ModuleNotFoundError:
     pass

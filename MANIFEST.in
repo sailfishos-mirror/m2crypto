@@ -23,3 +23,7 @@ include LICENCE
 # include Swig-generated files
 include src/SWIG/_m2crypto_wrap.c
 include src/M2Crypto/m2crypto.py
+
+# Include type stubs and the PEP 561 marker in the sdist
+include src/M2Crypto/py.typed
+recursive-include src/M2Crypto *.pyi

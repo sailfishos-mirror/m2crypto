@@ -43,16 +43,6 @@ def _serverPostConnectionCheck(*args, **kw) -> int:
 class Connection:
     """An SSL connection."""
 
-    m2_bio_noclose = m2.bio_noclose
-
-    @staticmethod
-    def m2_ssl_free(ssl: C.SSL) -> None:
-        m2.ssl_free(ssl)
-
-    @staticmethod
-    def m2_bio_free(bio: C.BIO) -> int:
-        return m2.bio_free(bio)
-
     def __init__(
         self,
         ctx: "Context",
@@ -93,6 +83,16 @@ class Connection:
 
         self.host: Optional[bytes] = None
         self._closed = False
+
+    m2_bio_noclose = m2.bio_noclose
+
+    @staticmethod
+    def m2_ssl_free(ssl: C.SSL) -> None:
+        m2.ssl_free(ssl)
+
+    @staticmethod
+    def m2_bio_free(bio: C.BIO) -> int:
+        return m2.bio_free(bio)
 
     @property
     def closed(self) -> bool:

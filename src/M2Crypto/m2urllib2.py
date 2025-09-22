@@ -144,7 +144,8 @@ class HTTPSHandler(AbstractHTTPHandler):  # type: ignore [no-redef]
         try:
             h.request(req.get_method(), request_uri, req.data, headers)
             r = h.getresponse()
-        except socket.error as err:
+        except (socket.error, SSL.SSLError) as err:
+            h.close()  # Ensure cleanup on failure.
             raise URLError(err)
 
         # The HTTPResponse object 'r' is the file-like object we need.

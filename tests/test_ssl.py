@@ -1063,7 +1063,7 @@ class Urllib2SSLClientTestCase(BaseSSLClientTestCase):
 
             opener = m2urllib2.build_opener(ctx)
             opener.addheaders = [("Connection", "close")]
-            with self.assertRaises(SSL.SSLError):
+            with self.assertRaises(m2urllib2.URLError):
                 opener.open("https://%s:%s/" % (srv_host, self.srv_port))
         finally:
             self.stop_server(pid)

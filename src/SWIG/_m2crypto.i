@@ -53,6 +53,7 @@ typedef unsigned __int64 uint64_t;
 #include <_lib.h>
 #include <libcrypto-compat.h>
 #include <py3k_compat.h>
+#include <python_logging.h>
 
 #include "compile.h"
 

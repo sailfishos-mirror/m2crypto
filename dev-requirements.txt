@@ -1,8 +1,7 @@
-build
+build; python_version>'3.6'
 wheel
 setuptools>=43.0.0; python_version<='3.6'
 setuptools>=75.8.1; python_version>='3.9'
-importlib-metadata; python_version<'3.8'
 twine; sys.platform == 'win32'
 flake8
 typing; python_version < "3.5"

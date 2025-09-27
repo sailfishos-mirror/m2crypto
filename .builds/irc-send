@@ -1,33 +1,151 @@
-#!/usr/bin/python3
+#! /usr/bin/env python3
+#
+# IRC Cat script using irc.client.SimpleIRCClient with SASL and SSL/TLS.
+#
+# IMPORTANT: sasl_login must equal your nickserv account name
+#
+# Adapted to read configuration from CLI and password from ~/.irc_pass.
 
-import pexpect
+import logging
+import functools
+import ssl
 import sys
+import os
+import argparse
+import irc.client
+import irc.connection
+import functools
+import ssl
+import sys
+import os
+import argparse
 
-SERVER="irc.libera.chat"
-PORT=6697
-USER=sys.argv[1]
-NICK=sys.argv[2]
-REAL_NAME="Commit bot"
-CHANNEL=sys.argv[3]
-MSG=sys.argv[4]
-PASS=sys.argv[5]
-assert len(sys.argv) == 6
+import irc.client
+import irc.connection
 
-client = pexpect.spawn(f"openssl s_client -connect {SERVER}:{PORT:d}")
-# client.logfile = sys.stdout.buffer
 
-# :mercury.libera.chat NOTICE * :*** Found your hostname: nat2.prg.suse.com
-client.expect("Found your hostname: ")
-client.sendline(f"NICK {NICK}")
-client.sendline(f"USER {USER} * * :{REAL_NAME}")
-# :NickServ!NickServ@services.libera.chat NOTICE build-bot :This nickname is registered. Please choose a different nickname, or identify via /msg NickServ IDENTIFY mcepl <password>
-client.expect(f"NOTICE {NICK} :This nickname is registered. ")
-client.sendline(f"PRIVMSG NickServ :IDENTIFY {USER} {PASS}")
-# build-bot build-bot!~mcepl@nat2.prg.suse.com mcepl :You are now logged in as mcepl
-client.expect(f"{NICK}.*:You are now logged in as {USER}")
-# JOIN #m2crypto
-client.sendline(f"JOIN #{CHANNEL}")
-# :mercury.libera.chat 366 ceplma #m2crypto :End of /NAMES list.
-client.expect("End of /NAMES")
-client.sendline(f"PRIVMSG #{CHANNEL} :{MSG}")
-client.sendline("QUIT")
+class IRCCat(irc.client.SimpleIRCClient):
+    # Simplified __init__ for demonstration
+    def __init__(self, target):
+        irc.client.SimpleIRCClient.__init__(self)
+        self.target = target
+
+    def on_welcome(self, connection, event):
+        # The library handles SASL negotiation automatically before this event,
+        # but joining is often safe here if SASL fails/isn't supported.
+        # Note: For strict SASL-only connection, you might wait for a 'logged_in' event if available.
+        if irc.client.is_channel(self.target):
+            connection.join(self.target)
+        else:
+            self.send_it()
+
+    def on_login_failed(self, connection, event):
+        # A specific event handler for login failure (e.g., SASL failed)
+        logging.error(f"Login failed: {event.arguments[0]}")
+        # Note: Depending on the server, you might get a standard DISCONNECT event instead.
+
+    def on_join(self, connection, event):
+        self.send_it()
+
+    def on_disconnect(self, connection, event):
+        logging.debug(f"Disconnected: {event.arguments[0]}")
+        sys.exit(0)
+
+    def send_it(self):
+        # Reads from stdin and sends as PRIVMSG
+        while 1:
+            try:
+                line = sys.stdin.readline().strip()
+            except EOFError:
+                break
+
+            if not line:
+                break
+
+            self.connection.privmsg(self.target, line)
+
+        quit_message = "Using irc.client.py (SASL-SSL)"
+        self.connection.quit(quit_message)
+
+        # Stop the reactor immediately after sending QUIT.
+        # This prevents the client from waiting for and reacting to the
+        # server's final QUIT/ERROR sequence, which causes the peer reset message.
+        self.connection.reactor.disconnect_all()
+
+
+def read_password_from_file():
+    """Reads and strips the password from the ~/.irc_pass file."""
+    password_file_path = os.path.expanduser("~/.irc_pass")
+
+    try:
+        with open(password_file_path, "r") as f:
+            # Read and strip leading/trailing whitespace, including EOL
+            password = f.read().strip()
+            if not password:
+                raise ValueError("Password file is empty.")
+            return password
+    except FileNotFoundError:
+        logging.error(
+            f"Error: Password file not found at {password_file_path}"
+        )
+        sys.exit(1)
+    except Exception as e:
+        logging.error(f"Error reading password file: {e}")
+        sys.exit(1)
+
+
+def get_args():
+    parser = argparse.ArgumentParser(
+        description="IRC Cat client with SASL and SSL/TLS."
+    )
+    parser.add_argument("server", help="IRC server hostname (e.g., irc.ergo.chat)")
+    parser.add_argument("nickname", help="IRC nickname to use")
+    parser.add_argument(
+        "account", help="SASL account name (usually your NickServ name)"
+    )
+    parser.add_argument("target", help="A nickname or channel (e.g., #mychannel)")
+    parser.add_argument(
+        "-p",
+        "--port",
+        default=6697,
+        type=int,
+        help="Port number (default 6697 for TLS)",
+    )
+    return parser.parse_args()
+
+
+def main():
+    logging.basicConfig(
+        format="%(levelname)s:%(funcName)s:%(message)s", level=logging.INFO
+    )
+
+    args = get_args()
+
+    password = read_password_from_file()
+
+    context = ssl.create_default_context()
+    context.load_default_certs(ssl.Purpose.SERVER_AUTH)  # Ensure system CAs are loaded
+
+    wrapper = functools.partial(context.wrap_socket, server_hostname=args.server)
+
+    c = IRCCat(args.target)
+    try:
+        c.connect(
+            args.server,
+            args.port,
+            args.nickname,
+            password,  # <-- IRC PASS (Used for SASL PLAIN)
+            sasl_login=args.account,  # <-- SASL Account Name
+            username=args.account,  # Use account name as ident user
+            connect_factory=irc.connection.Factory(wrapper=wrapper),
+        )
+        logging.debug("Connection initiated successfully.")
+    except irc.client.ServerConnectionError as x:
+        logging.error(f"Connection Error: {x}")
+        sys.exit(1)
+
+    c.start()
+
+
+if __name__ == "__main__":
+    main()

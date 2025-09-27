@@ -356,8 +356,13 @@ void hmac_ctx_free(HMAC_CTX *ctx) {
 PyObject *hmac_init(HMAC_CTX *ctx, PyObject *key, const EVP_MD *md) {
     Py_buffer kbuf;
 
-    if (m2_PyObject_GetBufferInt(key, &kbuf, PyBUF_SIMPLE) == -1)
+    if (m2_PyObject_GetBufferInt(key, &kbuf, PyBUF_SIMPLE) == -1) {
+        if (PyErr_Occurred()) {
+            PyErr_Clear();
+            PyErr_Format(_evp_err, "Invalid key: empty buffer object");
+        }
         return NULL;
+    }
 
     if (!HMAC_Init(ctx, kbuf.buf, kbuf.len, md)) {
         PyErr_SetString(_evp_err, "HMAC_Init failed");
@@ -482,13 +487,23 @@ PyObject *cipher_init(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *cipher,
 
     if (key == Py_None)
         kbuf.buf = NULL;
-    else if (m2_PyObject_GetBuffer(key, &kbuf, PyBUF_SIMPLE) == -1)
+    else if (m2_PyObject_GetBuffer(key, &kbuf, PyBUF_SIMPLE) == -1) {
+        if (PyErr_Occurred()) {
+            PyErr_Clear();
+            PyErr_Format(_evp_err, "Invalid key: empty buffer object");
+        }
         return NULL;
+    }
 
     if (iv == Py_None)
         ibuf.buf = NULL;
-    else if (m2_PyObject_GetBuffer(iv, &ibuf, PyBUF_SIMPLE) == -1)
+    else if (m2_PyObject_GetBuffer(iv, &ibuf, PyBUF_SIMPLE) == -1) {
+        if (PyErr_Occurred()) {
+            PyErr_Clear();
+            PyErr_Format(_evp_err, "Invalid IV: empty buffer object");
+        }
         return NULL;
+    }
 
     if (!EVP_CipherInit(ctx, cipher, (unsigned char *)kbuf.buf,
                         (unsigned char *)ibuf.buf, mode)) {

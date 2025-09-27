@@ -9,6 +9,7 @@ import base64
 import hashlib
 import io
 import logging
+import sys
 
 from binascii import a2b_hex, b2a_hex, hexlify, unhexlify
 
@@ -786,27 +787,27 @@ class PBKDF2TestCase(unittest.TestCase):
 
 class HMACTestCase(unittest.TestCase):
     data1 = [
-        b"",
+        b"someKey",
         b"More text test vectors to stuff up EBCDIC machines :-)",
-        a2b_hex("5a3f9959ce1f220eadeb40e4d89b3b8d3ea10e1b6917b5c4bb131624eb740b8e"),
+        a2b_hex(b"9ab50f9901ac7d3cefad459b17259cf570e286a8bfd7472aeb4a257897b5ac10"),
     ]
 
     data2 = [
         a2b_hex(b"0b" * 16),
         b"Hi There",
-        a2b_hex("492ce020fe2534a5789dc3848806c78f4f6711397f08e7e7a12ca5a4483c8aa6"),
+        a2b_hex(b"492ce020fe2534a5789dc3848806c78f4f6711397f08e7e7a12ca5a4483c8aa6"),
     ]
 
     data3 = [
         b"Jefe",
         b"what do ya want for nothing?",
-        a2b_hex("5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"),
+        a2b_hex(b"5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"),
     ]
 
     data4 = [
         a2b_hex(b"aa" * 16),
         a2b_hex(b"dd" * 50),
-        a2b_hex("7dda3cc169743a6484649f94f0eda0f9f2ff496a9733fb796ed5adb40a44c3c1"),
+        a2b_hex(b"7dda3cc169743a6484649f94f0eda0f9f2ff496a9733fb796ed5adb40a44c3c1"),
     ]
 
     data = [data1, data2, data3, data4]
@@ -819,7 +820,11 @@ class HMACTestCase(unittest.TestCase):
                 h = EVP.HMAC(d[0], algo)
                 h.update(d[1])
                 ret = h.final()
-                self.assertEqual(ret, d[2])
+                try:
+                    self.assertEqual(ret, d[2])
+                except AssertionError:
+                    print(f"ret:\n{ret}", file=sys.stderr, flush=True)
+                    raise
         with self.assertRaises(ValueError):
             EVP.HMAC(d[0], algo="nosuchalgo")
 

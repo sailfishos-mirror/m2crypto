@@ -262,7 +262,7 @@ PyObject *pkcs5_pbkdf2_hmac_sha1(PyObject *pass,
                                  PyObject *salt,
                                  int iter,
                                  int keylen) {
-    unsigned char *key;
+    unsigned char *key = NULL;
     PyObject *ret;
     Py_buffer passbuf, saltbuf;
 
@@ -271,10 +271,19 @@ PyObject *pkcs5_pbkdf2_hmac_sha1(PyObject *pass,
     if (m2_PyObject_GetBufferInt(salt, &saltbuf, PyBUF_SIMPLE) == -1) {
         m2_PyBuffer_Release(pass, &passbuf);
         return NULL;
+    }
+
+    if (!(key = PyMem_Malloc(keylen))) {
+        PyErr_SetString(PyExc_MemoryError, "pkcs5_pbkdf2_hmac_sha1");
+        m2_PyBuffer_Release(pass, &passbuf);
+        m2_PyBuffer_Release(salt, &saltbuf);
+        return NULL;
+    }
 
     PKCS5_PBKDF2_HMAC_SHA1((char *) passbuf.buf, passbuf.len,
                            (unsigned char *) saltbuf.buf, saltbuf.len,
                            iter, keylen, key);
+
     ret = PyBytes_FromStringAndSize((char*)key, keylen);
     OPENSSL_cleanse(key, keylen);
     PyMem_Free(key);
@@ -472,13 +481,13 @@ PyObject *cipher_init(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *cipher,
     Py_buffer kbuf, ibuf;
 
     if (key == Py_None)
-        kbuf = NULL;
-    else if (m2_PyObject_GetBuffer(key, &kbuf, &klen) == -1)
+        kbuf.buf = NULL;
+    else if (m2_PyObject_GetBuffer(key, &kbuf, PyBUF_SIMPLE) == -1)
         return NULL;
 
     if (iv == Py_None)
-        ibuf = NULL;
-    else if (m2_PyObject_GetBuffer(iv, &ibuf, &ilen) == -1)
+        ibuf.buf = NULL;
+    else if (m2_PyObject_GetBuffer(iv, &ibuf, PyBUF_SIMPLE) == -1)
         return NULL;
 
     if (!EVP_CipherInit(ctx, cipher, (unsigned char *)kbuf.buf,
@@ -611,16 +620,17 @@ int digest_sign_init(EVP_MD_CTX *ctx, EVP_PKEY *pkey) {
 }
 
 PyObject *digest_sign_update(EVP_MD_CTX *ctx, PyObject *blob) {
-    const void *buf;
-    int len = 0;
+    Py_buffer buf;
 
-    if (m2_PyObject_AsReadBufferInt(blob, (const void **)&buf, &len) == -1)
+    if (m2_PyObject_GetBufferInt(blob, &buf, PyBUF_SIMPLE) == -1)
         return NULL;
 
-    if (!EVP_DigestSignUpdate(ctx, buf, len)) {
+    if (!EVP_DigestSignUpdate(ctx, buf.buf, buf.len)) {
         m2_PyErr_Msg(_evp_err);
+        m2_PyBuffer_Release(blob, &buf);
         return NULL;
     }
+    m2_PyBuffer_Release(blob, &buf);
     Py_RETURN_NONE;
 }
 
@@ -657,26 +667,27 @@ PyObject *digest_sign_final(EVP_MD_CTX *ctx) {
 #if OPENSSL_VERSION_NUMBER >= 0x10101000L
 PyObject *digest_sign(EVP_MD_CTX *ctx, PyObject *msg) {
     PyObject *ret;
-    const void *msgbuf;
+    Py_buffer msgbuf;
     unsigned char *sigbuf;
-    int msglen = 0;
     size_t siglen = 0;
 
-    if (m2_PyObject_AsReadBufferInt(msg, (const void **)&msgbuf, &msglen) == -1)
+    if (m2_PyObject_GetBufferInt(msg, &msgbuf, PyBUF_SIMPLE) == -1)
         return NULL;
 
-    if (!EVP_DigestSign(ctx, NULL, &siglen, msgbuf, msglen)) {
+    if (!EVP_DigestSign(ctx, NULL, &siglen, msgbuf.buf, msgbuf.len)) {
         m2_PyErr_Msg(_evp_err);
+        m2_PyBuffer_Release(msg, &msgbuf);
         return NULL;
     }
 
     sigbuf = (unsigned char*)OPENSSL_malloc(siglen);
     if (!sigbuf) {
         PyErr_SetString(PyExc_MemoryError, "digest_sign");
+        m2_PyBuffer_Release(msg, &msgbuf);
         return NULL;
     }
 
-    if (!EVP_DigestSign(ctx, sigbuf, &siglen, msgbuf, msglen)) {
+    if (!EVP_DigestSign(ctx, sigbuf, &siglen, msgbuf.buf, msgbuf.len)) {
         m2_PyErr_Msg(_evp_err);
         OPENSSL_cleanse(sigbuf, siglen);
         OPENSSL_free(sigbuf);
@@ -687,6 +698,7 @@ PyObject *digest_sign(EVP_MD_CTX *ctx, PyObject *msg) {
 
     OPENSSL_cleanse(sigbuf, siglen);
     OPENSSL_free(sigbuf);
+    m2_PyBuffer_Release(msg, &msgbuf);
     return ret;
 
 }
@@ -697,39 +709,49 @@ int digest_verify_init(EVP_MD_CTX *ctx, EVP_PKEY *pkey) {
 }
 
 int digest_verify_update(EVP_MD_CTX *ctx, PyObject *blob) {
-    const void *buf = NULL;
-    int len = 0;
+    Py_buffer buf;
+    int ret;
 
-    if (m2_PyObject_AsReadBufferInt(blob, (const void **)&buf, &len) == -1)
+    if (m2_PyObject_GetBufferInt(blob, &buf, PyBUF_SIMPLE) == -1)
         return -1;
 
-    return EVP_DigestVerifyUpdate(ctx, buf, len);
+    ret = EVP_DigestVerifyUpdate(ctx, buf.buf, buf.len);
+
+    m2_PyBuffer_Release(blob, &buf);
+    return ret;
 }
 
 int digest_verify_final(EVP_MD_CTX *ctx, PyObject *blob) {
-    unsigned char *sigbuf = NULL;
-    int len = 0;
+    Py_buffer sigbuf;
+    int ret;
 
-    if (m2_PyObject_AsReadBufferInt(blob, (const void **)&sigbuf, &len) == -1)
+    if (m2_PyObject_GetBufferInt(blob, &sigbuf, PyBUF_SIMPLE) == -1)
         return -1;
 
-    return EVP_DigestVerifyFinal(ctx, sigbuf, len);
+    ret = EVP_DigestVerifyFinal(ctx, (unsigned char *)sigbuf.buf, sigbuf.len);
+
+    m2_PyBuffer_Release(blob, &sigbuf);
+    return ret;
 }
 
 #if OPENSSL_VERSION_NUMBER >= 0x10101000L
 int digest_verify(EVP_MD_CTX *ctx, PyObject *sig, PyObject *msg) {
-    unsigned char *sigbuf;
-    unsigned char *msgbuf;
-    int siglen = 0;
-    int msglen = 0;
+    Py_buffer sigbuf, msgbuf;
+    int ret;
 
-    if (m2_PyObject_AsReadBufferInt(sig, (const void **)&sigbuf, &siglen) == -1)
+    if (m2_PyObject_GetBufferInt(sig, &sigbuf, PyBUF_SIMPLE) == -1)
         return -1;
 
-    if (m2_PyObject_AsReadBufferInt(msg, (const void **)&msgbuf, &msglen) == -1)
+    if (m2_PyObject_GetBufferInt(msg, &msgbuf, PyBUF_SIMPLE) == -1) {
+        m2_PyBuffer_Release(sig, &sigbuf);
         return -1;
+    }
 
-    return EVP_DigestVerify(ctx, sigbuf, siglen, msgbuf, msglen);
+    ret = EVP_DigestVerify(ctx, sigbuf.buf, sigbuf.len, msgbuf.buf, msgbuf.len);
+
+    m2_PyBuffer_Release(sig, &sigbuf);
+    m2_PyBuffer_Release(msg, &msgbuf);
+    return ret;
 }
 #endif
 %}

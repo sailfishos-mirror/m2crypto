@@ -54,7 +54,7 @@ PyObject *rc4_update(RC4_KEY *key, PyObject *in) {
         return NULL;
     }
     RC4(key, buf.len, buf.buf, out);
-    ret = PyString_FromStringAndSize(out, buf.len);
+    ret = PyBytes_FromStringAndSize((char*)out, buf.len);
     PyMem_Free(out);
     m2_PyBuffer_Release(in, &buf);
     return ret;

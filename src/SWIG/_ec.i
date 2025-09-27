@@ -348,6 +348,7 @@ int ecdsa_verify(EC_KEY *key, PyObject *value, PyObject *r, PyObject *s) {
     Py_buffer vbuf, rbuf, sbuf;
     ECDSA_SIG *sig;
     int ret;
+    BIGNUM* pr, *ps;
 
     if (m2_PyObject_GetBufferInt(value, &vbuf, PyBUF_SIMPLE) == -1)
       return -1;
@@ -361,13 +362,17 @@ int ecdsa_verify(EC_KEY *key, PyObject *value, PyObject *r, PyObject *s) {
       return -1;
     }
 
-    if (!(pr = BN_mpi2bn((unsigned char *)rbuf, rlen, NULL))) {
+    pr = BN_mpi2bn((unsigned char *)rbuf.buf, rbuf.len, NULL);
+    if (!pr) {
         m2_PyErr_Msg(_ec_err);
+        m2_PyBuffer_Release(value, &vbuf); m2_PyBuffer_Release(r, &rbuf); m2_PyBuffer_Release(s, &sbuf);
         return -1;
     }
-    if (!(ps = BN_mpi2bn((unsigned char *)sbuf, slen, NULL))) {
+    ps = BN_mpi2bn((unsigned char *)sbuf.buf, sbuf.len, NULL);
+    if (!ps) {
         m2_PyErr_Msg(_ec_err);
         BN_free(pr);
+        m2_PyBuffer_Release(value, &vbuf); m2_PyBuffer_Release(r, &rbuf); m2_PyBuffer_Release(s, &sbuf);
         return -1;
     }
 
@@ -386,22 +391,6 @@ int ecdsa_verify(EC_KEY *key, PyObject *value, PyObject *r, PyObject *s) {
         return -1;
     }
 
-    if (!BN_mpi2bn((unsigned char *)rbuf.buf, rbuf.len, sig->r)) {
-        PyErr_SetString(_ec_err, ERR_reason_error_string(ERR_get_error()));
-        ECDSA_SIG_free(sig);
-        m2_PyBuffer_Release(value, &vbuf);
-        m2_PyBuffer_Release(r, &rbuf);
-        m2_PyBuffer_Release(s, &sbuf);
-        return -1;
-    }
-    if (!BN_mpi2bn((unsigned char *)sbuf.buf, sbuf.len, sig->s)) {
-        PyErr_SetString(_ec_err, ERR_reason_error_string(ERR_get_error()));
-        ECDSA_SIG_free(sig);
-        m2_PyBuffer_Release(value, &vbuf);
-        m2_PyBuffer_Release(r, &rbuf);
-        m2_PyBuffer_Release(s, &sbuf);
-        return -1;
-    }
     ret = ECDSA_do_verify(vbuf.buf, vbuf.len, sig, key);
     ECDSA_SIG_free(sig);
     m2_PyBuffer_Release(value, &vbuf);
@@ -495,33 +484,31 @@ PyObject *ecdh_compute_key(EC_KEY *keypairA, EC_KEY *pubkeyB) {
 
 
 EC_KEY* ec_key_from_pubkey_der(PyObject *pubkey) {
-    const void *keypairbuf;
-    Py_ssize_t keypairbuflen;
+    Py_buffer keypairbuf;
     const unsigned char *tempBuf;
     EC_KEY *keypair;
 
-    if (m2_PyObject_AsReadBuffer(pubkey, &keypairbuf, &keypairbuflen) == -1)
+    if (m2_PyObject_GetBuffer(pubkey, &keypairbuf, PyBUF_SIMPLE) == -1)
         return NULL;
 
-    tempBuf = (const unsigned char *)keypairbuf;
-    if ((keypair = d2i_EC_PUBKEY( NULL, &tempBuf, keypairbuflen)) == 0)
+    tempBuf = (const unsigned char *)keypairbuf.buf;
+    if ((keypair = d2i_EC_PUBKEY( NULL, &tempBuf, keypairbuf.len)) == 0)
     {
         m2_PyErr_Msg(_ec_err);
+        m2_PyBuffer_Release(pubkey, &keypairbuf);
         return NULL;
     }
+    m2_PyBuffer_Release(pubkey, &keypairbuf);
     return keypair;
 }
 
 EC_KEY* ec_key_from_pubkey_params(int nid, PyObject *pubkey) {
-    const void *keypairbuf;
-    Py_ssize_t keypairbuflen;
+    Py_buffer keypairbuf;
     const unsigned char *tempBuf;
     EC_KEY *keypair;
 
-    if (m2_PyObject_AsReadBuffer(pubkey, &keypairbuf, &keypairbuflen) == -1)
-    {
+    if (m2_PyObject_GetBuffer(pubkey, &keypairbuf, PyBUF_SIMPLE) == -1)
         return NULL;
-    }
 
     keypair = ec_key_new_by_curve_name(nid);
     if (!keypair) {
@@ -529,12 +516,14 @@ EC_KEY* ec_key_from_pubkey_params(int nid, PyObject *pubkey) {
         return NULL;
     }
 
-    tempBuf = (const unsigned char *)keypairbuf;
-    if ((o2i_ECPublicKey( &keypair, &tempBuf, keypairbuflen)) == 0)
+    tempBuf = (const unsigned char *)keypairbuf.buf;
+    if ((o2i_ECPublicKey( &keypair, &tempBuf, keypairbuf.len)) == 0)
     {
         m2_PyErr_Msg(_ec_err);
+        m2_PyBuffer_Release(pubkey, &keypairbuf);
         return NULL;
     }
+    m2_PyBuffer_Release(pubkey, &keypairbuf);
     return keypair;
 }
 

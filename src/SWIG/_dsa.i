@@ -261,16 +261,17 @@ PyObject *dsa_set_pqg(DSA *dsa, PyObject *pval, PyObject* qval, PyObject* gval) 
 
 PyObject *dsa_set_pub(DSA *dsa, PyObject *value) {
     BIGNUM *bn;
-    const void *vbuf;
-    int vlen = 0;
+    Py_buffer vbuf;
 
-    if (m2_PyObject_AsReadBufferInt(value, &vbuf, &vlen) == -1)
+    if (m2_PyObject_GetBufferInt(value, &vbuf, PyBUF_SIMPLE) == -1)
         return NULL;
 
-    if (!(bn = BN_mpi2bn((unsigned char *)vbuf, vlen, NULL))) {
+    if (!(bn = BN_mpi2bn((unsigned char *)vbuf.buf, vbuf.len, NULL))) {
         m2_PyErr_Msg(_dsa_err);
+        m2_PyBuffer_Release(value, &vbuf);
         return NULL;
     }
+    m2_PyBuffer_Release(value, &vbuf);
     if (!DSA_set0_key(dsa, bn, NULL)) {
         BN_free(bn);
         PyErr_SetString(_dsa_err, "Cannot set private and public key for DSA.");
@@ -373,7 +374,8 @@ int dsa_verify(DSA *dsa, PyObject *value, PyObject *r, PyObject *s) {
         m2_PyBuffer_Release(s, &sbuf);
         return -1;
     }
-    if (!(sig->r = BN_mpi2bn((unsigned char *)rbuf.buf, rbuf.len, NULL))) {
+    pr = BN_mpi2bn((unsigned char *)rbuf.buf, rbuf.len, NULL);
+    if (!pr) {
         m2_PyErr_Msg(_dsa_err);
         DSA_SIG_free(sig);
         m2_PyBuffer_Release(value, &vbuf);
@@ -381,7 +383,8 @@ int dsa_verify(DSA *dsa, PyObject *value, PyObject *r, PyObject *s) {
         m2_PyBuffer_Release(s, &sbuf);
         return -1;
     }
-    if (!(sig->s = BN_mpi2bn((unsigned char *)sbuf.buf, sbuf.len, NULL))) {
+    ps = BN_mpi2bn((unsigned char *)sbuf.buf, sbuf.len, NULL);
+    if (!ps) {
         m2_PyErr_Msg(_dsa_err);
         DSA_SIG_free(sig);
         m2_PyBuffer_Release(value, &vbuf);
@@ -415,6 +418,7 @@ PyObject *dsa_sign_asn1(DSA *dsa, PyObject *value) {
     void *sigbuf;
     Py_buffer vbuf;
     PyObject *ret;
+    unsigned int siglen;
 
     if (m2_PyObject_GetBufferInt(value, &vbuf, PyBUF_SIMPLE) == -1)
         return NULL;

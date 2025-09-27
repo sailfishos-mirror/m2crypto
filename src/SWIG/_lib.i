@@ -128,8 +128,6 @@ void blob_free(Blob *blob) {
 %}
 %ignore m2_PyBuffer_Release;
 %ignore m2_PyErr_SetString_from_openssl_error;
-%ignore m2_PyObject_AsReadBuffer;
-%ignore m2_PyObject_AsReadBufferInt;
 %ignore m2_PyObject_GetBuffer;
 %ignore m2_PyObject_GetBufferInt;
 %ignore m2_PyString_AsStringAndSizeInt;
@@ -182,31 +180,36 @@ static int m2_PyObject_GetBuffer(PyObject *obj, Py_buffer *view, int flags) {
   if (PyObject_CheckBuffer(obj))
     ret = PyObject_GetBuffer(obj, view, flags);
   else {
-    const void *buf;
-
-    ret = PyObject_AsReadBuffer(obj, &buf, &view->len);
-
-    if (ret == 0)
-      view->buf = (void *)buf;
+    /* In modern Python (3.13+), if an object doesn't support the
+     * Buffer Protocol, it's not a valid input for binary operations.
+     * We remove the deprecated PyObject_AsReadBuffer fallback.
+     */
+    PyErr_SetString(PyExc_TypeError, "expected a readable buffer object (bytes, bytearray, etc.)");
+    return -1;
   }
   return ret;
 }
 
+static int m2_PyObject_GetBufferInt(PyObject *obj, Py_buffer *view, int flags)
+{
+    int ret;
 
-static int m2_PyObject_GetBufferInt(PyObject *obj, Py_buffer *view, int flags) {
-  int ret;
+    if (PyObject_CheckBuffer(obj))
+        ret = PyObject_GetBuffer(obj, view, flags);
+    else {
+        PyErr_SetString(PyExc_TypeError, "expected a readable buffer object");
+        return -1;
+    }
+    if (ret)
+        return ret;
+    if (view->len > INT_MAX) {
+        PyErr_SetString(PyExc_ValueError, "object too large");
+        PyBuffer_Release(view);
+        return -1;
+    }
 
-  ret = m2_PyObject_GetBuffer(obj, view, flags);
-  if (ret)
-    return ret;
-  if (view->len > INT_MAX) {
-    PyErr_SetString(PyExc_ValueError, "object too large");
-    m2_PyBuffer_Release(obj, view);
-    return -1;
-  }
-  return 0;
+    return 0;
 }
-
 
 /*
  * Convert an OpenSSL error code into a Python Exception string.
@@ -231,90 +234,30 @@ void m2_PyErr_SetString_from_openssl_error(PyObject *err_type, unsigned long err
     PyErr_SetString(err_type, err_buf);
 }
 
-static int
-m2_PyObject_AsReadBuffer(PyObject * obj, const void **buffer,
-			 Py_ssize_t * buffer_len)
-{
-    Py_ssize_t len = 0;
-    Py_buffer view;
-
-    if (PyObject_CheckBuffer(obj)) {
-	if (PyObject_GetBuffer(obj, &view, PyBUF_SIMPLE) == 0) {
-	    *buffer = view.buf;
-	    len = view.len;
-	}
-    } else {
-    PyErr_SetString(PyExc_TypeError, "expected a readable buffer object");
-	return -1;
-    }
-    if (len > INT_MAX) {
-	PyBuffer_Release(&view);
-	PyErr_SetString(PyExc_ValueError, "object too large");
-	return -1;
-    }
-    *buffer_len = len;
-    PyBuffer_Release(&view);
-    return 0;
-}
-
-static int
-m2_PyObject_AsReadBufferInt(PyObject * obj, const void **buffer,
-			    int *buffer_len)
-{
-    int ret = 0;
-    Py_ssize_t len = 0;
-
-    ret = m2_PyObject_AsReadBuffer(obj, buffer, &len);
-    *buffer_len = len;
-    return ret;
-}
-
-static int m2_PyObject_GetBufferInt(PyObject *obj, Py_buffer *view, int flags)
-{
-    int ret;
-
-    if (PyObject_CheckBuffer(obj))
-        ret = PyObject_GetBuffer(obj, view, flags);
-    else {
-        PyErr_SetString(PyExc_TypeError, "expected a readable buffer object");
-        return -1;
-    }
-    if (ret)
-        return ret;
-    if (view->len > INT_MAX) {
-        PyErr_SetString(PyExc_ValueError, "object too large");
-        PyBuffer_Release(view);
-        return -1;
-    }
-
-    return 0;
-}
-
 static BIGNUM*
 m2_PyObject_AsBIGNUM(PyObject* value, PyObject* _py_exc)
 {
     BIGNUM* bn = NULL;
-    const void* vbuf = NULL;
-    int vlen = 0;
+    Py_buffer vbuf;
 
     if (!_py_exc || !PyExceptionClass_Check(_py_exc)) {
          PyErr_SetString(PyExc_TypeError, "Invalid exception type provided internally.");
          return NULL;
     }
 
-    if (m2_PyObject_AsReadBufferInt(value, &vbuf, &vlen) == -1) {
+    if (m2_PyObject_GetBufferInt(value, &vbuf, PyBUF_SIMPLE) == -1) {
         return NULL;
     }
 
     ERR_clear_error();
-    if (!(bn = BN_mpi2bn((unsigned char *)vbuf, vlen, NULL))) {
+    if (!(bn = BN_mpi2bn((unsigned char *)vbuf.buf, vbuf.len, NULL))) {
         unsigned long err_code = ERR_get_error();
-
         m2_PyErr_SetString_from_openssl_error(_py_exc, err_code);
-
+        m2_PyBuffer_Release(value, &vbuf);
         return NULL;
     }
 
+    m2_PyBuffer_Release(value, &vbuf);
     return bn;
 }
 
@@ -743,24 +686,19 @@ PyObject *bn_to_hex(BIGNUM *bn) {
 BIGNUM *hex_to_bn(PyObject *value) {
     Py_buffer vbuf;
     BIGNUM *bn;
-    Py_buffer view;
 
-    if (PyObject_CheckBuffer(value)) {
-        if (m2_PyObject_GetBuffer(value, &vbuf, PyBUF_SIMPLE) == 0) {
-            vbuf = view.buf;
-            vlen = view.len;
-        }
-    }
-    else {
-        if (m2_PyObject_AsReadBuffer(value, &vbuf, &vlen) == -1)
-            return NULL;
-    }
+
+    if (m2_PyObject_GetBuffer(value, &vbuf, PyBUF_SIMPLE) == -1)
+        return NULL;
 
     if ((bn=BN_new())==NULL) {
         PyErr_SetString(PyExc_MemoryError, "hex_to_bn");
         m2_PyBuffer_Release(value, &vbuf);
         return NULL;
     }
+
+    /* BN_hex2bn expects a null-terminated string/buffer */
+    /* We pass vbuf.buf assuming input is correctly formatted (e.g. bytes from hex string) */
     if (BN_hex2bn(&bn, (const char *)vbuf.buf) <= 0) {
         m2_PyErr_Msg(PyExc_RuntimeError);
         BN_free(bn);
@@ -774,24 +712,17 @@ BIGNUM *hex_to_bn(PyObject *value) {
 BIGNUM *dec_to_bn(PyObject *value) {
     Py_buffer vbuf;
     BIGNUM *bn;
-    Py_buffer view;
 
-    if (PyObject_CheckBuffer(value)) {
-        if (m2_PyObject_GetBuffer(value, &vbuf, PyBUF_SIMPLE) == 0) {
-            vbuf = view.buf;
-            vlen = view.len;
-        }
-    }
-    else {
-        if (m2_PyObject_AsReadBuffer(value, &vbuf, &vlen) == -1)
-            return NULL;
-    }
+    if (m2_PyObject_GetBuffer(value, &vbuf, PyBUF_SIMPLE) == -1)
+        return NULL;
 
     if ((bn=BN_new())==NULL) {
       PyErr_SetString(PyExc_MemoryError, "dec_to_bn");
       m2_PyBuffer_Release(value, &vbuf);
       return NULL;
     }
+
+    /* BN_dec2bn expects a null-terminated string/buffer */
     if ((BN_dec2bn(&bn, (const char *)vbuf.buf) <= 0)) {
       m2_PyErr_Msg(PyExc_RuntimeError);
       BN_free(bn);

@@ -18,13 +18,13 @@ void util_init(PyObject *util_err) {
 
 PyObject *util_hex_to_string(PyObject *blob) {
     PyObject *obj;
-    unsigned char *ret;
+    char *ret;
     Py_buffer buf;
 
     if (m2_PyObject_GetBuffer(blob, &buf, PyBUF_SIMPLE) == -1)
         return NULL;
 
-    ret = hex_to_string((unsigned char *)buf.buf, buf.len);
+    ret = (char *)hex_to_string((unsigned char *)buf.buf, buf.len);
     if (!ret) {
         m2_PyErr_Msg(_util_err);
         m2_PyBuffer_Release(blob, &buf);

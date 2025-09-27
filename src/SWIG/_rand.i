@@ -27,7 +27,7 @@ void rand_init(PyObject *rand_err) {
 }
 
 PyObject *rand_seed(PyObject *seed) {
-    PyBuffer buf;
+    Py_buffer buf;
 
     if (m2_PyObject_GetBufferInt(seed, &buf, PyBUF_SIMPLE) == -1)
          return NULL;
@@ -38,7 +38,7 @@ PyObject *rand_seed(PyObject *seed) {
 }
 
 PyObject *rand_add(PyObject *blob, double entropy) {
-    PyBuffer buf;
+    Py_buffer buf;
 
     if (m2_PyObject_GetBufferInt(blob, &buf, PyBUF_SIMPLE) == -1)
         return NULL;

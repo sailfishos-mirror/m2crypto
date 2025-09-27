@@ -333,8 +333,9 @@ PyObject *rsa_private_decrypt(RSA *rsa, PyObject *from, int padding) {
         m2_PyBuffer_Release(from, &pybuf);
         return NULL;
     }
-    tlen = RSA_private_decrypt(flen, (unsigned char *)fbuf,
-        (unsigned char *)tbuf, rsa, padding);
+
+    tlen = RSA_private_decrypt(pybuf.len, (unsigned char *)pybuf.buf,
+                               (unsigned char *)tbuf, rsa, padding);
     if (tlen == -1) {
         ERR_clear_error();
         PyErr_Clear();

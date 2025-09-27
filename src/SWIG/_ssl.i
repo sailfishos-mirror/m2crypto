@@ -921,7 +921,7 @@ PyObject *ssl_read_nbio(SSL *ssl, int num) {
 }
 
 int ssl_write(SSL *ssl, PyObject *blob, double timeout) {
-    int r, err, ret;
+    int r, ssl_err, ret;
     Py_buffer buf;
     struct timeval tv;
 

@@ -11,7 +11,7 @@ packages:
   - openssl
   - python3-setuptools
   - python3-twisted
-  - python3-pexpect
+  - python3-irc
   - python3-docutils
   - python3-mypy
 environment:
@@ -38,9 +38,8 @@ tasks:
      PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest -b -v tests.alltests.suite
      [ -n "$GIT_REF" ] && REASON="$JOB_ID ($GIT_REF)"
      [ -n "$PATCHSET_URL" ] && REASON="$JOB_ID ($PATCHSET_URL)"
-     set +x
-     # .builds/irc-send mcepl build-bot m2crypto "sourcehut build $REASON finished with the result $? ($JOB_URL)." "$(cat ~/.irc_pass)"
-     set -x
+     echo "Sourcehut build $BUILD_REASON finished with the result $? ($JOB_URL)." \
+         | .builds/irc-send irc.ergo.chat commit-bot mcepl "#m2crypto"
   - readme: |
      cd m2crypto
      printf "GIT_REF: %s\n" "${GIT_REF}"

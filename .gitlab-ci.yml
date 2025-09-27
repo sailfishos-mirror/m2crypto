@@ -19,6 +19,7 @@ python39:
         - python3 -mpip wheel --verbose --no-cache-dir --no-clean --no-build-isolation --wheel-dir dist/ --editable .
         - python3 -mpip install --break-system-packages -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/[mM]2[cC]rypto*.whl
         - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest -b -v tests.alltests.suite
+        - echo "$PYTHONPATH" ; python3 -c 'import sys; print(sys.path)'
 
 python3:
     image: python:3
@@ -26,7 +27,7 @@ python3:
     stage: build
     script:
         - apt-get update -q -y
-        - apt-get install -y swig libssl-dev python3-dev python3-pip openssl python3-setuptools python3-twisted python3-pip
+        - apt-get install -y swig libssl-dev python3-dev python3-pip openssl python3-setuptools python3-twisted python3-pip python3-irc
         - mkdir -p $HOME/.local/bin
         - ls $HOME/.local/bin
         - export PATH=$PATH:$HOME/.local/bin
@@ -35,6 +36,7 @@ python3:
         - python3 -mpip wheel --verbose --no-cache-dir --no-clean --no-build-isolation --wheel-dir dist/ --editable .
         - python3 -mpip install --break-system-packages -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/[mM]2[cC]rypto*.whl
         - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest -b -v tests.alltests.suite
+        - echo "$PYTHONPATH" ; python3 -c 'import sys; print(sys.path)'
 
 alpine-32bit:
     image:
@@ -53,6 +55,9 @@ alpine-32bit:
         - python3 -mpip wheel --verbose --no-cache-dir --no-clean --no-build-isolation --wheel-dir dist/ --editable .
         - python3 -mpip install --break-system-packages -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/[mM]2[cC]rypto*.whl
         - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest -b -v tests.alltests.suite
+        - echo "$PYTHONPATH" ; python3 -c 'import sys; print(sys.path)'
+        - echo "$IRC_PASS" > ~/.irc_pass && chmod 600 ~/.irc_pass
+        - echo "GitLab build task $CI_JOB_NAME for $REASON finished with the result $? ($CI_JOB_URL)." | .builds/irc-send irc.ergo.chat commit-bot mcepl "#m2crypto"
 
 python3-32bit:
     image:
@@ -71,6 +76,9 @@ python3-32bit:
         - python3 -mpip wheel --verbose --no-cache-dir --no-clean --no-build-isolation --wheel-dir dist/ --editable .
         - python3 -mpip install --break-system-packages -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/[mM]2[cC]rypto*.whl
         - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest -b -v tests.alltests.suite
+        - echo "$PYTHONPATH" ; python3 -c 'import sys; print(sys.path)'
+        - echo "$IRC_PASS" > ~/.irc_pass && chmod 600 ~/.irc_pass
+        - echo "GitLab build task $CI_JOB_NAME for $REASON finished with the result $? ($CI_JOB_URL)." | .builds/irc-send irc.ergo.chat commit-bot mcepl "#m2crypto"
 
 python3-doctest:
     image: python:3
@@ -78,7 +86,7 @@ python3-doctest:
     stage: build
     script:
         - apt-get update -q -y
-        - apt-get install -y swig libssl-dev python3-dev python3-pip openssl python3-setuptools python3-twisted python3-pip
+        - apt-get install -y swig libssl-dev python3-dev python3-pip openssl python3-setuptools python3-twisted python3-pip python3-irc
         - mkdir -p $HOME/.local/bin
         - ls $HOME/.local/bin
         - export PATH=$PATH:$HOME/.local/bin
@@ -87,8 +95,10 @@ python3-doctest:
         - ls $HOME/.local/bin
         - python3 -mpip wheel --verbose --no-cache-dir --no-clean --no-build-isolation --wheel-dir dist/ --editable .
         - python3 -mpip install --break-system-packages -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/[mM]2[cC]rypto*.whl
-        - cd doc/
-        - PYTHONPATH=$(readlink -f ../build/lib.*) make doctest
+        - PYTHONPATH=$(readlink -f build/lib.*) make -C doc/ doctest
+        - echo "$PYTHONPATH" ; python3 -c 'import sys; print(sys.path)'
+        - echo "$IRC_PASS" > ~/.irc_pass && chmod 600 ~/.irc_pass
+        - echo "GitLab build task $CI_JOB_NAME for $REASON finished with the result $? ($CI_JOB_URL)." | .builds/irc-send irc.ergo.chat commit-bot mcepl "#m2crypto"
 
 fedora:
     image: quay.io/fedora/fedora:latest
@@ -97,7 +107,7 @@ fedora:
     script:
         - dnf makecache
         - dnf install -y @development-tools fedora-packager rpmdevtools
-        - dnf install -y swig python3-devel python3-pip openssl-devel openssl python3-setuptools python3-twisted openssl-devel-engine
+        - dnf install -y swig python3-devel python3-pip openssl-devel openssl python3-setuptools python3-twisted openssl-devel-engine python3-irc
         - mkdir -p $HOME/.local/bin
         - ls $HOME/.local/bin
         - export PATH=$PATH:$HOME/.local/bin
@@ -106,6 +116,9 @@ fedora:
         - python3 -mpip wheel --verbose --no-cache-dir --no-clean --no-build-isolation --wheel-dir dist/ --editable .
         - python3 -mpip install -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/[mM]2[cC]rypto*.whl
         - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest -b -v tests.alltests.suite
+        - echo "$PYTHONPATH" ; python3 -c 'import sys; print(sys.path)'
+        - echo "$IRC_PASS" > ~/.irc_pass && chmod 600 ~/.irc_pass
+        - echo "GitLab build task $CI_JOB_NAME for $REASON finished with the result $? ($CI_JOB_URL)." | .builds/irc-send irc.ergo.chat commit-bot mcepl "#m2crypto"
 
 fedora-rawhide:
     image: quay.io/fedora/fedora:rawhide
@@ -123,6 +136,9 @@ fedora-rawhide:
         - python3 -mpip wheel --verbose --no-cache-dir --no-clean --no-build-isolation --wheel-dir dist/ --editable .
         - python3 -mpip install --break-system-packages -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/[mM]2[cC]rypto*.whl
         - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest -b -v tests.alltests.suite
+        - echo "$PYTHONPATH" ; python3 -c 'import sys; print(sys.path)'
+        - echo "$IRC_PASS" > ~/.irc_pass && chmod 600 ~/.irc_pass
+        - echo "GitLab build task $CI_JOB_NAME for $REASON finished with the result $? ($CI_JOB_URL)." | .builds/irc-send irc.ergo.chat commit-bot mcepl "#m2crypto"
     allow_failure: true
 
 leap:
@@ -140,12 +156,15 @@ leap:
         - mkdir -p $HOME/.local/bin
         - ls $HOME/.local/bin
         - export PATH=$PATH:$HOME/.local/bin
-        - python3 -mpip install --user --upgrade-strategy only-if-needed -r dev-requirements.txt
+        - python3 -mpip --disable-pip-version-check install --user --upgrade-strategy only-if-needed -r dev-requirements.txt
         - ls $HOME/.local/bin
-        - python3 -mpip wheel --verbose --no-cache-dir --no-clean --no-build-isolation --wheel-dir dist/ --editable .
+        - python3 -mpip --disable-pip-version-check wheel --verbose --no-cache-dir --no-clean --no-build-isolation --wheel-dir dist/ --editable .
         - find . -name \*.c -ls
-        - python3 -mpip install -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
+        - python3 -mpip --disable-pip-version-check install -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/M2Crypto*.whl
         - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest -b -v tests.alltests.suite
+        - echo "$PYTHONPATH" ; python3 -c 'import sys; print(sys.path)'
+        - echo "$IRC_PASS" > ~/.irc_pass && chmod 600 ~/.irc_pass
+        - echo "GitLab build task $CI_JOB_NAME for $REASON finished with the result $? ($CI_JOB_URL)." | .builds/irc-send irc.ergo.chat commit-bot mcepl "#m2crypto"
 
 opensuse:
     image: opensuse/tumbleweed
@@ -154,7 +173,7 @@ opensuse:
     script:
         - zypper refresh
         - zypper install -y --force-resolution pattern:devel_rpm_build pattern:devel_C_C++ osc
-        - zypper install -y --force-resolution swig python3-devel python3-pip libopenssl-devel openssl python3-service_identity python3-setuptools python3-Twisted
+        - zypper install -y --force-resolution swig python3-devel python3-pip libopenssl-devel openssl python3-service_identity python3-setuptools python3-Twisted python3-irc
         - mkdir -p $HOME/.local/bin
         - ls $HOME/.local/bin
         - export PATH=$PATH:$HOME/.local/bin
@@ -163,6 +182,9 @@ opensuse:
         - python3 -mpip wheel --verbose --no-cache-dir --no-clean --no-build-isolation --wheel-dir dist/ --editable .
         - python3 -mpip install -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/[mM]2[cC]rypto*.whl
         - PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest -b -v tests.alltests.suite
+        - echo "$PYTHONPATH" ; python3 -c 'import sys; print(sys.path)'
+        - echo "$IRC_PASS" > ~/.irc_pass && chmod 600 ~/.irc_pass
+        - echo "GitLab build task $CI_JOB_NAME for $REASON finished with the result $? ($CI_JOB_URL)." | .builds/irc-send irc.ergo.chat commit-bot mcepl "#m2crypto"
 
 build-sdist:
     image: python:3
@@ -180,6 +202,9 @@ build-sdist:
         - python3 -mpip install --break-system-packages --user -r dev-requirements.txt
         - ls $HOME/.local/bin
         - python3 -mbuild . --sdist
+        - echo "$PYTHONPATH" ; python3 -c 'import sys; print(sys.path)'
+        - echo "$IRC_PASS" > ~/.irc_pass && chmod 600 ~/.irc_pass
+        - echo "GitLab build task $CI_JOB_NAME for $REASON finished with the result $? ($CI_JOB_URL)." | .builds/irc-send irc.ergo.chat commit-bot mcepl "#m2crypto"
 
 release-pypi:
   stage: deploy

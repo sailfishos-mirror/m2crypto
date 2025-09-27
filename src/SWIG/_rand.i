@@ -27,22 +27,24 @@ void rand_init(PyObject *rand_err) {
 }
 
 PyObject *rand_seed(PyObject *seed) {
-    const void *buf = NULL;
-    int len = 0;
+    PyBuffer buf;
 
-    m2_PyObject_AsReadBufferInt(seed, &buf, &len);
+    if (m2_PyObject_GetBufferInt(seed, &buf, PyBUF_SIMPLE) == -1)
+         return NULL;
 
-    RAND_seed(buf, len);
+    RAND_seed(buf.buf, buf.len);
+	m2_PyBuffer_Release(seed, &buf);
     Py_RETURN_NONE;
 }
 
 PyObject *rand_add(PyObject *blob, double entropy) {
-    const void *buf = NULL;
-    int len = 0;
+    PyBuffer buf;
 
-    m2_PyObject_AsReadBufferInt(blob, &buf, &len);
+    if (m2_PyObject_GetBufferInt(blob, &buf, PyBUF_SIMPLE) == -1)
+        return NULL;
 
-    RAND_add(buf, len, entropy);
+    RAND_add(buf.buf, buf.len, entropy);
+    m2_PyBuffer_Release(blob, &buf);
     Py_RETURN_NONE;
 }
 

@@ -93,28 +93,30 @@ int dh_check(DH *dh) {
 }
 
 PyObject *dh_compute_key(DH *dh, PyObject *pubkey) {
-    const void *pkbuf;
-    int pklen = 0, klen;
+    Py_buffer pkbuf;
+    int klen;
     void *key;
     BIGNUM *pk;
     PyObject *ret;
 
-    if (m2_PyObject_AsReadBufferInt(pubkey, &pkbuf, &pklen) == -1)
+    if (m2_PyObject_GetBufferInt(pubkey, &pkbuf, PyBUF_SIMPLE) == -1)
         return NULL;
 
-    if (!(pk = BN_mpi2bn((unsigned char *)pkbuf, pklen, NULL))) {
+    if (!(pk = BN_mpi2bn((unsigned char *)pkbuf.buf, pkbuf.len, NULL))) {
         m2_PyErr_Msg(_dh_err);
         return NULL;
     }
     if (!(key = PyMem_Malloc(DH_size(dh)))) {
         BN_free(pk);
         PyErr_SetString(PyExc_MemoryError, "dh_compute_key");
+        m2_PyBuffer_Release(pubkey, &pkbuf);
         return NULL;
     }
     if ((klen = DH_compute_key((unsigned char *)key, pk, dh)) == -1) {
         BN_free(pk);
         PyMem_Free(key);
         m2_PyErr_Msg(_dh_err);
+        m2_PyBuffer_Release(pubkey, &pkbuf);
         return NULL;
     }
 
@@ -122,6 +124,7 @@ PyObject *dh_compute_key(DH *dh, PyObject *pubkey) {
 
     BN_free(pk);
     PyMem_Free(key);
+    m2_PyBuffer_Release(pubkey, &pkbuf);
     return ret;
 }
 
@@ -166,11 +169,49 @@ PyObject *dh_get_priv(DH *dh) {
 }
 
 PyObject *dh_set_pg(DH *dh, PyObject *pval, PyObject* gval) {
-    BIGNUM* p, *g;
+    BIGNUM* p = NULL;
+    BIGNUM* g = NULL;
+    Py_buffer pbuf, gbuf;
 
-    if (!(p = m2_PyObject_AsBIGNUM(pval, _dh_err))
-        || !(g = m2_PyObject_AsBIGNUM(gval, _dh_err)))
-        return NULL;
+    /* Try pval as a buffer (MPI format) */
+    if (m2_PyObject_GetBufferInt(pval, &pbuf, PyBUF_SIMPLE) != -1) {
+        if (!(p = BN_mpi2bn((unsigned char *)pbuf.buf, pbuf.len, NULL))) {
+            PyErr_SetString(_dh_err, ERR_reason_error_string(ERR_get_error()));
+            m2_PyBuffer_Release(pval, &pbuf);
+            return NULL;
+        }
+        m2_PyBuffer_Release(pval, &pbuf);
+    } else {
+        PyErr_Clear(); /* Clear buffer-related errors and try integer conversion */
+    }
+
+    /* If not set by buffer conversion, try standard BIGNUM conversion (e.g., from Python int) */
+    if (p == NULL) {
+        if (!(p = m2_PyObject_AsBIGNUM(pval, _dh_err))) {
+            return NULL; /* Failed both buffer and standard conversion */
+        }
+    }
+
+    /* Try gval as a buffer (MPI format) */
+    if (m2_PyObject_GetBufferInt(gval, &gbuf, PyBUF_SIMPLE) != -1) {
+        if (!(g = BN_mpi2bn((unsigned char *)gbuf.buf, gbuf.len, NULL))) {
+            PyErr_SetString(_dh_err, ERR_reason_error_string(ERR_get_error()));
+            m2_PyBuffer_Release(gval, &gbuf);
+            BN_free(p); /* Clean up p as well */
+            return NULL;
+        }
+        m2_PyBuffer_Release(gval, &gbuf);
+    } else {
+        PyErr_Clear(); /* Clear buffer-related errors and try integer conversion */
+    }
+
+    /* If not set by buffer conversion, try standard BIGNUM conversion (e.g., from Python int) */
+    if (g == NULL) {
+        if (!(g = m2_PyObject_AsBIGNUM(gval, _dh_err))) {
+            BN_free(p); /* Clean up p */
+            return NULL; /* Failed both buffer and standard conversion */
+        }
+    }
 
     if (!DH_set0_pqg(dh, p, NULL, g)) {
         PyErr_SetString(_dh_err,
@@ -178,7 +219,7 @@ PyObject *dh_set_pg(DH *dh, PyObject *pval, PyObject* gval) {
         BN_free(p);
         BN_free(g);
         return NULL;
-        }
+    }
 
     Py_RETURN_NONE;
 }

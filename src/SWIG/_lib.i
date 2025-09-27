@@ -126,14 +126,16 @@ void blob_free(Blob *blob) {
 /* Python helpers. */
 
 %}
-%ignore PyObject_CheckBuffer;
-%ignore PyObject_GetBuffer;
-%ignore PyBuffer_Release;
+%ignore m2_PyBuffer_Release;
 %ignore m2_PyErr_SetString_from_openssl_error;
 %ignore m2_PyObject_AsReadBuffer;
 %ignore m2_PyObject_AsReadBufferInt;
+%ignore m2_PyObject_GetBuffer;
 %ignore m2_PyObject_GetBufferInt;
 %ignore m2_PyString_AsStringAndSizeInt;
+%ignore PyBuffer_Release;
+%ignore PyObject_GetBuffer;
+%ignore PyObject_CheckBuffer;
 
 %newobject mpi_to_bn;
 %newobject bin_to_bn;
@@ -149,6 +151,63 @@ typedef struct bignum_st BIGNUM;
 };
 
 %{
+#if PY_VERSION_HEX < 0x02060000
+static int PyObject_CheckBuffer(PyObject *obj) {
+    (void)obj;
+    return 0;
+}
+
+static int PyObject_GetBuffer(PyObject *obj, Py_buffer *view, int flags) {
+    (void)obj;
+    (void)view;
+    (void)flags;
+    return -1;
+}
+
+static void PyBuffer_Release(Py_buffer *view) {
+    (void)view;
+}
+#endif /* PY_VERSION_HEX < 0x02060000 */
+
+
+static void m2_PyBuffer_Release(PyObject *obj, Py_buffer *view) {
+  if (PyObject_CheckBuffer(obj))
+    PyBuffer_Release(view);
+  /* else do nothing, view->buf comes from PyObject_AsReadBuffer */
+}
+
+static int m2_PyObject_GetBuffer(PyObject *obj, Py_buffer *view, int flags) {
+  int ret;
+
+  if (PyObject_CheckBuffer(obj))
+    ret = PyObject_GetBuffer(obj, view, flags);
+  else {
+    const void *buf;
+
+    ret = PyObject_AsReadBuffer(obj, &buf, &view->len);
+
+    if (ret == 0)
+      view->buf = (void *)buf;
+  }
+  return ret;
+}
+
+
+static int m2_PyObject_GetBufferInt(PyObject *obj, Py_buffer *view, int flags) {
+  int ret;
+
+  ret = m2_PyObject_GetBuffer(obj, view, flags);
+  if (ret)
+    return ret;
+  if (view->len > INT_MAX) {
+    PyErr_SetString(PyExc_ValueError, "object too large");
+    m2_PyBuffer_Release(obj, view);
+    return -1;
+  }
+  return 0;
+}
+
+
 /*
  * Convert an OpenSSL error code into a Python Exception string.
  */
@@ -621,13 +680,15 @@ PyObject *bn_to_mpi(const BIGNUM *bn) {
 }
 
 const BIGNUM *mpi_to_bn(PyObject *value) {
-    const void *vbuf = NULL;
-    int vlen = 0;
+    Py_buffer vbuf;
+    BIGNUM *ret;
 
-    if (m2_PyObject_AsReadBufferInt(value, &vbuf, &vlen) == -1)
-        return NULL;
+    if (m2_PyObject_GetBufferInt(value, &vbuf, PyBUF_SIMPLE) == -1)
+      return NULL;
 
-    return BN_mpi2bn(vbuf, vlen, NULL);
+    ret = BN_mpi2bn(vbuf.buf, vbuf.len, NULL);
+    m2_PyBuffer_Release(value, &vbuf);
+    return ret;
 }
 
 PyObject *bn_to_bin(BIGNUM *bn) {
@@ -649,13 +710,15 @@ PyObject *bn_to_bin(BIGNUM *bn) {
 }
 
 const BIGNUM *bin_to_bn(PyObject *value) {
-    const void *vbuf = NULL;
-    int vlen = 0;
+    Py_buffer vbuf;
+    BIGNUM *ret;
 
-    if (m2_PyObject_AsReadBufferInt(value, &vbuf, &vlen) == -1)
-        return NULL;
+    if (m2_PyObject_GetBufferInt(value, &vbuf, PyBUF_SIMPLE) == -1)
+      return NULL;
 
-    return BN_bin2bn(vbuf, vlen, NULL);
+    ret = BN_bin2bn(vbuf.buf, vbuf.len, NULL);
+    m2_PyBuffer_Release(value, &vbuf);
+    return ret;
 }
 
 PyObject *bn_to_hex(BIGNUM *bn) {
@@ -678,13 +741,12 @@ PyObject *bn_to_hex(BIGNUM *bn) {
 }
 
 BIGNUM *hex_to_bn(PyObject *value) {
-    const void *vbuf = NULL;
-    Py_ssize_t vlen = 0;
+    Py_buffer vbuf;
     BIGNUM *bn;
     Py_buffer view;
 
     if (PyObject_CheckBuffer(value)) {
-        if (PyObject_GetBuffer(value, &view, PyBUF_SIMPLE) == 0) {
+        if (m2_PyObject_GetBuffer(value, &vbuf, PyBUF_SIMPLE) == 0) {
             vbuf = view.buf;
             vlen = view.len;
         }
@@ -695,28 +757,27 @@ BIGNUM *hex_to_bn(PyObject *value) {
     }
 
     if ((bn=BN_new())==NULL) {
-        PyBuffer_Release(&view);
         PyErr_SetString(PyExc_MemoryError, "hex_to_bn");
+        m2_PyBuffer_Release(value, &vbuf);
         return NULL;
     }
-    if (BN_hex2bn(&bn, (const char *)vbuf) <= 0) {
-        PyBuffer_Release(&view);
+    if (BN_hex2bn(&bn, (const char *)vbuf.buf) <= 0) {
         m2_PyErr_Msg(PyExc_RuntimeError);
         BN_free(bn);
+        m2_PyBuffer_Release(value, &vbuf);
         return NULL;
     }
-    PyBuffer_Release(&view);
+    m2_PyBuffer_Release(value, &vbuf);
     return bn;
 }
 
 BIGNUM *dec_to_bn(PyObject *value) {
-    const void *vbuf = NULL;
-    Py_ssize_t vlen = 0;
+    Py_buffer vbuf;
     BIGNUM *bn;
     Py_buffer view;
 
     if (PyObject_CheckBuffer(value)) {
-        if (PyObject_GetBuffer(value, &view, PyBUF_SIMPLE) == 0) {
+        if (m2_PyObject_GetBuffer(value, &vbuf, PyBUF_SIMPLE) == 0) {
             vbuf = view.buf;
             vlen = view.len;
         }
@@ -727,17 +788,17 @@ BIGNUM *dec_to_bn(PyObject *value) {
     }
 
     if ((bn=BN_new())==NULL) {
-      PyBuffer_Release(&view);
       PyErr_SetString(PyExc_MemoryError, "dec_to_bn");
+      m2_PyBuffer_Release(value, &vbuf);
       return NULL;
     }
-    if ((BN_dec2bn(&bn, (const char *)vbuf) <= 0)) {
-      PyBuffer_Release(&view);
+    if ((BN_dec2bn(&bn, (const char *)vbuf.buf) <= 0)) {
       m2_PyErr_Msg(PyExc_RuntimeError);
       BN_free(bn);
+      m2_PyBuffer_Release(value, &vbuf);
       return NULL;
     }
-    PyBuffer_Release(&view);
+    m2_PyBuffer_Release(value, &vbuf);
     return bn;
 }
 %}

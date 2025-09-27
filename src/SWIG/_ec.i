@@ -319,40 +319,47 @@ PyObject *ecdsa_sig_get_s(ECDSA_SIG *ecdsa_sig) {
 }
 
 PyObject *ecdsa_sign(EC_KEY *key, PyObject *value) {
-    const void *vbuf;
-    int vlen = 0;
     PyObject *tuple;
     ECDSA_SIG *sig;
+    Py_buffer vbuf;
 
-    if (m2_PyObject_AsReadBufferInt(value, &vbuf, &vlen) == -1)
+    if (m2_PyObject_GetBufferInt(value, &vbuf, PyBUF_SIMPLE) == -1)
         return NULL;
 
-    if (!(sig = ECDSA_do_sign(vbuf, vlen, key))) {
+    if (!(sig = ECDSA_do_sign(vbuf.buf, vbuf.len, key))) {
         m2_PyErr_Msg(_ec_err);
+        m2_PyBuffer_Release(value, &vbuf);
         return NULL;
     }
     if (!(tuple = PyTuple_New(2))) {
         ECDSA_SIG_free(sig);
         PyErr_SetString(PyExc_RuntimeError, "PyTuple_New() fails");
+        m2_PyBuffer_Release(value, &vbuf);
         return NULL;
     }
     PyTuple_SET_ITEM(tuple, 0, ecdsa_sig_get_r(sig));
     PyTuple_SET_ITEM(tuple, 1, ecdsa_sig_get_s(sig));
     ECDSA_SIG_free(sig);
+    m2_PyBuffer_Release(value, &vbuf);
     return tuple;
 }
 
 int ecdsa_verify(EC_KEY *key, PyObject *value, PyObject *r, PyObject *s) {
-    const void *vbuf, *rbuf, *sbuf;
-    int vlen = 0, rlen = 0, slen = 0;
+    Py_buffer vbuf, rbuf, sbuf;
     ECDSA_SIG *sig;
     int ret;
-    BIGNUM* pr, *ps;
 
-    if ((m2_PyObject_AsReadBufferInt(value, &vbuf, &vlen) == -1)
-        || (m2_PyObject_AsReadBufferInt(r, &rbuf, &rlen) == -1)
-        || (m2_PyObject_AsReadBufferInt(s, &sbuf, &slen) == -1))
-        return -1;
+    if (m2_PyObject_GetBufferInt(value, &vbuf, PyBUF_SIMPLE) == -1)
+      return -1;
+    if (m2_PyObject_GetBufferInt(r, &rbuf, PyBUF_SIMPLE) == -1) {
+      m2_PyBuffer_Release(value, &vbuf);
+      return -1;
+    }
+    if (m2_PyObject_GetBufferInt(s, &sbuf, PyBUF_SIMPLE) == -1) {
+      m2_PyBuffer_Release(value, &vbuf);
+      m2_PyBuffer_Release(r, &rbuf);
+      return -1;
+    }
 
     if (!(pr = BN_mpi2bn((unsigned char *)rbuf, rlen, NULL))) {
         m2_PyErr_Msg(_ec_err);
@@ -366,8 +373,9 @@ int ecdsa_verify(EC_KEY *key, PyObject *value, PyObject *r, PyObject *s) {
 
     if (!(sig = ECDSA_SIG_new())) {
         m2_PyErr_Msg(_ec_err);
-        BN_free(pr);
-        BN_free(ps);
+        m2_PyBuffer_Release(value, &vbuf);
+        m2_PyBuffer_Release(r, &rbuf);
+        m2_PyBuffer_Release(s, &sbuf);
         return -1;
     }
     if (!ECDSA_SIG_set0(sig, pr, ps)) {
@@ -377,52 +385,78 @@ int ecdsa_verify(EC_KEY *key, PyObject *value, PyObject *r, PyObject *s) {
         BN_free(ps);
         return -1;
     }
-    ret = ECDSA_do_verify(vbuf, vlen, sig, key);
+
+    if (!BN_mpi2bn((unsigned char *)rbuf.buf, rbuf.len, sig->r)) {
+        PyErr_SetString(_ec_err, ERR_reason_error_string(ERR_get_error()));
+        ECDSA_SIG_free(sig);
+        m2_PyBuffer_Release(value, &vbuf);
+        m2_PyBuffer_Release(r, &rbuf);
+        m2_PyBuffer_Release(s, &sbuf);
+        return -1;
+    }
+    if (!BN_mpi2bn((unsigned char *)sbuf.buf, sbuf.len, sig->s)) {
+        PyErr_SetString(_ec_err, ERR_reason_error_string(ERR_get_error()));
+        ECDSA_SIG_free(sig);
+        m2_PyBuffer_Release(value, &vbuf);
+        m2_PyBuffer_Release(r, &rbuf);
+        m2_PyBuffer_Release(s, &sbuf);
+        return -1;
+    }
+    ret = ECDSA_do_verify(vbuf.buf, vbuf.len, sig, key);
     ECDSA_SIG_free(sig);
+    m2_PyBuffer_Release(value, &vbuf);
+    m2_PyBuffer_Release(r, &rbuf);
+    m2_PyBuffer_Release(s, &sbuf);
     if (ret == -1)
         m2_PyErr_Msg(_ec_err);
     return ret;
 }
 
-
 PyObject *ecdsa_sign_asn1(EC_KEY *key, PyObject *value) {
-    const void *vbuf;
-    int vlen = 0;
+    Py_buffer vbuf;
     void *sigbuf;
     unsigned int siglen;
     PyObject *ret;
 
-    if (m2_PyObject_AsReadBufferInt(value, &vbuf, &vlen) == -1)
+    if (m2_PyObject_GetBufferInt(value, &vbuf, PyBUF_SIMPLE) == -1)
         return NULL;
 
     if (!(sigbuf = PyMem_Malloc(ECDSA_size(key)))) {
         PyErr_SetString(PyExc_MemoryError, "ecdsa_sign_asn1");
+        m2_PyBuffer_Release(value, &vbuf);
         return NULL;
     }
-    if (!ECDSA_sign(0, vbuf, vlen, (unsigned char *)sigbuf, &siglen, key)) {
+    if (!ECDSA_sign(0, vbuf.buf, vbuf.len,
+                    (unsigned char *)sigbuf, &siglen, key)) {
         m2_PyErr_Msg(_ec_err);
         PyMem_Free(sigbuf);
+        m2_PyBuffer_Release(value, &vbuf);
         return NULL;
     }
     ret = PyBytes_FromStringAndSize(sigbuf, siglen);
 
     PyMem_Free(sigbuf);
+    m2_PyBuffer_Release(value, &vbuf);
     return ret;
 }
 
 
 int ecdsa_verify_asn1(EC_KEY *key, PyObject *value, PyObject *sig) {
-    const void *vbuf;
-    void *sbuf;
-    int vlen = 0, slen = 0, ret;
+    Py_buffer vbuf, sbuf;
+    int ret;
 
-    if ((m2_PyObject_AsReadBufferInt(value, &vbuf, &vlen) == -1)
-        || (m2_PyObject_AsReadBufferInt(sig, (const void **)&sbuf, &slen)
-        == -1))
-        return -1;
+    if (m2_PyObject_GetBufferInt(value, &vbuf, PyBUF_SIMPLE) == -1)
+      return -1;
+    if (m2_PyObject_GetBufferInt(sig, &sbuf, PyBUF_SIMPLE) == -1) {
+      m2_PyBuffer_Release(value, &vbuf);
+      return -1;
+    }
 
-    if ((ret = ECDSA_verify(0, vbuf, vlen, sbuf, slen, key)) == -1)
+    if ((ret = ECDSA_verify(0, (const void *) vbuf.buf, vbuf.len,
+                            sbuf.buf, sbuf.len, key)) == -1)
         m2_PyErr_Msg(_ec_err);
+    m2_PyBuffer_Release(value, &vbuf);
+    m2_PyBuffer_Release(sig, &sbuf);
     return ret;
 }
 
@@ -467,9 +501,7 @@ EC_KEY* ec_key_from_pubkey_der(PyObject *pubkey) {
     EC_KEY *keypair;
 
     if (m2_PyObject_AsReadBuffer(pubkey, &keypairbuf, &keypairbuflen) == -1)
-    {
         return NULL;
-    }
 
     tempBuf = (const unsigned char *)keypairbuf;
     if ((keypair = d2i_EC_PUBKEY( NULL, &tempBuf, keypairbuflen)) == 0)

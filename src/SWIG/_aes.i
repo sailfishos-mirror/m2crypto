@@ -45,16 +45,16 @@ void AES_free(AES_KEY *key) {
 // otherwise: decrypt (Python code will supply the value 1.)
 */
 PyObject *AES_set_key(AES_KEY *key, PyObject *value, int bits, int op) {
-    char *vbuf;
-    Py_ssize_t vlen;
+    Py_buffer vbuf;
 
-    if (PyBytes_AsStringAndSize(value, &vbuf, &vlen) == -1)
-        return NULL;
+    if (m2_PyObject_GetBuffer(value, &vbuf, PyBUF_SIMPLE) == -1)
+      return NULL;
 
     if (op == 0)
-        AES_set_encrypt_key((const unsigned char *)vbuf, bits, key);
+        AES_set_encrypt_key((const unsigned char *)vbuf.buf, bits, key);
     else
-        AES_set_decrypt_key((const unsigned char *)vbuf, bits, key);
+        AES_set_decrypt_key((const unsigned char *)vbuf.buf, bits, key);
+    m2_PyBuffer_Release(value, &vbuf);
     Py_RETURN_NONE;
 }
 
@@ -63,22 +63,23 @@ PyObject *AES_set_key(AES_KEY *key, PyObject *value, int bits, int op) {
 // otherwise: decrypt (Python code will supply the value 1.)
 */
 PyObject *AES_crypt(const AES_KEY *key, PyObject *in, int outlen, int op) {
-    char *buf;
-    Py_ssize_t len;
     unsigned char *out;
     PyObject *res;
+    Py_buffer buf;
 
-    if (PyBytes_AsStringAndSize(in, &buf, &len) == -1)
+    if (m2_PyObject_GetBuffer(in, &buf, PyBUF_SIMPLE) == -1)
         return NULL;
 
     if (!(out=(unsigned char *)PyMem_Malloc(outlen))) {
         PyErr_SetString(PyExc_MemoryError, "AES_crypt");
+        m2_PyBuffer_Release(in, &buf);
         return NULL;
     }
     if (op == 0)
-        AES_encrypt((const unsigned char *)buf, out, key);
+        AES_encrypt((const unsigned char *)buf.buf, out, key);
     else
-        AES_decrypt((const unsigned char *)buf, out, key);
+        AES_decrypt((const unsigned char *)buf.buf, out, key);
+    m2_PyBuffer_Release(in, &buf);
     res = PyBytes_FromStringAndSize((char*)out, outlen);
     PyMem_Free(out);
     return res;

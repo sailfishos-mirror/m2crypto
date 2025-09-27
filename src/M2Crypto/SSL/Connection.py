@@ -17,8 +17,7 @@ from .Checker import Checker, SSLVerificationError
 from .Cipher import Cipher, Cipher_Stack
 from .Session import Session
 from .SSLError import SSLError
-import M2Crypto.SSL.timeout as timeout_module
-from .timeout import timeout as Timeout
+from .timeout import timeout as Timeout, struct_to_timeout, struct_size
 from typing import (
     Callable,
     TYPE_CHECKING,
@@ -665,11 +664,11 @@ class Connection:
         return m2.ssl_get_default_session_timeout(self.ssl)
 
     def get_socket_read_timeout(self) -> Timeout:
-        return timeout_module.struct_to_timeout(
+        return struct_to_timeout(
             self.socket.getsockopt(
                 socket.SOL_SOCKET,
                 socket.SO_RCVTIMEO,
-                timeout_module.struct_size(),
+                struct_size(),
             )
         )
 
@@ -677,9 +676,9 @@ class Connection:
         binstr = self.socket.getsockopt(
             socket.SOL_SOCKET,
             socket.SO_SNDTIMEO,
-            timeout_module.struct_size(),  # type: ignore[attr-defined]
+            struct_size(),  # type: ignore[attr-defined]
         )
-        timeo = timeout_module.struct_to_timeout(binstr)  # type: ignore[attr-defined]
+        timeo = struct_to_timeout(binstr)  # type: ignore[attr-defined]
         # print("Debug: get_socket_write_timeout: "
         #       "get sockopt value: %s -> ret timeout(sec=%r, microsec=%r)" %
         #       (self._hexdump(binstr), timeo.sec, timeo.microsec))

@@ -658,13 +658,11 @@ class X509TestCase(unittest.TestCase):
         )
 
     @unittest.skipIf(platform.system() == "Windows", "Skip on Windows. TODO")
-    @expectedFailureIf(m2.time_t_bits() == 32)
     def test_date_after_2050_working(self):
         cert = X509.load_cert("tests/bad_date_cert.crt")
         self.assertEqual(str(cert.get_not_after()), "Feb  9 14:57:46 2116 GMT")
 
     @unittest.skipIf(platform.system() == "Windows", "Skip on Windows. TODO")
-    @expectedFailureIf(m2.time_t_bits() == 32)
     def test_date_reference_counting(self):
         """x509_get_not_before() and x509_get_not_after() return internal
         pointers into X509. As the returned ASN1_TIME objects do not store any

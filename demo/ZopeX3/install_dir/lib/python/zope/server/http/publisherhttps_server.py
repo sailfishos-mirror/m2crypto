@@ -22,7 +22,7 @@ def get_instance_ssldir():
     # This is real cheesy: It seems Zope3 doesn't have convenient
     # programmatic access to INSTANCE_HOME. This code relies on zopectl
     # setting the first entry of PYTHONPATH to $INSTANCE_HOME/lib/python.
-    return os.path.join(os.path.dirname(os.path.dirname(sys.path[0])), 'ssl')
+    return os.path.join(os.path.dirname(os.path.dirname(sys.path[0])), "ssl")
 
 
 class PublisherHTTPS_Server(HTTPS_Server):
@@ -37,17 +37,17 @@ class PublisherHTTPS_Server(HTTPS_Server):
         # used for other protocols, like XML-RPC, SOAP and so as well
         # Here we just allow the logger to output the sub-protocol type.
         if sub_protocol:
-            self.SERVER_IDENT += ' (%s)' %str(sub_protocol)
+            self.SERVER_IDENT += " (%s)" % str(sub_protocol)
 
-        kw['ssl_ctx'] = make_ssl_context(get_instance_ssldir())
+        kw["ssl_ctx"] = make_ssl_context(get_instance_ssldir())
         HTTPS_Server.__init__(self, *args, **kw)
 
     def executeRequest(self, task):
         """Overrides HTTPServer.executeRequest()."""
         env = task.getCGIEnvironment()
-        env['HTTPS'] = 'ON'
+        env["HTTPS"] = "ON"
         try:
-            del env['HTTP']
+            del env["HTTP"]
         except KeyError:
             pass
         instream = task.request_data.getBodyStream()
@@ -65,9 +65,9 @@ class PMDBHTTPS_Server(PublisherHTTPS_Server):
     def executeRequest(self, task):
         """Overrides HTTPServer.executeRequest()."""
         env = task.getCGIEnvironment()
-        env['HTTPS'] = 'ON'
+        env["HTTPS"] = "ON"
         try:
-            del env['HTTP']
+            del env["HTTP"]
         except KeyError:
             pass
         instream = task.request_data.getBodyStream()
@@ -79,8 +79,8 @@ class PMDBHTTPS_Server(PublisherHTTPS_Server):
             publish(request, handle_errors=False)
         except:
             import sys, pdb
+
             print("%s:" % sys.exc_info()[0])
             print(sys.exc_info()[1])
             pdb.post_mortem(sys.exc_info()[2])
             raise
-

@@ -1,9 +1,9 @@
 --- z2s.py	Sun Oct 26 17:51:00 2003
 +++ /usr/local/home/ngps/pkg/zope261/z2.py	Thu Jan 30 22:41:42 2003
 @@ -105,21 +105,9 @@
- 
+
      Multiple -w options can be provided to run multiple servers.
- 
+
 -  -y port
 -
 -    The SSL Web server (HTTPS) port.  This defaults to %(HTTPS_PORT)s. The
@@ -17,16 +17,16 @@
 -    Multiple -y options can be provided to run multiple servers.
 -
    -W port
- 
+
 -    The "WebDAV source" port.  If this is a dash (e.g. -W -), then
 +    The "WebDAV source" port.  If this is a dash (e.g. -w -), then
      "WebDAV source" is disabled.  The default is disabled.  Note that
      this feature is a workaround for the lack of "source-link" support
      in standard WebDAV clients.
 @@ -130,24 +118,6 @@
- 
+
      Multiple -W options can be provided to run multiple servers.
- 
+
 -  -Y port
 -
 -    The "WebDAV source over HTTPS" port.  If this is a dash (e.g. -Y -), then
@@ -47,17 +47,17 @@
 -
    -C
    --force-http-connection-close
- 
+
 @@ -316,15 +286,9 @@
  # Port for HTTP Server. The standard port for HTTP services is 80.
  HTTP_PORT=8080
- 
+
 -# Port for HTTPS Server. The standard port for HTTPS services is 443.
 -HTTPS_PORT=8443
 -
  # HTTP enivornment settings.
  HTTP_ENV={}
- 
+
 -# HTTPS enivornment settings.
 -HTTPS_ENV={}
 -
@@ -67,7 +67,7 @@
 @@ -333,13 +297,6 @@
  # standard port for this handler, which is disabled by default.
  WEBDAV_SOURCE_PORT=[]
- 
+
 -# Port for the special "WebDAV source view over SSL" HTTP handler.  There is no
 -# standard port for this handler, which is disabled by default.
 -WEBDAV_SSL_SOURCE_PORT=[]
@@ -76,17 +76,17 @@
 -X509_REMOTE_USER=None
 -
  ## FTP configuration
- 
+
  # Port for the FTP Server. The standard port for FTP services is 21.
 @@ -429,7 +386,7 @@
- 
- 
+
+
      opts, args = getopt.getopt(sys.argv[1:],
 -                               'hz:Z:t:i:a:d:u:w:W:y:Y:x:f:p:m:Sl:2DP:rF:L:XM:C',
 +                               'hz:Z:t:i:a:d:u:w:W:f:p:m:Sl:2DP:rF:L:XM:C',
                                 ['icp=', 'force-http-connection-close'
                                 ])
- 
+
 @@ -486,19 +443,10 @@
              MONITOR_PORT=server_info(MONITOR_PORT, v)
          elif o=='-w':
@@ -109,36 +109,36 @@
          elif o=='-P':
 @@ -653,60 +601,14 @@
      from ZServer import resolver, logger, asyncore
- 
+
      from ZServer import zhttp_server, zhttp_handler
--    from ZServer import zhttps_server, zhttps0_handler, zhttps_handler    
+-    from ZServer import zhttps_server, zhttps0_handler, zhttps_handler
      from ZServer.WebDAVSrcHandler import WebDAVSrcHandler
      from ZServer import PCGIServer,FTPServer,FCGIServer
- 
+
      from ZServer import secure_monitor_server
- 
+
 -    from M2Crypto import SSL, Rand
 -
      ## ZServer startup
      ##
- 
+
 -    ## In X509_REMOTE_USER mode, we log the client cert's subject DN.
 -    if X509_REMOTE_USER:
--        
+-
 -        import base64, string, time
 -
 -        def log (self, bytes):
 -            user_agent=self.get_header('user-agent')
 -            if not user_agent: user_agent=''
 -            referer=self.get_header('referer')
--            if not referer: referer=''  
+-            if not referer: referer=''
 -
 -            get_peer_cert = getattr(self.channel, 'get_peer_cert', None)
 -            if get_peer_cert is not None:
 -                name = str(get_peer_cert().get_subject())
 -            else:
 -                name = 'Anonymous'
--            auth=self.get_header('Authorization')                
+-            auth=self.get_header('Authorization')
 -            if auth is not None:
 -                if string.lower(auth[:6]) == 'basic ':
 -                    try: decoded=base64.decodestring(auth[6:])
@@ -180,7 +180,7 @@
              if FORCE_HTTP_CONNECTION_CLOSE:
                  zh._force_connection_close = 1
              hs.install_handler(zh)
- 
+
 -    # HTTPS Server
 -    if HTTPS_PORT:
 -        ssl_ctx = SSL.Context('sslv23')
@@ -196,7 +196,7 @@
 -        else:
 -            ssl_ctx.set_verify(SSL.verify_none, 10)
 -        if type(HTTPS_PORT) is type(0): HTTPS_PORT=((IP_ADDRESS, HTTPS_PORT),)
--    
+-
 -        for address, port in HTTPS_PORT:
 -            hss = zhttps_server(
 -                ip=address,
@@ -204,7 +204,7 @@
 -                ssl_ctx=ssl_ctx,
 -                resolver=rs,
 -                logger_object=lg)
--    
+-
 -            try:
 -                del HTTPS_ENV['HTTP']
 -            except KeyError:
@@ -223,7 +223,7 @@
 @@ -854,34 +716,6 @@
              else:
                  sys.WEBDAV_SOURCE_PORT_CLIENTS = None
- 
+
 -    # WebDAV-over-SSL source Server (runs HTTPS, but munges request to return
 -    #  'manage_FTPget').
 -    if WEBDAV_SSL_SOURCE_PORT:
@@ -252,12 +252,12 @@
 -
 -            zsh = WebDAVSrcHandler(MODULE, '', HTTPS_ENV)
 -            hss.install_handler(zsh)
- 
+
      # FTP Server
      if FTP_PORT:
 @@ -1072,8 +906,6 @@
      sys.exit(0)
- 
+
  # Start Medusa, Ye Hass!
 -Rand.load_file('%s/randpool.dat' % INSTANCE_HOME, -1)
  sys.ZServerExitCode=0

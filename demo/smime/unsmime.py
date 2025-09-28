@@ -9,6 +9,7 @@ Copyright (c) 2000 Ng Pheng Siong. All rights reserved."""
 from M2Crypto import BIO, Rand, SMIME, X509
 import sys
 
+
 def decrypt_verify(p7file, recip_key, signer_cert, ca_cert):
     s = SMIME.SMIME()
 
@@ -45,8 +46,7 @@ def decrypt_verify(p7file, recip_key, signer_cert, ca_cert):
     print(data)
 
 
-if __name__ == '__main__':
-    Rand.load_file('../randpool.dat', -1)
-    decrypt_verify(BIO.File(sys.stdin), 'client.pem', 'client2.pem','ca.pem')
-    Rand.save_file('../randpool.dat')
-
+if __name__ == "__main__":
+    Rand.load_file("../randpool.dat", -1)
+    decrypt_verify(BIO.File(sys.stdin), "client.pem", "client2.pem", "ca.pem")
+    Rand.save_file("../randpool.dat")

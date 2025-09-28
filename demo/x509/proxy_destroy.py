@@ -13,6 +13,7 @@ import optparse, os
 USAGEHELP = "proxy_destroy.py file1 file2  Destroys files listed"
 JUNK = "LalalAlalaLalalALalalAlalaLalalALalalAlalaLalalALalalAlalaLalalA"
 
+
 def scrub_file(filename):
     """
     Overwrite the file with junk, before removing it
@@ -40,4 +41,6 @@ def main():
     for proxy_file in args:
         scrub_file(proxy_file)
 
-if __name__ == "__main__": main()
+
+if __name__ == "__main__":
+    main()

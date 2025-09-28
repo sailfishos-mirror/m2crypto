@@ -1,9 +1,9 @@
 ############################################################################
 # Matt Rodriguez, LBNL
-#Copyright (c) 2003, The Regents of the University of California,
-#through Lawrence Berkeley National Laboratory
-#(subject to receipt of any required approvals from the U.S. Dept. of Energy).
-#All rights reserved.
+# Copyright (c) 2003, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory
+# (subject to receipt of any required approvals from the U.S. Dept. of Energy).
+# All rights reserved.
 ############################################################################
 
 from __future__ import print_function
@@ -17,7 +17,7 @@ import re
 import time, calendar, datetime
 
 import_regex = re.compile(r"\s*libssl.so.0.9.8\s*")
-errstr = "You must have the openssl 0.9.8 libraries in your LD_LIBRARY_PATH"""
+errstr = "You must have the openssl 0.9.8 libraries in your LD_LIBRARY_PATH" ""
 
 try:
     from M2Crypto import BIO, X509, RSA, EVP, ASN1
@@ -29,10 +29,11 @@ except ImportError as ex:
         raise ex
 
 MBSTRING_FLAG = 0x1000
-MBSTRING_ASC  = MBSTRING_FLAG | 1
+MBSTRING_ASC = MBSTRING_FLAG | 1
 KEY_USAGE_VALUE = "Digital Signature, Key Encipherment, Data Encipherment"
 PCI_VALUE_FULL = "critical, language:Inherit all"
 PCI_VALUE_LIMITED = "critical, language:1.3.6.1.4.1.3536.1.1.1.9"
+
 
 def create_write_file(fname, perm=0o600):
     """
@@ -44,8 +45,8 @@ def create_write_file(fname, perm=0o600):
         os.remove(fname)
     # Make sure the file doesn't exist. Will throw an exception if
     # it does. This would only happen if the code is attacked.
-    fd = os.open(fname, os.O_CREAT|os.O_EXCL|os.O_WRONLY, perm)
-    f = os.fdopen(fd, 'w')
+    fd = os.open(fname, os.O_CREAT | os.O_EXCL | os.O_WRONLY, perm)
+    f = os.fdopen(fd, "w")
     return f
 
 
@@ -54,12 +55,14 @@ class ProxyFactoryException(Exception):
     Base class for exceptions in the ProxyFactory class
     """
 
+
 class Proxy:
     """
     class that holds proxy certificate information,
     consisting of an issuer cert a user cert and
     a key for the user cert
     """
+
     def __init__(self):
         self._key = None
         self._cert = None
@@ -131,14 +134,15 @@ class ProxyFactory:
     """
     Creates proxies
     """
-    def __init__(self, kw={'cert':None,'key':None,'valid':(12,0),'full':True}):
 
-        self._usercert = get_usercert(kw['cert'])
-        self._userkey = get_userkey(kw['key'])
+    def __init__(self, kw={"cert": None, "key": None, "valid": (12, 0), "full": True}):
+
+        self._usercert = get_usercert(kw["cert"])
+        self._userkey = get_userkey(kw["key"])
         self._proxycert = None
         self._proxykey = None
-        self._valid = kw['valid']
-        self._full = kw['full']
+        self._valid = kw["valid"]
+        self._full = kw["full"]
 
     def generate(self):
         """
@@ -162,7 +166,7 @@ class ProxyFactory:
         sign_pk = EVP.PKey()
         sign_pk.assign_rsa(self._userkey)
         self._add_extensions()
-        self._proxycert.sign(sign_pk, 'md5')
+        self._proxycert.sign(sign_pk, "md5")
 
     def set_proxycert(self, proxycert):
         """
@@ -193,16 +197,23 @@ class ProxyFactory:
         seq = issuer_name_txt.split(",")
         for entry in seq:
             name_component = entry.split("=")
-            subject_name.add_entry_by_txt(field=name_component[0].strip(),
-                                         type=MBSTRING_ASC,
-                                         entry=name_component[1],len=-1,
-                                         loc=-1, set=0)
+            subject_name.add_entry_by_txt(
+                field=name_component[0].strip(),
+                type=MBSTRING_ASC,
+                entry=name_component[1],
+                len=-1,
+                loc=-1,
+                set=0,
+            )
 
-
-        subject_name.add_entry_by_txt(field="CN",
-                                      type=MBSTRING_ASC,
-                                      entry=str(serial_number),
-                                      len=-1, loc=-1, set=0)
+        subject_name.add_entry_by_txt(
+            field="CN",
+            type=MBSTRING_ASC,
+            entry=str(serial_number),
+            len=-1,
+            loc=-1,
+            set=0,
+        )
 
         self._proxycert.set_subject_name(subject_name)
 
@@ -215,7 +226,7 @@ class ProxyFactory:
         not_after = ASN1.ASN1_UTCTIME()
         not_before.set_time(int(time.time()))
         offset = (self._valid[0] * 3600) + (self._valid[1] * 60)
-        not_after.set_time(int(time.time()) + offset )
+        not_after.set_time(int(time.time()) + offset)
         self._proxycert.set_not_before(not_before)
         self._proxycert.set_not_after(not_after)
 
@@ -223,14 +234,17 @@ class ProxyFactory:
         """
         Lifted from the globus code
         """
-        message_digest = EVP.MessageDigest('sha1')
+        message_digest = EVP.MessageDigest("sha1")
         pubkey = cert.get_pubkey()
         der_encoding = pubkey.as_der()
         message_digest.update(der_encoding)
         digest = message_digest.final()
-        digest_tuple = struct.unpack('BBBB', digest[:4])
-        sub_hash = long(digest_tuple[0] + (digest_tuple[1] + ( digest_tuple[2] +
-                       ( digest_tuple[3] >> 1) * 256 ) * 256) * 256)
+        digest_tuple = struct.unpack("BBBB", digest[:4])
+        sub_hash = long(
+            digest_tuple[0]
+            + (digest_tuple[1] + (digest_tuple[2] + (digest_tuple[3] >> 1) * 256) * 256)
+            * 256
+        )
         return sub_hash
 
     def _add_extensions(self):
@@ -240,11 +254,9 @@ class ProxyFactory:
         key_usage_ext = X509.new_extension("keyUsage", KEY_USAGE_VALUE, 1)
         self._proxycert.add_ext(key_usage_ext)
         if self._full:
-            pci_ext = X509.new_extension("proxyCertInfo",
-                                        PCI_VALUE_FULL, 1, 0)
+            pci_ext = X509.new_extension("proxyCertInfo", PCI_VALUE_FULL, 1, 0)
         else:
-            pci_ext = X509.new_extension("proxyCertInfo",
-                                        PCI_VALUE_LIMITED, 1, 0)
+            pci_ext = X509.new_extension("proxyCertInfo", PCI_VALUE_LIMITED, 1, 0)
         self._proxycert.add_ext(pci_ext)
 
     def _check_valid(self):
@@ -256,34 +268,37 @@ class ProxyFactory:
         after_time = self._usercert.get_not_after()
         before_tuple = time.strptime(str(before_time), "%b %d %H:%M:%S %Y %Z")
         after_tuple = time.strptime(str(after_time), "%b %d %H:%M:%S %Y %Z")
-        starts =  datetime.timedelta(seconds=calendar.timegm(before_tuple))
+        starts = datetime.timedelta(seconds=calendar.timegm(before_tuple))
         expires = datetime.timedelta(seconds=calendar.timegm(after_tuple))
         now = datetime.timedelta(seconds=time.time())
         time_delta = expires - now
-        #cert has expired
+        # cert has expired
         if time_delta.days < 0:
             return False
-        #cert is not yet valid, not likely but should still return False
+        # cert is not yet valid, not likely but should still return False
         time_delta = now - starts
         if time_delta.days < 0:
             return False
 
         return True
 
-#Utility Functions
+
+# Utility Functions
 def get_proxy_filename():
     """
     function that returns the default proxy path
     which is /tmp/x509up_uuid
     """
-    if os.name == 'posix':
+    if os.name == "posix":
         proxy_filename = "x509up_u" + (str(os.getuid()))
         proxypath = os.path.join("/tmp", proxy_filename)
-    elif os.name == 'nt':
+    elif os.name == "nt":
         username = os.getenv("USERNAME")
         if username is None:
-            raise RuntimeError("""USERNAME is not set in environment. Can't
-            determine proxy file location""")
+            raise RuntimeError(
+                """USERNAME is not set in environment. Can't
+            determine proxy file location"""
+            )
 
         proxy_filename = "x509up_u" + username
         drive = os.path.splitdrive(os.getcwd())[0]
@@ -296,6 +311,7 @@ def get_proxy_filename():
         raise RuntimeError(except_string)
     return proxypath
 
+
 def get_usercert(certfile=None):
     """
     function that returns a X509 instance which
@@ -305,13 +321,13 @@ def get_usercert(certfile=None):
     before and after times.
     """
     if certfile is None:
-        certfile = open(os.path.join(os.getenv("HOME"),
-                                    ".globus","usercert.pem"))
+        certfile = open(os.path.join(os.getenv("HOME"), ".globus", "usercert.pem"))
     else:
         certfile = open(certfile)
     bio = BIO.File(certfile)
     cert = X509.load_cert_bio(bio)
     return cert
+
 
 def get_userkey(keyfile=None):
     """
@@ -319,12 +335,9 @@ def get_userkey(keyfile=None):
     is the user cert that is expected to be a ~/.globus/userkey.pem
     """
     if keyfile is None:
-        keyfile = open(os.path.join(os.getenv("HOME"),
-                                   ".globus","userkey.pem"))
+        keyfile = open(os.path.join(os.getenv("HOME"), ".globus", "userkey.pem"))
     else:
         keyfile = open(keyfile)
     bio = BIO.File(keyfile)
     key = RSA.load_key_bio(bio)
     return key
-
-

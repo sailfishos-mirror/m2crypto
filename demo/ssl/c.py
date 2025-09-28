@@ -9,10 +9,10 @@ import sys
 
 from M2Crypto import SSL, m2
 
-HOST = '127.0.0.1'
+HOST = "127.0.0.1"
 PORT = 9443
-req_10 = 'GET / HTTP/1.0\r\n\r\n'
-req_11 = 'GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n'
+req_10 = "GET / HTTP/1.0\r\n\r\n"
+req_11 = "GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n"
 
 
 def c_10():
@@ -27,8 +27,8 @@ def c_style(HOST, PORT, req):
 
     # Set up SSL context.
     ctx = m2.ssl_ctx_new(m2.sslv3_method())
-    m2.ssl_ctx_use_cert(ctx, 'client.pem')
-    m2.ssl_ctx_use_privkey(ctx, 'client.pem')
+    m2.ssl_ctx_use_cert(ctx, "client.pem")
+    m2.ssl_ctx_use_privkey(ctx, "client.pem")
 
     # Make the socket connection.
     s = socket(AF_INET, SOCK_STREAM)
@@ -52,7 +52,8 @@ def c_style(HOST, PORT, req):
     # Receive the response.
     while 1:
         data = m2.bio_gets(topbio, 4096)
-        if not data: break
+        if not data:
+            break
         sys.stdout.write(data)
 
     # Cleanup. May be missing some necessary steps. ;-|
@@ -64,7 +65,6 @@ def c_style(HOST, PORT, req):
     s.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     c_10()
     c_11()
-

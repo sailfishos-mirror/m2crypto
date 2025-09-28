@@ -12,23 +12,23 @@ import asynchat, asyncore, ftp_server, logger
 # M2Crypto
 from M2Crypto import SSL
 
-VERSION_STRING='0.09'
+VERSION_STRING = "0.09"
+
 
 class ftp_tls_channel(ftp_server.ftp_channel):
-
     """FTP/TLS server channel for Medusa."""
 
     def __init__(self, server, ssl_ctx, conn, addr):
         """Initialise the channel."""
         self.ssl_ctx = ssl_ctx
         self.server = server
-        self.current_mode = 'a'
+        self.current_mode = "a"
         self.addr = addr
         asynchat.async_chat.__init__(self, conn)
-        self.set_terminator('\r\n')
+        self.set_terminator("\r\n")
         self.client_addr = (addr[0], 21)
         self.client_dc = None
-        self.in_buffer = ''
+        self.in_buffer = ""
         self.closing = 0
         self.passive_acceptor = None
         self.passive_connection = None
@@ -38,7 +38,7 @@ class ftp_tls_channel(ftp_server.ftp_channel):
         self._ssl_accepted = 0
         self._pbsz = None
         self._prot = None
-        resp = '220 %s M2Crypto (Medusa) FTP/TLS server v%s ready.'
+        resp = "220 %s M2Crypto (Medusa) FTP/TLS server v%s ready."
         self.respond(resp % (self.server.hostname, VERSION_STRING))
 
     def writable(self):
@@ -54,7 +54,7 @@ class ftp_tls_channel(ftp_server.ftp_channel):
             try:
                 ftp_server.ftp_channel.handle_read(self)
             except SSL.SSLError as what:
-                if str(what) == 'unexpected eof':
+                if str(what) == "unexpected eof":
                     self.close()
                 else:
                     raise
@@ -69,7 +69,7 @@ class ftp_tls_channel(ftp_server.ftp_channel):
             try:
                 ftp_server.ftp_channel.handle_write(self)
             except SSL.SSLError as what:
-                if str(what) == 'unexpected eof':
+                if str(what) == "unexpected eof":
                     self.close()
                 else:
                     raise
@@ -84,7 +84,7 @@ class ftp_tls_channel(ftp_server.ftp_channel):
                 return result
         except SSL.SSLError as what:
             self.close()
-            self.log_info('send: closing channel %s %s' % (repr(self), what))
+            self.log_info("send: closing channel %s %s" % (repr(self), what))
             return 0
 
     def recv(self, buffer_size):
@@ -92,13 +92,13 @@ class ftp_tls_channel(ftp_server.ftp_channel):
         try:
             result = self.socket.recv(buffer_size)
             if not result:
-                return ''
+                return ""
             else:
                 return result
         except SSL.SSLError as what:
             self.close()
-            self.log_info('recv: closing channel %s %s' % (repr(self), what))
-            return ''
+            self.log_info("recv: closing channel %s %s" % (repr(self), what))
+            return ""
 
     def found_terminator(self):
         """Dispatch the FTP command."""
@@ -106,24 +106,24 @@ class ftp_tls_channel(ftp_server.ftp_channel):
         if not len(line):
             return
 
-        sp = string.find(line, ' ')
+        sp = string.find(line, " ")
         if sp != -1:
-            line = [line[:sp], line[sp+1:]]
+            line = [line[:sp], line[sp + 1 :]]
         else:
             line = [line]
 
         command = string.lower(line[0])
-        if string.find(command, 'stor') != -1:
+        if string.find(command, "stor") != -1:
             while command and command[0] not in string.letters:
                 command = command[1:]
 
-        func_name = 'cmd_%s' % command
-        if command != 'pass':
-            self.log('<== %s' % repr(self.in_buffer)[1:-1])
+        func_name = "cmd_%s" % command
+        if command != "pass":
+            self.log("<== %s" % repr(self.in_buffer)[1:-1])
         else:
-            self.log('<== %s' % line[0]+' <password>')
+            self.log("<== %s" % line[0] + " <password>")
 
-        self.in_buffer = ''
+        self.in_buffer = ""
         if not hasattr(self, func_name):
             self.command_not_understood(line[0])
             return
@@ -142,7 +142,7 @@ class ftp_tls_channel(ftp_server.ftp_channel):
                         self.client_dc_close()
                     except:
                         pass
-                resp = '451 Server error: %s, %s: file %s line: %s'
+                resp = "451 Server error: %s, %s: file %s line: %s"
                 self.respond(resp % (t, v, file, line))
 
     def make_xmit_channel(self):
@@ -171,11 +171,11 @@ class ftp_tls_channel(ftp_server.ftp_channel):
                 cdc = ftp_server.xmit_channel(self, self.client_addr)
             cdc.create_socket(socket.AF_INET, socket.SOCK_STREAM)
             if self.bind_local_minus_one:
-                cdc.bind(('', self.server.port - 1))
+                cdc.bind(("", self.server.port - 1))
             try:
                 cdc.connect(self.client_addr)
             except socket.error as what:
-                self.respond('425 Cannot build data connection')
+                self.respond("425 Cannot build data connection")
         self.client_dc = cdc
 
     def make_recv_channel(self, fd):
@@ -199,23 +199,25 @@ class ftp_tls_channel(ftp_server.ftp_channel):
                     cdc = ftp_server.recv_channel(self, None, fd)
         else:
             if self._prot:
-                cdc = tls_recv_channel(self, None, self.ssl_ctx, self._prot, self.client_addr, fd)
+                cdc = tls_recv_channel(
+                    self, None, self.ssl_ctx, self._prot, self.client_addr, fd
+                )
             else:
                 cdc = ftp_server.recv_channel(self, self.client_addr, fd)
             cdc.create_socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
                 cdc.connect(self.client_addr)
             except socket.error as what:
-                self.respond('425 Cannot build data connection')
+                self.respond("425 Cannot build data connection")
         self.client_dc = cdc
 
     def cmd_auth(self, line):
         """Prepare for TLS operation."""
         # XXX Handle variations.
-        if line[1] != 'TLS':
-            self.command_not_understood (string.join(line))
+        if line[1] != "TLS":
+            self.command_not_understood(string.join(line))
         else:
-            self.respond('234 AUTH TLS successful')
+            self.respond("234 AUTH TLS successful")
             self._ssl_accepting = 1
             self.socket = SSL.Connection(self.ssl_ctx, self.socket)
             self.socket.setup_addr(self.addr)
@@ -230,36 +232,37 @@ class ftp_tls_channel(ftp_server.ftp_channel):
         FTP/TLS the only valid value for the parameter is '0'; any
         other value is accepted but ignored."""
         if not (self._ssl_accepting or self._ssl_accepted):
-            return self.respond('503 AUTH TLS must be issued prior to PBSZ')
+            return self.respond("503 AUTH TLS must be issued prior to PBSZ")
         self._pbsz = 1
-        self.respond('200 PBSZ=0 successful.')
+        self.respond("200 PBSZ=0 successful.")
 
     def cmd_prot(self, line):
         """Negotiate the security level of the data connection."""
         if self._pbsz is None:
-            return self.respond('503 PBSZ must be issued prior to PROT')
-        if line[1] == 'C':
-            self.respond('200 Protection set to Clear')
+            return self.respond("503 PBSZ must be issued prior to PROT")
+        if line[1] == "C":
+            self.respond("200 Protection set to Clear")
             self._pbsz = None
             self._prot = None
-        elif line[1] == 'P':
-            self.respond('200 Protection set to Private')
+        elif line[1] == "P":
+            self.respond("200 Protection set to Private")
             self._prot = 1
-        elif line[1] in ('S', 'E'):
-            self.respond('536 PROT %s unsupported' % line[1])
+        elif line[1] in ("S", "E"):
+            self.respond("536 PROT %s unsupported" % line[1])
         else:
-            self.respond('504 PROT %s unsupported' % line[1])
+            self.respond("504 PROT %s unsupported" % line[1])
 
 
 class ftp_tls_server(ftp_server.ftp_server):
-
     """FTP/TLS server for Medusa."""
 
-    SERVER_IDENT = 'M2Crypto FTP/TLS Server (v%s)' % VERSION_STRING
+    SERVER_IDENT = "M2Crypto FTP/TLS Server (v%s)" % VERSION_STRING
 
     ftp_channel_class = ftp_tls_channel
 
-    def __init__(self, authz, ssl_ctx, host=None, ip='', port=21, resolver=None, log_obj=None):
+    def __init__(
+        self, authz, ssl_ctx, host=None, ip="", port=21, resolver=None, log_obj=None
+    ):
         """Initialise the server."""
         self.ssl_ctx = ssl_ctx
         self.ip = ip
@@ -293,19 +296,21 @@ class ftp_tls_server(ftp_server.ftp_server):
         else:
             self.logger = logger.unresolving_logger(logger.file_logger(sys.stdout))
 
-        l = 'M2Crypto (Medusa) FTP/TLS server started at %s\n\tAuthz: %s\n\tHostname: %s\n\tPort: %d'
-        self.log_info(l % (time.ctime(time.time()), repr(self.authorizer), self.hostname, self.port))
+        l = "M2Crypto (Medusa) FTP/TLS server started at %s\n\tAuthz: %s\n\tHostname: %s\n\tPort: %d"
+        self.log_info(
+            l
+            % (time.ctime(time.time()), repr(self.authorizer), self.hostname, self.port)
+        )
 
     def handle_accept(self):
         """Accept a socket and dispatch a channel to handle it."""
         conn, addr = self.accept()
         self.total_sessions.increment()
-        self.log_info('Connection from %s:%d' % addr)
+        self.log_info("Connection from %s:%d" % addr)
         self.ftp_channel_class(self, self.ssl_ctx, conn, addr)
 
 
 class nbio_ftp_tls_actor:
-
     """TLS protocol negotiation mixin for FTP/TLS."""
 
     def tls_init(self, sock, ssl_ctx, client_addr):
@@ -355,7 +360,7 @@ class nbio_ftp_tls_actor:
                 return result
         except SSL.SSLError as what:
             self.close()
-            self.log_info('send: closing channel %s %s' % (repr(self), what))
+            self.log_info("send: closing channel %s %s" % (repr(self), what))
             return 0
 
     def recv(self, buffer_size):
@@ -363,17 +368,16 @@ class nbio_ftp_tls_actor:
         try:
             result = self.socket.recv(buffer_size)
             if not result:
-                return ''
+                return ""
             else:
                 return result
         except SSL.SSLError as what:
             self.close()
-            self.log_info('recv: closing channel %s %s' % (repr(self), what))
-            return ''
+            self.log_info("recv: closing channel %s %s" % (repr(self), what))
+            return ""
 
 
 class tls_xmit_channel(nbio_ftp_tls_actor, ftp_server.xmit_channel):
-
     """TLS driver for a send-only data connection."""
 
     def __init__(self, channel, conn, ssl_ctx, client_addr=None):
@@ -411,7 +415,6 @@ class tls_xmit_channel(nbio_ftp_tls_actor, ftp_server.xmit_channel):
 
 
 class tls_recv_channel(nbio_ftp_tls_actor, ftp_server.recv_channel):
-
     """TLS driver for a receive-only data connection."""
 
     def __init__(self, channel, conn, ssl_ctx, client_addr, fd):
@@ -434,5 +437,3 @@ class tls_recv_channel(nbio_ftp_tls_actor, ftp_server.recv_channel):
         or let the application handle this event."""
         if self.tls_neg_ok():
             ftp_server.recv_channel.handle_write(self)
-
-

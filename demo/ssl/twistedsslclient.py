@@ -14,9 +14,10 @@ import twisted.internet.reactor as reactor
 import M2Crypto.SSL.TwistedProtocolWrapper as wrapper
 import M2Crypto.SSL as SSL
 
+
 class EchoClient(basic.LineReceiver):
     def connectionMade(self):
-        self.sendLine('Hello World!')
+        self.sendLine("Hello World!")
 
     def lineReceived(self, line):
         print('received: "%s"' % line)
@@ -27,11 +28,11 @@ class EchoClientFactory(protocol.ClientFactory):
     protocol = EchoClient
 
     def clientConnectionFailed(self, connector, reason):
-        print('connection failed')
+        print("connection failed")
         reactor.stop()
 
     def clientConnectionLost(self, connector, reason):
-        print('connection lost')
+        print("connection lost")
         reactor.stop()
 
 
@@ -40,7 +41,7 @@ class ContextFactory:
         return SSL.Context()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     factory = EchoClientFactory()
-    wrapper.connectSSL('localhost', 8000, factory, ContextFactory())
-    reactor.run() # This will block until reactor.stop() is called
+    wrapper.connectSSL("localhost", 8000, factory, ContextFactory())
+    reactor.run()  # This will block until reactor.stop() is called

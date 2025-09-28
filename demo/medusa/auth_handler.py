@@ -31,8 +31,9 @@ import producers
 
 # does anyone support digest authentication? (rfc2069)
 
+
 class auth_handler:
-    def __init__(self, dict, handler, realm='default'):
+    def __init__(self, dict, handler, realm="default"):
         self.authorizer = dictionary_authorizer(dict)
         self.handler = handler
         self.realm = realm
@@ -49,35 +50,35 @@ class auth_handler:
 
         if scheme:
             scheme = string.lower(scheme)
-            if scheme == 'basic':
+            if scheme == "basic":
                 cookie = AUTHORIZATION.group(2)
                 try:
                     decoded = base64.decodestring(cookie)
                 except:
-                    print('malformed authorization info <%s>' % cookie)
+                    print("malformed authorization info <%s>" % cookie)
                     request.error(400)
                     return
-                auth_info = string.split(decoded, ':')
+                auth_info = string.split(decoded, ":")
                 if self.authorizer.authorize(auth_info):
                     self.pass_count.increment()
                     request.auth_info = auth_info
                     self.handler.handle_request(request)
                 else:
                     self.handle_unauthorized(request)
-            #elif scheme == 'digest':
+            # elif scheme == 'digest':
             #    print('digest: ',AUTHORIZATION.group(2))
             else:
-                print('unknown/unsupported auth method: %s' % scheme)
+                print("unknown/unsupported auth method: %s" % scheme)
                 self.handle_unauthorized()
         else:
             # list both?  prefer one or the other?
             # you could also use a 'nonce' here. [see below]
-            #auth = 'Basic realm="%s" Digest realm="%s"' %
+            # auth = 'Basic realm="%s" Digest realm="%s"' %
             #    (self.realm, self.realm)
-            #nonce = self.make_nonce (request)
-            #auth = 'Digest realm="%s" nonce="%s"' % (self.realm, nonce)
-            #request['WWW-Authenticate'] = auth
-            #print('sending header: %s' % request['WWW-Authenticate'])
+            # nonce = self.make_nonce (request)
+            # auth = 'Digest realm="%s" nonce="%s"' % (self.realm, nonce)
+            # request['WWW-Authenticate'] = auth
+            # print('sending header: %s' % request['WWW-Authenticate'])
             self.handle_unauthorized(request)
 
     def handle_unauthorized(self, request):
@@ -85,8 +86,8 @@ class auth_handler:
         # to ignore the file data we're not interested in.
         self.fail_count.increment()
         request.channel.set_terminator(None)
-        request['Connection'] = 'close'
-        request['WWW-Authenticate'] = 'Basic realm="%s"' % self.realm
+        request["Connection"] = "close"
+        request["WWW-Authenticate"] = 'Basic realm="%s"' % self.realm
         request.error(401)
 
     def make_nonce(self, request):
@@ -94,7 +95,7 @@ class auth_handler:
         ip = request.channel.server.ip
         now = str(long(time.time()))[:-1]
         private_key = str(id(self))
-        nonce = string.join([ip, now, private_key], ':')
+        nonce = string.join([ip, now, private_key], ":")
         return self.apply_hash(nonce)
 
     def apply_hash(self, s):
@@ -109,18 +110,15 @@ class auth_handler:
         # Thanks to mwm@contessa.phone.net (Mike Meyer)
         r = [
             producers.simple_producer(
-                '<li>Authorization Extension : '
-                '<b>Unauthorized requests:</b> %s<ul>' % self.fail_count
+                "<li>Authorization Extension : "
+                "<b>Unauthorized requests:</b> %s<ul>" % self.fail_count
             )
         ]
-        if hasattr(self.handler, 'status'):
+        if hasattr(self.handler, "status"):
             r.append(self.handler.status())
-        r.append(
-            producers.simple_producer('</ul>')
-        )
-        return producers.composite_producer(
-            http_server.fifo(r)
-        )
+        r.append(producers.simple_producer("</ul>"))
+        return producers.composite_producer(http_server.fifo(r))
+
 
 class dictionary_authorizer:
     def __init__(self, dict):
@@ -133,8 +131,9 @@ class dictionary_authorizer:
         else:
             return 0
 
+
 AUTHORIZATION = re.compile(
     #               scheme  challenge
-    'Authorization: ([^ ]+) (.*)',
-    re.IGNORECASE
+    "Authorization: ([^ ]+) (.*)",
+    re.IGNORECASE,
 )

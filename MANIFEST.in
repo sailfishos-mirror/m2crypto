@@ -7,6 +7,7 @@ include src/SWIG/*.def
 recursive-include tests *.py *.pem *.der *.b64 README *.pgp *.dat *.p7* *.crt *.txt
 recursive-include doc *
 recursive-include contrib *
+recursive-include demo *
 
 # don't include patatt registry
 recursive-exclude .keys *

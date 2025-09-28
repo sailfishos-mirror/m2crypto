@@ -14,50 +14,51 @@
 # opening files for reading, and listing directories, should
 # return a producer.
 
+
 class abstract_filesystem:
-    def __init__ (self):
+    def __init__(self):
         pass
 
-    def current_directory (self):
+    def current_directory(self):
         "Return a string representing the current directory."
         pass
 
-    def listdir (self, path, long=0):
+    def listdir(self, path, long=0):
         """Return a listing of the directory at 'path' The empty string
         indicates the current directory.  If 'long' is set, instead
         return a list of (name, stat_info) tuples
         """
         pass
 
-    def open (self, path, mode):
+    def open(self, path, mode):
         "Return an open file object"
         pass
 
-    def stat (self, path):
+    def stat(self, path):
         "Return the equivalent of os.stat() on the given path."
         pass
 
-    def isdir (self, path):
+    def isdir(self, path):
         "Does the path represent a directory?"
         pass
 
-    def isfile (self, path):
+    def isfile(self, path):
         "Does the path represent a plain file?"
         pass
 
-    def cwd (self, path):
+    def cwd(self, path):
         "Change the working directory."
         pass
 
-    def cdup (self):
+    def cdup(self):
         "Change to the parent of the current directory."
         pass
 
-
-    def longify (self, path):
+    def longify(self, path):
         """Return a 'long' representation of the filename
         [for the output of the LIST command]"""
         pass
+
 
 # standard wrapper around a unix-like filesystem, with a 'false root'
 # capability.
@@ -74,13 +75,16 @@ import stat
 import re
 import string
 
-def safe_stat (path):
+
+def safe_stat(path):
     try:
-        return (path, os.stat (path))
+        return (path, os.stat(path))
     except:
         return None
 
+
 import glob
+
 
 class os_filesystem:
     path_module = os.path
@@ -89,25 +93,25 @@ class os_filesystem:
     # [we currently don't glob, anyway]
     do_globbing = 1
 
-    def __init__ (self, root, wd='/'):
+    def __init__(self, root, wd="/"):
         self.root = root
         self.wd = wd
 
-    def current_directory (self):
+    def current_directory(self):
         return self.wd
 
-    def isfile (self, path):
-        p = self.normalize (self.path_module.join (self.wd, path))
-        return self.path_module.isfile (self.translate(p))
+    def isfile(self, path):
+        p = self.normalize(self.path_module.join(self.wd, path))
+        return self.path_module.isfile(self.translate(p))
 
-    def isdir (self, path):
-        p = self.normalize (self.path_module.join (self.wd, path))
-        return self.path_module.isdir (self.translate(p))
+    def isdir(self, path):
+        p = self.normalize(self.path_module.join(self.wd, path))
+        return self.path_module.isdir(self.translate(p))
 
-    def cwd (self, path):
-        p = self.normalize (self.path_module.join (self.wd, path))
+    def cwd(self, path):
+        p = self.normalize(self.path_module.join(self.wd, path))
         translated_path = self.translate(p)
-        if not self.path_module.isdir (translated_path):
+        if not self.path_module.isdir(translated_path):
             return 0
         else:
             old_dir = os.getcwd()
@@ -116,149 +120,152 @@ class os_filesystem:
             try:
                 can = 0
                 try:
-                    os.chdir (translated_path)
+                    os.chdir(translated_path)
                     can = 1
                     self.wd = p
                 except:
                     pass
             finally:
                 if can:
-                    os.chdir (old_dir)
+                    os.chdir(old_dir)
             return can
 
-    def cdup (self):
-        return self.cwd ('..')
+    def cdup(self):
+        return self.cwd("..")
 
-    def listdir (self, path, long=0):
-        p = self.translate (path)
+    def listdir(self, path, long=0):
+        p = self.translate(path)
         # I think we should glob, but limit it to the current
         # directory only.
-        ld = os.listdir (p)
+        ld = os.listdir(p)
         if not long:
-            return list_producer (ld, None)
+            return list_producer(ld, None)
         else:
             old_dir = os.getcwd()
             try:
-                os.chdir (p)
+                os.chdir(p)
                 # if os.stat fails we ignore that file.
-                result = filter (None, map (safe_stat, ld))
+                result = filter(None, map(safe_stat, ld))
             finally:
-                os.chdir (old_dir)
-            return list_producer (result, self.longify)
+                os.chdir(old_dir)
+            return list_producer(result, self.longify)
 
     # TODO: implement a cache w/timeout for stat()
-    def stat (self, path):
-        p = self.translate (path)
-        return os.stat (p)
+    def stat(self, path):
+        p = self.translate(path)
+        return os.stat(p)
 
-    def open (self, path, mode):
-        p = self.translate (path)
-        return open (p, mode)
+    def open(self, path, mode):
+        p = self.translate(path)
+        return open(p, mode)
 
-    def unlink (self, path):
-        p = self.translate (path)
-        return os.unlink (p)
+    def unlink(self, path):
+        p = self.translate(path)
+        return os.unlink(p)
 
-    def mkdir (self, path):
-        p = self.translate (path)
-        return os.mkdir (p)
+    def mkdir(self, path):
+        p = self.translate(path)
+        return os.mkdir(p)
 
-    def rmdir (self, path):
-        p = self.translate (path)
-        return os.rmdir (p)
+    def rmdir(self, path):
+        p = self.translate(path)
+        return os.rmdir(p)
 
     # utility methods
-    def normalize (self, path):
+    def normalize(self, path):
         # watch for the ever-sneaky '/+' path element
-        path = re.sub('/+', '/', path)
-        p = self.path_module.normpath (path)
+        path = re.sub("/+", "/", path)
+        p = self.path_module.normpath(path)
         # remove 'dangling' cdup's.
-        if len(p) > 2 and p[:3] == '/..':
-            p = '/'
+        if len(p) > 2 and p[:3] == "/..":
+            p = "/"
         return p
 
-    def translate (self, path):
+    def translate(self, path):
         # we need to join together three separate
         # path components, and do it safely.
         # <real_root>/<current_directory>/<path>
         # use the operating system's path separator.
-        path = string.join (string.split (path, '/'), os.sep)
-        p = self.normalize (self.path_module.join (self.wd, path))
-        p = self.normalize (self.path_module.join (self.root, p[1:]))
+        path = string.join(string.split(path, "/"), os.sep)
+        p = self.normalize(self.path_module.join(self.wd, path))
+        p = self.normalize(self.path_module.join(self.root, p[1:]))
         return p
 
-    def longify (self, (path, stat_info)):
-        return unix_longify (path, stat_info)
+    def longify(self, arg_tuple):
+        path, stat_info = arg_tuple
+        return unix_longify(path, stat_info)
 
-    def __repr__ (self):
-        return '<unix-style fs root:%s wd:%s>' % (
-                self.root,
-                self.wd
-                )
+    def __repr__(self):
+        return "<unix-style fs root:%s wd:%s>" % (self.root, self.wd)
 
-if os.name == 'posix':
 
-    class unix_filesystem (os_filesystem):
+if os.name == "posix":
+
+    class unix_filesystem(os_filesystem):
         pass
 
-    class schizophrenic_unix_filesystem (os_filesystem):
-        PROCESS_UID             = os.getuid()
-        PROCESS_EUID    = os.geteuid()
-        PROCESS_GID             = os.getgid()
-        PROCESS_EGID    = os.getegid()
+    class schizophrenic_unix_filesystem(os_filesystem):
+        PROCESS_UID = os.getuid()
+        PROCESS_EUID = os.geteuid()
+        PROCESS_GID = os.getgid()
+        PROCESS_EGID = os.getegid()
 
-        def __init__ (self, root, wd='/', persona=(None, None)):
-            os_filesystem.__init__ (self, root, wd)
+        def __init__(self, root, wd="/", persona=(None, None)):
+            os_filesystem.__init__(self, root, wd)
             self.persona = persona
 
-        def become_persona (self):
+        def become_persona(self):
             if self.persona is not (None, None):
                 uid, gid = self.persona
                 # the order of these is important!
-                os.setegid (gid)
-                os.seteuid (uid)
+                os.setegid(gid)
+                os.seteuid(uid)
 
-        def become_nobody (self):
+        def become_nobody(self):
             if self.persona is not (None, None):
-                os.seteuid (self.PROCESS_UID)
-                os.setegid (self.PROCESS_GID)
+                os.seteuid(self.PROCESS_UID)
+                os.setegid(self.PROCESS_GID)
 
         # cwd, cdup, open, listdir
-        def cwd (self, path):
+        def cwd(self, path):
             try:
                 self.become_persona()
-                return os_filesystem.cwd (self, path)
+                return os_filesystem.cwd(self, path)
             finally:
                 self.become_nobody()
 
-        def cdup (self, path):
+        def cdup(self, path):
             try:
                 self.become_persona()
-                return os_filesystem.cdup (self)
+                return os_filesystem.cdup(self)
             finally:
                 self.become_nobody()
 
-        def open (self, filename, mode):
+        def open(self, filename, mode):
             try:
                 self.become_persona()
-                return os_filesystem.open (self, filename, mode)
+                return os_filesystem.open(self, filename, mode)
             finally:
                 self.become_nobody()
 
-        def listdir (self, path, long=0):
+        def listdir(self, path, long=0):
             try:
                 self.become_persona()
-                return os_filesystem.listdir (self, path, long)
+                return os_filesystem.listdir(self, path, long)
             finally:
                 self.become_nobody()
+
 
 # For the 'real' root, we could obtain a list of drives, and then
 # use that.  Doesn't win32 provide such a 'real' filesystem?
 # [yes, I think something like this "\\.\c\windows"]
 
-class msdos_filesystem (os_filesystem):
-    def longify (self, (path, stat_info)):
-        return msdos_longify (path, stat_info)
+
+class msdos_filesystem(os_filesystem):
+    def longify(self, arg_tuple):
+        path, stat_info = arg_tuple
+        return msdos_longify(path, stat_info)
+
 
 # A merged filesystem will let you plug other filesystems together.
 # We really need the equivalent of a 'mount' capability - this seems
@@ -268,81 +275,95 @@ class msdos_filesystem (os_filesystem):
 # Note: this is most likely how I will handle ~user directories
 # with the http server.
 
+
 class merged_filesystem:
-    def __init__ (self, *fsys):
+    def __init__(self, *fsys):
         pass
+
 
 # this matches the output of NT's ftp server (when in
 # MSDOS mode) exactly.
 
-def msdos_longify (file, stat_info):
-    if stat.S_ISDIR (stat_info[stat.ST_MODE]):
-        dir = '<DIR>'
-    else:
-        dir = '     '
-    date = msdos_date (stat_info[stat.ST_MTIME])
-    return '%s       %s %8d %s' % (
-            date,
-            dir,
-            stat_info[stat.ST_SIZE],
-            file
-            )
 
-def msdos_date (t):
+def msdos_longify(file, stat_info):
+    if stat.S_ISDIR(stat_info[stat.ST_MODE]):
+        dir = "<DIR>"
+    else:
+        dir = "     "
+    date = msdos_date(stat_info[stat.ST_MTIME])
+    return "%s       %s %8d %s" % (date, dir, stat_info[stat.ST_SIZE], file)
+
+
+def msdos_date(t):
     try:
-        info = time.gmtime (t)
+        info = time.gmtime(t)
     except:
-        info = time.gmtime (0)
+        info = time.gmtime(0)
     # year, month, day, hour, minute, second, ...
     if info[3] > 11:
-        merid = 'PM'
+        merid = "PM"
         info[3] = info[3] - 12
     else:
-        merid = 'AM'
-    return '%02d-%02d-%02d  %02d:%02d%s' % (
-            info[1],
-            info[2],
-            info[0]%100,
-            info[3],
-            info[4],
-            merid
-            )
+        merid = "AM"
+    return "%02d-%02d-%02d  %02d:%02d%s" % (
+        info[1],
+        info[2],
+        info[0] % 100,
+        info[3],
+        info[4],
+        merid,
+    )
 
-months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+]
 
 mode_table = {
-        '0':'---',
-        '1':'--x',
-        '2':'-w-',
-        '3':'-wx',
-        '4':'r--',
-        '5':'r-x',
-        '6':'rw-',
-        '7':'rwx'
-        }
+    "0": "---",
+    "1": "--x",
+    "2": "-w-",
+    "3": "-wx",
+    "4": "r--",
+    "5": "r-x",
+    "6": "rw-",
+    "7": "rwx",
+}
 
 import time
 
-def unix_longify (file, stat_info):
+
+def unix_longify(file, stat_info):
     # for now, only pay attention to the lower bits
-    mode = ('%o' % stat_info[stat.ST_MODE])[-3:]
-    mode = string.join (map (lambda x: mode_table[x], mode), '')
-    if stat.S_ISDIR (stat_info[stat.ST_MODE]):
-        dirchar = 'd'
+    mode = ("%o" % stat_info[stat.ST_MODE])[-3:]
+    mode = string.join(map(lambda x: mode_table[x], mode), "")
+    if stat.S_ISDIR(stat_info[stat.ST_MODE]):
+        dirchar = "d"
     else:
-        dirchar = '-'
-    date = ls_date (long(time.time()), stat_info[stat.ST_MTIME])
-    return '%s%s %3d %-8d %-8d %8d %s %s' % (
-            dirchar,
-            mode,
-            stat_info[stat.ST_NLINK],
-            stat_info[stat.ST_UID],
-            stat_info[stat.ST_GID],
-            stat_info[stat.ST_SIZE],
-            date,
-            file
-            )
+        dirchar = "-"
+    date = ls_date(long(time.time()), stat_info[stat.ST_MTIME])
+    return "%s%s %3d %-8d %-8d %8d %s %s" % (
+        dirchar,
+        mode,
+        stat_info[stat.ST_NLINK],
+        stat_info[stat.ST_UID],
+        stat_info[stat.ST_GID],
+        stat_info[stat.ST_SIZE],
+        date,
+        file,
+    )
+
 
 # Emulate the unix 'ls' command's date field.
 # it has two formats - if the date is more than 180
@@ -351,44 +372,37 @@ def unix_longify (file, stat_info):
 # otherwise, it looks like this:
 # Oct 19 17:33
 
-def ls_date (now, t):
+
+def ls_date(now, t):
     try:
-        info = time.gmtime (t)
+        info = time.gmtime(t)
     except:
-        info = time.gmtime (0)
+        info = time.gmtime(0)
     # 15,600,000 == 86,400 * 180
     if (now - t) > 15600000:
-        return '%s %2d  %d' % (
-                months[info[1]-1],
-                info[2],
-                info[0]
-                )
+        return "%s %2d  %d" % (months[info[1] - 1], info[2], info[0])
     else:
-        return '%s %2d %02d:%02d' % (
-                months[info[1]-1],
-                info[2],
-                info[3],
-                info[4]
-                )
+        return "%s %2d %02d:%02d" % (months[info[1] - 1], info[2], info[3], info[4])
+
 
 # ===========================================================================
 # Producers
 # ===========================================================================
 
+
 class list_producer:
-    def __init__ (self, list, func=None):
+    def __init__(self, list, func=None):
         self.list = list
         self.func = func
 
     # this should do a pushd/popd
-    def more (self):
+    def more(self):
         if not self.list:
-            return ''
+            return ""
         else:
             # do a few at a time
             bunch = self.list[:50]
             if self.func is not None:
-                bunch = map (self.func, bunch)
+                bunch = map(self.func, bunch)
             self.list = self.list[50:]
-            return string.joinfields (bunch, '\r\n') + '\r\n'
-
+            return string.joinfields(bunch, "\r\n") + "\r\n"

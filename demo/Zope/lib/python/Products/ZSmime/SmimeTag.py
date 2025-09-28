@@ -3,7 +3,7 @@
 Copyright (c) 1999-2001 Ng Pheng Siong. All rights reserved.
 This software is released under the ZPL. Usual disclaimers apply."""
 
-__version__ = '1.2'
+__version__ = "1.2"
 
 # Zope tag stuff.
 from DocumentTemplate.DT_String import String
@@ -15,10 +15,11 @@ from M2Crypto import BIO, SMIME, X509
 
 SmimeError = "SmimeTag Error"
 
+
 class SmimeTag:
     """<dtml-smime>"""
 
-    name = 'smime'
+    name = "smime"
     blockContinuations = ()
 
     def __init__(self, blocks):
@@ -28,8 +29,8 @@ class SmimeTag:
         args = parse_params(args, signer=None, recipients=None)
         has_key = args.has_key
 
-        if has_key('signer'):
-            self.signer = args['signer']
+        if has_key("signer"):
+            self.signer = args["signer"]
             try:
                 Call(self.signer)
             except ParseError:
@@ -37,15 +38,14 @@ class SmimeTag:
         else:
             raise SmimeError('The parameter "signer" was not specified in tag.')
 
-        if has_key('recipients'):
-            self.recipients = args['recipients']
+        if has_key("recipients"):
+            self.recipients = args["recipients"]
             try:
                 Call(self.recipients)
             except ParseError:
                 raise SmimeError('Invalid parameter "recipients".')
         else:
             raise SmimeError('The parameter "recipients" was not specified in tag.')
-
 
     def render(self, md):
         # Render the dtml block.
@@ -61,7 +61,7 @@ class SmimeTag:
         except ParseError:
             raise SmimeError('Invalid parameter "signer".')
         signer_key_bio = BIO.MemoryBuffer(signer)
-        signer_cert_bio = BIO.MemoryBuffer(signer) # XXX Kludge.
+        signer_cert_bio = BIO.MemoryBuffer(signer)  # XXX Kludge.
 
         # Sign the data.
         s.load_key_bio(signer_key_bio, signer_cert_bio)
@@ -84,7 +84,7 @@ class SmimeTag:
         s.set_x509_stack(sk)
 
         # Set a cipher.
-        s.set_cipher(SMIME.Cipher('des_ede3_cbc'))
+        s.set_cipher(SMIME.Cipher("des_ede3_cbc"))
 
         # Encrypt.
         tmp_bio = BIO.MemoryBuffer()
@@ -96,9 +96,7 @@ class SmimeTag:
         s.write(out, p7)
         return out.getvalue()
 
-
     __call__ = render
 
 
-String.commands['smime'] = SmimeTag
-
+String.commands["smime"] = SmimeTag

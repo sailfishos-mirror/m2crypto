@@ -12,12 +12,15 @@ All rights reserved.
 
 sslContextFactory = None
 
+
 def setSSLContextFactory(factory):
     global sslContextFactory
     sslContextFactory = factory
 
+
 from M2Crypto.SSL import Connection, Checker
 import socket
+
 
 class ssl_socket(socket.socket):
     def connect(self, addr, *args):
@@ -25,9 +28,10 @@ class ssl_socket(socket.socket):
         return super(ssl_socket, self).connect(addr, *args)
 
     def close(self):
-        if hasattr(self, 'conn'):
+        if hasattr(self, "conn"):
             self.conn.close()
         socket.socket.close(self)
+
 
 def ssl(sock):
     sock.conn = Connection(ctx=sslContextFactory(), sock=sock)
@@ -35,12 +39,14 @@ def ssl(sock):
     sock.conn.setup_ssl()
     sock.conn.set_connect_state()
     sock.conn.connect_ssl()
-    check = getattr(sock.conn, 'postConnectionCheck', sock.conn.clientPostConnectionCheck)
+    check = getattr(
+        sock.conn, "postConnectionCheck", sock.conn.clientPostConnectionCheck
+    )
     if check is not None:
         if not check(sock.conn.get_peer_cert(), sock.conn.addr[0]):
-            raise Checker.SSLVerificationError('post connection check failed')
+            raise Checker.SSLVerificationError("post connection check failed")
     return sock.conn
+
 
 socket.socket = ssl_socket
 socket.ssl = ssl
-

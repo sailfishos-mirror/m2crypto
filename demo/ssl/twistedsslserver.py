@@ -22,17 +22,17 @@ class Echo(protocol.Protocol):
         self.transport.write(data)
 
     def connectionMade(self):
-        print('connection made')
+        print("connection made")
 
 
 class ContextFactory:
     def getContext(self):
         ctx = SSL.Context()
-        ctx.load_cert('server.pem')
+        ctx.load_cert("server.pem")
         return ctx
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     log.startLogging(sys.stdout)
     factory = protocol.Factory()
     factory.protocol = Echo

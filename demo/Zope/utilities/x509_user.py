@@ -45,24 +45,24 @@ Copyright (c) 2000 Ng Pheng Siong. This program is released under the ZPL.
 
 import anydbm, getopt, sys
 
-x509_db = 'access_x509'
+x509_db = "access_x509"
 username = subject_dn = None
 
-argerr='Usage'
+argerr = "Usage"
 
-optlist, optarg=getopt.getopt(sys.argv[1:], 'f:u:x:')   # ;-)
+optlist, optarg = getopt.getopt(sys.argv[1:], "f:u:x:")  # ;-)
 for opt in optlist:
-    if '-f' in opt:
+    if "-f" in opt:
         x509_db = opt[1]
-    elif '-u' in opt:
+    elif "-u" in opt:
         username = opt[1]
-    elif '-x' in opt:
+    elif "-x" in opt:
         subject_dn = opt[1]
 
 if username is None:
-    raise argerr('\n' + __doc__)
+    raise argerr("\n" + __doc__)
 
-db = anydbm.open(x509_db, 'cw')
+db = anydbm.open(x509_db, "cw")
 if subject_dn is None:
     # Remove the association...
     try:
@@ -76,4 +76,3 @@ else:
     db[subject_dn] = username
     db[username] = subject_dn
 db.close()
-

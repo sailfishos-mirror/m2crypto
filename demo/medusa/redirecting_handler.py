@@ -8,37 +8,38 @@
 import re
 import counter
 
+
 class redirecting_handler:
 
-    def __init__ (self, pattern, redirect, regex_flag=re.IGNORECASE):
+    def __init__(self, pattern, redirect, regex_flag=re.IGNORECASE):
         self.pattern = pattern
         self.redirect = redirect
-        self.patreg = re.compile (pattern, regex_flag)
+        self.patreg = re.compile(pattern, regex_flag)
         self.hits = counter.counter()
 
-    def match (self, request):
-        m = self.patref.match (request.uri)
-        return (m and (m.end() == len(request.uri)))
+    def match(self, request):
+        m = self.patref.match(request.uri)
+        return m and (m.end() == len(request.uri))
 
-    def handle_request (self, request):
+    def handle_request(self, request):
         self.hits.increment()
-        m = self.patreg.match (request.uri)
+        m = self.patreg.match(request.uri)
         part = m.group(1)
 
-        request['Location'] = self.redirect % part
-        request.error (302) # moved temporarily
+        request["Location"] = self.redirect % part
+        request.error(302)  # moved temporarily
 
-    def __repr__ (self):
-        return '<Redirecting Handler at %08x [%s => %s]>' % (
+    def __repr__(self):
+        return "<Redirecting Handler at %08x [%s => %s]>" % (
             id(self),
             repr(self.pattern),
-            repr(self.redirect)
-            )
+            repr(self.redirect),
+        )
 
-    def status (self):
+    def status(self):
         import producers
-        return producers.simple_producer (
-            '<li> Redirecting Handler %s => %s <b>Hits</b>: %s' % (
-                self.pattern, self.redirect, self.hits
-                )
-            )
+
+        return producers.simple_producer(
+            "<li> Redirecting Handler %s => %s <b>Hits</b>: %s"
+            % (self.pattern, self.redirect, self.hits)
+        )

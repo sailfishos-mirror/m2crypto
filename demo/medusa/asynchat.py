@@ -50,26 +50,27 @@ import socket
 import asyncore
 import string
 
-class async_chat (asyncore.dispatcher):
+
+class async_chat(asyncore.dispatcher):
     """This is an abstract class.  You must derive from this class, and add
     the two methods collect_incoming_data() and found_terminator()"""
 
     # these are overridable defaults
 
-    ac_in_buffer_size    = 4096
-    ac_out_buffer_size    = 4096
+    ac_in_buffer_size = 4096
+    ac_out_buffer_size = 4096
 
-    def __init__ (self, conn=None):
-        self.ac_in_buffer = ''
-        self.ac_out_buffer = ''
+    def __init__(self, conn=None):
+        self.ac_in_buffer = ""
+        self.ac_out_buffer = ""
         self.producer_fifo = fifo()
-        asyncore.dispatcher.__init__ (self, conn)
+        asyncore.dispatcher.__init__(self, conn)
 
-    def set_terminator (self, term):
+    def set_terminator(self, term):
         "Set the input delimiter.  Can be a fixed string of any length, an integer, or None"
         self.terminator = term
 
-    def get_terminator (self):
+    def get_terminator(self):
         return self.terminator
 
     # grab some more data from the socket,
@@ -77,10 +78,10 @@ class async_chat (asyncore.dispatcher):
     # check for the terminator,
     # if found, transition to the next state.
 
-    def handle_read (self):
+    def handle_read(self):
 
         try:
-            data = self.recv (self.ac_in_buffer_size)
+            data = self.recv(self.ac_in_buffer_size)
         except socket.error as why:
             self.handle_error()
             return
@@ -97,17 +98,17 @@ class async_chat (asyncore.dispatcher):
             terminator = self.get_terminator()
             if terminator is None:
                 # no terminator, collect it all
-                self.collect_incoming_data (self.ac_in_buffer)
-                self.ac_in_buffer = ''
+                self.collect_incoming_data(self.ac_in_buffer)
+                self.ac_in_buffer = ""
             elif type(terminator) == type(0):
                 # numeric terminator
                 n = terminator
                 if lb < n:
-                    self.collect_incoming_data (self.ac_in_buffer)
-                    self.ac_in_buffer = ''
+                    self.collect_incoming_data(self.ac_in_buffer)
+                    self.ac_in_buffer = ""
                     self.terminator = self.terminator - lb
                 else:
-                    self.collect_incoming_data (self.ac_in_buffer[:n])
+                    self.collect_incoming_data(self.ac_in_buffer[:n])
                     self.ac_in_buffer = self.ac_in_buffer[n:]
                     self.terminator = 0
                     self.found_terminator()
@@ -120,65 +121,65 @@ class async_chat (asyncore.dispatcher):
                 # 3) end of buffer does not match any prefix:
                 #    collect data
                 terminator_len = len(terminator)
-                index = string.find (self.ac_in_buffer, terminator)
+                index = string.find(self.ac_in_buffer, terminator)
                 if index != -1:
                     # we found the terminator
                     if index > 0:
                         # don't bother reporting the empty string (source of subtle bugs)
-                        self.collect_incoming_data (self.ac_in_buffer[:index])
-                    self.ac_in_buffer = self.ac_in_buffer[index+terminator_len:]
+                        self.collect_incoming_data(self.ac_in_buffer[:index])
+                    self.ac_in_buffer = self.ac_in_buffer[index + terminator_len :]
                     # This does the Right Thing if the terminator is changed here.
                     self.found_terminator()
                 else:
                     # check for a prefix of the terminator
-                    index = find_prefix_at_end (self.ac_in_buffer, terminator)
+                    index = find_prefix_at_end(self.ac_in_buffer, terminator)
                     if index:
                         if index != lb:
                             # we found a prefix, collect up to the prefix
-                            self.collect_incoming_data (self.ac_in_buffer[:-index])
+                            self.collect_incoming_data(self.ac_in_buffer[:-index])
                             self.ac_in_buffer = self.ac_in_buffer[-index:]
                         break
                     else:
                         # no prefix, collect it all
-                        self.collect_incoming_data (self.ac_in_buffer)
-                        self.ac_in_buffer = ''
+                        self.collect_incoming_data(self.ac_in_buffer)
+                        self.ac_in_buffer = ""
 
-    def handle_write (self):
-        self.initiate_send ()
+    def handle_write(self):
+        self.initiate_send()
 
-    def handle_close (self):
+    def handle_close(self):
         self.close()
 
-    def push (self, data):
-        self.producer_fifo.push (simple_producer (data))
+    def push(self, data):
+        self.producer_fifo.push(simple_producer(data))
         self.initiate_send()
 
-    def push_with_producer (self, producer):
-        self.producer_fifo.push (producer)
+    def push_with_producer(self, producer):
+        self.producer_fifo.push(producer)
         self.initiate_send()
 
-    def readable (self):
+    def readable(self):
         "predicate for inclusion in the readable for select()"
-        return (len(self.ac_in_buffer) <= self.ac_in_buffer_size)
+        return len(self.ac_in_buffer) <= self.ac_in_buffer_size
 
-    def writable (self):
+    def writable(self):
         "predicate for inclusion in the writable for select()"
         # return len(self.ac_out_buffer) or len(self.producer_fifo) or (not self.connected)
         # this is about twice as fast, though not as clear.
         return not (
-            (self.ac_out_buffer is '') and
-            self.producer_fifo.is_empty() and
-            self.connected
-            )
+            (self.ac_out_buffer is "")
+            and self.producer_fifo.is_empty()
+            and self.connected
+        )
 
-    def close_when_done (self):
+    def close_when_done(self):
         "automatically close this channel once the outgoing queue is empty"
-        self.producer_fifo.push (None)
+        self.producer_fifo.push(None)
 
     # refill the outgoing buffer by calling the more() method
     # of the first producer in the queue
-    def refill_buffer (self):
-        _string_type = type('')
+    def refill_buffer(self):
+        _string_type = type("")
         while 1:
             if len(self.producer_fifo):
                 p = self.producer_fifo.first()
@@ -202,16 +203,16 @@ class async_chat (asyncore.dispatcher):
             else:
                 return
 
-    def initiate_send (self):
+    def initiate_send(self):
         obs = self.ac_out_buffer_size
         # try to refill the buffer
-        if (len (self.ac_out_buffer) < obs):
+        if len(self.ac_out_buffer) < obs:
             self.refill_buffer()
 
         if self.ac_out_buffer and self.connected:
             # try to send the buffer
             try:
-                num_sent = self.send (self.ac_out_buffer[:obs])
+                num_sent = self.send(self.ac_out_buffer[:obs])
                 if num_sent:
                     self.ac_out_buffer = self.ac_out_buffer[num_sent:]
 
@@ -219,56 +220,58 @@ class async_chat (asyncore.dispatcher):
                 self.handle_error()
                 return
 
-    def discard_buffers (self):
+    def discard_buffers(self):
         # Emergencies only!
-        self.ac_in_buffer = ''
-        self.ac_out_buffer = ''
+        self.ac_in_buffer = ""
+        self.ac_out_buffer = ""
         while self.producer_fifo:
             self.producer_fifo.pop()
 
 
 class simple_producer:
 
-    def __init__ (self, data, buffer_size=512):
+    def __init__(self, data, buffer_size=512):
         self.data = data
         self.buffer_size = buffer_size
 
-    def more (self):
-        if len (self.data) > self.buffer_size:
-            result = self.data[:self.buffer_size]
-            self.data = self.data[self.buffer_size:]
+    def more(self):
+        if len(self.data) > self.buffer_size:
+            result = self.data[: self.buffer_size]
+            self.data = self.data[self.buffer_size :]
             return result
         else:
             result = self.data
-            self.data = ''
+            self.data = ""
             return result
 
+
 class fifo:
-    def __init__ (self, list=None):
+    def __init__(self, list=None):
         if not list:
             self.list = []
         else:
             self.list = list
 
-    def __len__ (self):
+    def __len__(self):
         return len(self.list)
 
-    def is_empty (self):
+    def is_empty(self):
         return self.list == []
 
-    def first (self):
+    def first(self):
         return self.list[0]
 
-    def push (self, data):
-        self.list.append (data)
+    def push(self, data):
+        self.list.append(data)
 
-    def pop (self):
+    def pop(self):
         if self.list:
             result = self.list[0]
             del self.list[0]
             return (1, result)
         else:
             return (0, None)
+
 
 # Given 'haystack', see if any prefix of 'needle' is at its end.  This
 # assumes an exact match has already been checked.  Return the number of
@@ -285,7 +288,8 @@ class fifo:
 # re:           12820/s
 # regex:        14035/s
 
-def find_prefix_at_end (haystack, needle):
+
+def find_prefix_at_end(haystack, needle):
     l = len(needle) - 1
     while l and not haystack.endswith(needle[:l]):
         l -= 1

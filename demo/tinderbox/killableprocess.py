@@ -57,18 +57,25 @@ except ImportError:
         """This exception is raised when a process run by check_call() returns
         a non-zero exit status. The exit status will be stored in the
         returncode attribute."""
+
         def __init__(self, returncode, cmd):
             self.returncode = returncode
             self.cmd = cmd
-        def __str__(self):
-            return "Command '%s' returned non-zero exit status %d" % (self.cmd, self.returncode)
 
-mswindows = (sys.platform == "win32")
+        def __str__(self):
+            return "Command '%s' returned non-zero exit status %d" % (
+                self.cmd,
+                self.returncode,
+            )
+
+
+mswindows = sys.platform == "win32"
 
 if mswindows:
     import winprocess
 else:
     import signal
+
 
 def call(*args, **kwargs):
     waitargs = {}
@@ -76,6 +83,7 @@ def call(*args, **kwargs):
         waitargs["timeout"] = kwargs.pop("timeout")
 
     return Popen(*args, **kwargs).wait(**waitargs)
+
 
 def check_call(*args, **kwargs):
     """Call a program with an optional timeout. If the program has a non-zero
@@ -88,18 +96,35 @@ def check_call(*args, **kwargs):
             cmd = args[0]
         raise CalledProcessError(retcode, cmd)
 
+
 if not mswindows:
+
     def DoNothing(*args):
         pass
 
+
 class Popen(subprocess.Popen):
     if mswindows:
-        def _execute_child(self, args, executable, preexec_fn, close_fds,
-                           cwd, env, universal_newlines, startupinfo,
-                           creationflags, shell,
-                           p2cread, p2cwrite,
-                           c2pread, c2pwrite,
-                           errread, errwrite):
+
+        def _execute_child(
+            self,
+            args,
+            executable,
+            preexec_fn,
+            close_fds,
+            cwd,
+            env,
+            universal_newlines,
+            startupinfo,
+            creationflags,
+            shell,
+            p2cread,
+            p2cwrite,
+            c2pread,
+            c2pwrite,
+            errread,
+            errwrite,
+        ):
             if not isinstance(args, types.StringTypes):
                 args = subprocess.list2cmdline(args)
 
@@ -126,12 +151,16 @@ class Popen(subprocess.Popen):
             creationflags |= winprocess.CREATE_UNICODE_ENVIRONMENT
 
             hp, ht, pid, tid = winprocess.CreateProcess(
-                executable, args,
-                None, None, # No special security
-                1, # Must inherit handles!
+                executable,
+                args,
+                None,
+                None,  # No special security
+                1,  # Must inherit handles!
                 creationflags,
                 winprocess.EnvironmentBlock(env),
-                cwd, startupinfo)
+                cwd,
+                startupinfo,
+            )
 
             self._child_created = True
             self._handle = hp
@@ -157,7 +186,7 @@ class Popen(subprocess.Popen):
                 winprocess.TerminateProcess(self._handle, 127)
             self.returncode = 127
         else:
-            if sys.platform == 'cygwin':
+            if sys.platform == "cygwin":
                 cmd = "taskkill /f /pid " + str(self.pid)
                 if group:
                     cmd += " /t"

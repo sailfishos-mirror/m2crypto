@@ -10,9 +10,10 @@ import asyncore, errno, socket, time
 from M2Crypto import Rand, SSL
 import echod_lib
 
+
 class ssl_echo_channel(asyncore.dispatcher):
 
-    buffer = 'Ye Olde Echo Servre\r\n'
+    buffer = "Ye Olde Echo Servre\r\n"
 
     def __init__(self, conn):
         asyncore.dispatcher.__init__(self, conn)
@@ -43,7 +44,7 @@ class ssl_echo_channel(asyncore.dispatcher):
                 else:
                     self.buffer = self.buffer[n:]
             except SSL.SSLError as what:
-                if str(what) == 'unexpected eof':
+                if str(what) == "unexpected eof":
                     self.handle_close()
                     return
                 else:
@@ -62,12 +63,12 @@ class ssl_echo_channel(asyncore.dispatcher):
                 blob = self.recv(4096)
                 if blob is None:
                     pass
-                elif blob == '':
+                elif blob == "":
                     self.handle_close()
                 else:
                     self.buffer = self.buffer + blob
             except SSL.SSLError as what:
-                if str(what) == 'unexpected eof':
+                if str(what) == "unexpected eof":
                     self.handle_close()
                     return
                 else:
@@ -76,7 +77,7 @@ class ssl_echo_channel(asyncore.dispatcher):
 
 class ssl_echo_server(SSL.ssl_dispatcher):
 
-    channel_class=ssl_echo_channel
+    channel_class = ssl_echo_channel
 
     def __init__(self, addr, port, ssl_context):
         SSL.ssl_dispatcher.__init__(self)
@@ -85,30 +86,33 @@ class ssl_echo_server(SSL.ssl_dispatcher):
         self.socket.setblocking(0)
         self.bind((addr, port))
         self.listen(5)
-        self.ssl_ctx=ssl_context
+        self.ssl_ctx = ssl_context
 
     def handle_accept(self):
         try:
             sock, addr = self.socket.accept()
             self.channel_class(sock)
         except:
-            print('-' * 40)
+            print("-" * 40)
             import traceback
+
             traceback.print_exc()
-            print('-' * 40)
+            print("-" * 40)
             return
 
     def writable(self):
         return 0
 
 
-if __name__=='__main__':
-    Rand.load_file('../randpool.dat', -1)
-    ctx = echod_lib.init_context('sslv23', 'server.pem', 'ca.pem', \
-            #SSL.verify_peer | SSL.verify_fail_if_no_peer_cert)
-            SSL.verify_none)
-    ctx.set_tmp_dh('dh1024.pem')
-    ssl_echo_server('', 9999, ctx)
+if __name__ == "__main__":
+    Rand.load_file("../randpool.dat", -1)
+    ctx = echod_lib.init_context(
+        "sslv23",
+        "server.pem",
+        "ca.pem",  # SSL.verify_peer | SSL.verify_fail_if_no_peer_cert)
+        SSL.verify_none,
+    )
+    ctx.set_tmp_dh("dh1024.pem")
+    ssl_echo_server("", 9999, ctx)
     asyncore.loop()
-    Rand.save_file('../randpool.dat')
-
+    Rand.save_file("../randpool.dat")

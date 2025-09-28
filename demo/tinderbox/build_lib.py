@@ -27,14 +27,14 @@ import killableprocess
 import tempfile
 
 
-_logFilename   = 'tbox.log'
-_logPrefix     = ''
-_logFile       = None
-_logEcho       = True
+_logFilename = "tbox.log"
+_logPrefix = ""
+_logFile = None
+_logEcho = True
 _logEchoErrors = False
 
 
-def initLog(filename, prefix='', echo=True, echoErrors=False):
+def initLog(filename, prefix="", echo=True, echoErrors=False):
     """
     Initialize log file and store log parameters
 
@@ -42,13 +42,13 @@ def initLog(filename, prefix='', echo=True, echoErrors=False):
     """
     global _logFilename, _logPrefix, _logFile, _logEcho, _logEchoErrors
 
-    _logFilename   = filename or _logFilename
-    _logEcho       = echo
+    _logFilename = filename or _logFilename
+    _logEcho = echo
     _logEchoErrors = echoErrors
-    _logPrefix     = prefix
+    _logPrefix = prefix
 
     try:
-        _logFile = open(_logFilename, 'w+')
+        _logFile = open(_logFilename, "w+")
         result = True
     except:
         result = False
@@ -61,7 +61,7 @@ def closeLog():
     _logFile.close()
 
 
-def log(msg, error=False, newline='\n'):
+def log(msg, error=False, newline="\n"):
     """
     Output log message to an open log file or to StdOut
     """
@@ -71,13 +71,13 @@ def log(msg, error=False, newline='\n'):
         if error or _logEcho:
             echo = True
     else:
-        _logFile.write('%s%s%s' % (_logPrefix, msg, newline))
+        _logFile.write("%s%s%s" % (_logPrefix, msg, newline))
 
         if error and _logEchoErrors:
-            sys.stderr.write('%s%s%s' % (_logPrefix, msg, newline))
+            sys.stderr.write("%s%s%s" % (_logPrefix, msg, newline))
 
     if echo:
-        sys.stdout.write('%s%s%s' % (_logPrefix, msg, newline))
+        sys.stdout.write("%s%s%s" % (_logPrefix, msg, newline))
         sys.stdout.flush()
 
 
@@ -138,9 +138,18 @@ def runCommand(cmd, env=None, timeout=-1, logger=log, ignorepreexec=False):
         preexec_fn = setpgid_preexec_fn
 
     if redirect:
-        p = killableprocess.Popen(cmd, env=env, stdin=subprocess.PIPE, stdout=output, stderr=subprocess.STDOUT, preexec_fn=preexec_fn)
+        p = killableprocess.Popen(
+            cmd,
+            env=env,
+            stdin=subprocess.PIPE,
+            stdout=output,
+            stderr=subprocess.STDOUT,
+            preexec_fn=preexec_fn,
+        )
     else:
-        p = killableprocess.Popen(cmd, env=env, stdin=subprocess.PIPE, preexec_fn=preexec_fn)
+        p = killableprocess.Popen(
+            cmd, env=env, stdin=subprocess.PIPE, preexec_fn=preexec_fn
+        )
 
     try:
         if timeout == -1 and redirect:

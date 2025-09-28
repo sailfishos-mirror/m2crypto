@@ -10,14 +10,17 @@ of course.)
 Copyright (c) 1999-2001 Ng Pheng Siong. All rights reserved."""
 
 from M2Crypto import Err, Rand, SSL, X509, threading
-m2_threading = threading; del threading
+
+m2_threading = threading
+del threading
 
 import formatter, getopt, htmllib, sys
 from threading import Thread
 from socket import gethostname
 
-ADDR1 = '127.0.0.1', 9999
-ADDR2 = '127.0.0.2', 9999
+ADDR1 = "127.0.0.1", 9999
+ADDR2 = "127.0.0.2", 9999
+
 
 def handler(addr, sslctx, host, port, req, sslsess=None):
 
@@ -36,38 +39,37 @@ def handler(addr, sslctx, host, port, req, sslsess=None):
             break
 
     if addr != ADDR2:
-        thr = Thread(target=handler,
-                    args=(ADDR2, sslctx, host, port, req, sslsess))
+        thr = Thread(target=handler, args=(ADDR2, sslctx, host, port, req, sslsess))
         print("Thread =", thr.getName())
         thr.start()
 
     s.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     m2_threading.init()
-    Rand.load_file('../randpool.dat', -1)
+    Rand.load_file("../randpool.dat", -1)
 
-    host = '127.0.0.1'
+    host = "127.0.0.1"
     port = 443
-    req = '/'
+    req = "/"
 
-    optlist, optarg = getopt.getopt(sys.argv[1:], 'h:p:r:')
+    optlist, optarg = getopt.getopt(sys.argv[1:], "h:p:r:")
     for opt in optlist:
-        if '-h' in opt:
+        if "-h" in opt:
             host = opt[1]
-        elif '-p' in opt:
+        elif "-p" in opt:
             port = int(opt[1])
-        elif '-r' in opt:
+        elif "-r" in opt:
             req = opt[1]
 
-    ctx = SSL.Context('sslv3')
-    ctx.load_cert('client.pem')
-    ctx.load_verify_info('ca.pem')
+    ctx = SSL.Context("sslv3")
+    ctx.load_cert("client.pem")
+    ctx.load_verify_info("ca.pem")
     ctx.set_verify(SSL.verify_none, 10)
 
-    req = 'GET %s HTTP/1.0\r\n\r\n' % req
+    req = "GET %s HTTP/1.0\r\n\r\n" % req
 
     start = Thread(target=handler, args=(ADDR1, ctx, host, port, req))
     print("Thread =", start.getName())
@@ -75,6 +77,4 @@ if __name__ == '__main__':
     start.join()
 
     m2_threading.cleanup()
-    Rand.save_file('../randpool.dat')
-
-
+    Rand.save_file("../randpool.dat")

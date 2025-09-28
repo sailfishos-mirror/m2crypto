@@ -17,28 +17,33 @@ import sys, os
 # currently using the Python 2.2 asyncore bundled with Zope to override
 # brokenness in the Python 2.1 version. We need to do some funny business
 # to make this work, as a 2.2-ism crept into the asyncore code.
-if os.name == 'posix':
+if os.name == "posix":
     import fcntl
-    if not hasattr(fcntl, 'F_GETFL'):
+
+    if not hasattr(fcntl, "F_GETFL"):
         import FCNTL
+
         fcntl.F_GETFL = FCNTL.F_GETFL
         fcntl.F_SETFL = FCNTL.F_SETFL
 
 from medusa import asyncore
-sys.modules['asyncore'] = asyncore
 
+sys.modules["asyncore"] = asyncore
 
 
 from medusa.test import max_sockets
-CONNECTION_LIMIT=max_sockets.max_select_sockets()
 
-ZSERVER_VERSION='1.1b1'
+CONNECTION_LIMIT = max_sockets.max_select_sockets()
+
+ZSERVER_VERSION = "1.1b1"
 import App.FindHomes
+
 try:
     import App.version_txt
-    ZOPE_VERSION=App.version_txt.version_txt()
+
+    ZOPE_VERSION = App.version_txt.version_txt()
 except:
-    ZOPE_VERSION='experimental'
+    ZOPE_VERSION = "experimental"
 
 
 # Try to poke zLOG default logging into asyncore
@@ -46,19 +51,23 @@ except:
 #     however that would mean that ZServer required zLOG.
 try:
     from zLOG import LOG, register_subsystem, BLATHER, INFO, WARNING, ERROR
-    register_subsystem('ZServer')
-    severity={'info':INFO, 'warning':WARNING, 'error': ERROR}
 
-    def log_info(self, message, type='info'):
-        if message[:14]=='adding channel' or \
-           message[:15]=='closing channel' or \
-           message == 'Computing default hostname':
-            LOG('ZServer', BLATHER, message)
+    register_subsystem("ZServer")
+    severity = {"info": INFO, "warning": WARNING, "error": ERROR}
+
+    def log_info(self, message, type="info"):
+        if (
+            message[:14] == "adding channel"
+            or message[:15] == "closing channel"
+            or message == "Computing default hostname"
+        ):
+            LOG("ZServer", BLATHER, message)
         else:
-            LOG('ZServer', severity[type], message)
+            LOG("ZServer", severity[type], message)
 
     import asyncore
-    asyncore.dispatcher.log_info=log_info
+
+    asyncore.dispatcher.log_info = log_info
 except:
     pass
 
@@ -67,19 +76,23 @@ except:
 # processes from Zope code. Thanks to Dieter Maurer for this.
 try:
     import fcntl
+
     try:
         from fcntl import F_SETFD, FD_CLOEXEC
     except ImportError:
         from FCNTL import F_SETFD, FD_CLOEXEC
 
     def requestCloseOnExec(sock):
-        try:    fcntl.fcntl(sock.fileno(), F_SETFD, FD_CLOEXEC)
-        except: pass
+        try:
+            fcntl.fcntl(sock.fileno(), F_SETFD, FD_CLOEXEC)
+        except:
+            pass
 
 except (ImportError, AttributeError):
 
     def requestCloseOnExec(sock):
         pass
+
 
 import asyncore
 from medusa import resolver, logger
@@ -92,4 +105,4 @@ from PubCore import setNumberOfThreads
 from medusa.monitor import secure_monitor_server
 
 # override the service name in logger.syslog_logger
-logger.syslog_logger.svc_name='ZServer'
+logger.syslog_logger.svc_name = "ZServer"

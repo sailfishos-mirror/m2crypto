@@ -29,27 +29,25 @@ class HTTPS_ServerChannel(HTTPServerChannel):
             if result <= 0:
                 return 0
             else:
-                #self.server.bytes_out.increment(result)
+                # self.server.bytes_out.increment(result)
                 return result
         except SSL.SSLError as why:
             self.close()
-            self.log_info('send: closing channel %s %s' % (repr(self), why), 'warning')
+            self.log_info("send: closing channel %s %s" % (repr(self), why), "warning")
             return 0
 
     def recv(self, buffer_size):
         try:
             result = self.socket._read_nbio(buffer_size)
             if result is None:
-                return ''
-            elif result == '':
+                return ""
+            elif result == "":
                 self.close()
-                return ''
+                return ""
             else:
-                #self.server.bytes_in.increment(len(result))
+                # self.server.bytes_in.increment(len(result))
                 return result
         except SSL.SSLError as why:
             self.close()
-            self.log_info('recv: closing channel %s %s' % (repr(self), why), 'warning')
-            return ''
-
-
+            self.log_info("recv: closing channel %s %s" % (repr(self), why), "warning")
+            return ""

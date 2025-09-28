@@ -29,21 +29,20 @@ import sys, base64
 # --------------------------------------------------------------
 # program parameters
 
-makenewkey  = 0     # 1 = make/save new key, 0 = use existing
-showpubkey  = 0     # 1 = show the public key value
-showdigest  = 0     # 1 = show the digest value
-showprofile = 0     # 1 = use the python profiler
+makenewkey = 0  # 1 = make/save new key, 0 = use existing
+showpubkey = 0  # 1 = show the public key value
+showdigest = 0  # 1 = show the digest value
+showprofile = 0  # 1 = use the python profiler
 
-hashalgs  = ['md5', 'ripemd160', 'sha1',
-             'sha224', 'sha256', 'sha384', 'sha512']
+hashalgs = ["md5", "ripemd160", "sha1", "sha224", "sha256", "sha384", "sha512"]
 
 # default hashing algorithm
-hashalg  = 'sha1'
+hashalg = "sha1"
 
 # default key parameters
-keylen   = 1024
+keylen = 1024
 exponent = 65537
-'''
+"""
   There is some temptation to use an RSA exponent of 3
   because 1) it is easy to remember and 2) it minimizes the
   effort of signature verification.  Unfortunately there
@@ -63,113 +62,137 @@ exponent = 65537
   of using a stronger exponent and avoiding these and possible
   future attacks based on 3.  I suggest getting in the habit
   of using something stronger.  Some suggest using 65537.
-'''
+"""
 
 # number of speed test loops
-N1 = N2  = 100
+N1 = N2 = 100
 
 # --------------------------------------------------------------
 # functions
 
+
 def test(rsa, dgst):
-    print('  testing signing and verification...', end=' ')
+    print("  testing signing and verification...", end=" ")
     try:
         sig = rsa.sign(dgst)
     except Exception as e:
-        print('\n\n    *** %s *** \n' % e)
+        print("\n\n    *** %s *** \n" % e)
         sys.exit()
     if not rsa.verify(dgst, sig):
-        print('not ok')
+        print("not ok")
     else:
-        print('ok')
+        print("ok")
+
 
 def test_asn1(rsa, dgst):
-    print('  testing asn1 signing and verification...', end=' ')
+    print("  testing asn1 signing and verification...", end=" ")
     blob = rsa.sign_asn1(dgst)
     if not rsa.verify_asn1(dgst, blob):
-        print('not ok')
+        print("not ok")
     else:
-        print('ok')
+        print("ok")
+
 
 def speed():
     from time import time
+
     t1 = time()
     for i in range(N1):
         sig = rsa.sign(dgst)
-    print('    %d signings:      %8.2fs' % (N1, (time() - t1)))
+    print("    %d signings:      %8.2fs" % (N1, (time() - t1)))
     t1 = time()
     for i in range(N2):
         rsa.verify(dgst, sig)
-    print('    %d verifications: %8.2fs' % (N2, (time() - t1)))
+    print("    %d verifications: %8.2fs" % (N2, (time() - t1)))
+
 
 def test_speed(rsa, dgst):
-    print('  measuring speed...')
+    print("  measuring speed...")
     if showprofile:
         import profile
-        profile.run('speed()')
+
+        profile.run("speed()")
     else:
         speed()
         print()
 
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+
 def main(keylen, hashalg):
-    global rsa, dgst     # this exists ONLY for speed testing
+    global rsa, dgst  # this exists ONLY for speed testing
 
-    Rand.load_file('randpool.dat', -1)
+    Rand.load_file("randpool.dat", -1)
 
-    pvtkeyfilename = 'rsa%dpvtkey.pem' % (keylen)
-    pubkeyfilename = 'rsa%dpubkey.pem' % (keylen)
+    pvtkeyfilename = "rsa%dpvtkey.pem" % (keylen)
+    pubkeyfilename = "rsa%dpubkey.pem" % (keylen)
 
     if makenewkey:
-        print('  making and saving a new key')
+        print("  making and saving a new key")
         rsa = RSA.gen_key(keylen, exponent)
-        rsa.save_key(pvtkeyfilename, None )  # no pswd callback
+        rsa.save_key(pvtkeyfilename, None)  # no pswd callback
         rsa.save_pub_key(pubkeyfilename)
     else:
-        print('  loading an existing key')
+        print("  loading an existing key")
         rsa = RSA.load_key(pvtkeyfilename)
-    print('  rsa key length:', len(rsa))
+    print("  rsa key length:", len(rsa))
 
     if not rsa.check_key():
-        raise 'key is not initialised'
+        raise "key is not initialised"
 
     # since we are testing signing and verification, let's not
     # be fussy about the digest.  Just make one.
     md = EVP.MessageDigest(hashalg)
-    md.update('can you spell subliminal channel?')
+    md.update("can you spell subliminal channel?")
     dgst = md.digest()
-    print('  hash algorithm: %s' % hashalg)
+    print("  hash algorithm: %s" % hashalg)
     if showdigest:
-        print('  %s digest: \n%s' % (hashalg, base64.encodestring(dgst)))
+        print("  %s digest: \n%s" % (hashalg, base64.encodestring(dgst)))
 
     test(rsa, dgst)
-#    test_asn1(rsa, dgst)
+    #    test_asn1(rsa, dgst)
     test_speed(rsa, dgst)
-    Rand.save_file('randpool.dat')
+    Rand.save_file("randpool.dat")
+
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+
 def print_usage():
-    print("""
+    print(
+        """
   Usage:  python -O %s [option option option ...]
     where options may include:
       makenewkey  showdigest  showprofile
       md5  sha1  sha256  sha512
       <key length>
-""" % sys.argv[0])
+"""
+        % sys.argv[0]
+    )
     sys.exit()
 
+
 # --------------------------------------------------------------
 # --------------------------------------------------------------
 
-if __name__=='__main__':
+if __name__ == "__main__":
     for arg in sys.argv[1:]:
-        if arg in hashalgs:         hashalg = arg; continue
-        if arg == 'makenewkey':   makenewkey  = 1; continue
-        if arg == 'showpubkey':   showpubkey  = 1; continue
-        if arg == 'showdigest':   showdigest  = 1; continue
-        if arg == 'showprofile':  showprofile = 1; continue
+        if arg in hashalgs:
+            hashalg = arg
+            continue
+        if arg == "makenewkey":
+            makenewkey = 1
+            continue
+        if arg == "showpubkey":
+            showpubkey = 1
+            continue
+        if arg == "showdigest":
+            showdigest = 1
+            continue
+        if arg == "showprofile":
+            showprofile = 1
+            continue
         try:
             keylen = int(arg)
         except:

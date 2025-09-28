@@ -12,13 +12,12 @@ from M2Crypto import BIO, SMIME, X509
 s = SMIME.SMIME()
 
 # Load private key and cert.
-s.load_key('recipient_key.pem', 'recipient.pem')
+s.load_key("recipient_key.pem", "recipient.pem")
 
 # Load the encrypted data.
-p7, data = SMIME.smime_load_pkcs7('encrypt.p7')
+p7, data = SMIME.smime_load_pkcs7("encrypt.p7")
 
 # Decrypt p7.
 out = s.decrypt(p7)
 
 print(out)
-

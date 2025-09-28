@@ -265,28 +265,30 @@ Note: you *must* use Python 2.1 or later!
 # win32 binary distribution, the installer will have replaced the
 # marker string with the actual software home. If that has not
 # happened, then the path munging code is skipped.
-swhome=r'INSERT_SOFTWARE_HOME'
-if swhome != 'INSERT_SOFTWARE_HOME':
+swhome = r"INSERT_SOFTWARE_HOME"
+if swhome != "INSERT_SOFTWARE_HOME":
     import sys
-    sys.path.insert(0, '%s/lib/python' % swhome)
-    sys.path.insert(1, '%s/bin/lib' % swhome)
-    sys.path.insert(2, '%s/bin/lib/plat-win' % swhome)
-    sys.path.insert(3, '%s/bin/lib/win32' % swhome)
-    sys.path.insert(4, '%s/bin/lib/win32/lib' % swhome)
-    sys.path.insert(5, '%s' % swhome)
+
+    sys.path.insert(0, "%s/lib/python" % swhome)
+    sys.path.insert(1, "%s/bin/lib" % swhome)
+    sys.path.insert(2, "%s/bin/lib/plat-win" % swhome)
+    sys.path.insert(3, "%s/bin/lib/win32" % swhome)
+    sys.path.insert(4, "%s/bin/lib/win32/lib" % swhome)
+    sys.path.insert(5, "%s" % swhome)
 
 
-import os, sys, getopt, codecs, string
+import os, sys, getopt, codecs, string, importlib
 import socket
 
 from types import StringType, IntType
+
 # workaround to allow unicode encoding conversions in DTML
-dummy = codecs.lookup('iso-8859-1')
+dummy = codecs.lookup("iso-8859-1")
 
 sys.setcheckinterval(500)
 
-program=sys.argv[0]
-here=os.path.join(os.getcwd(), os.path.split(program)[0])
+program = sys.argv[0]
+here = os.path.join(os.getcwd(), os.path.split(program)[0])
 
 ########################################################################
 # Configuration section
@@ -296,83 +298,83 @@ here=os.path.join(os.getcwd(), os.path.split(program)[0])
 
 # This is the IP address of the network interface you want your servers to
 # be visible from.  This can be changed to '' to listen on all interfaces.
-IP_ADDRESS=''
+IP_ADDRESS = ""
 
 # IP address of your DNS server. Set to '' if you do not want to resolve
 # IP addresses. If you have DNS service on your local machine then you can
 # set this to '127.0.0.1'
-DNS_IP=''
+DNS_IP = ""
 
 # User id to run ZServer as. Note that this only works under Unix, and if
 # ZServer is started by root. This no longer defaults to 'nobody' since
 # that can lead to a Zope file compromise.
-UID=None
+UID = None
 
 # Log file location. If this is a relative path, then it is joined the
 # the 'var' directory.
-LOG_FILE='Z2.log'
+LOG_FILE = "Z2.log"
 
 ## HTTP configuration
 ##
 
 # Port for HTTP Server. The standard port for HTTP services is 80.
-HTTP_PORT=8080
+HTTP_PORT = 8080
 
 # Port for HTTPS Server. The standard port for HTTPS services is 443.
-HTTPS_PORT=8443
+HTTPS_PORT = 8443
 
 # HTTP enivornment settings.
-HTTP_ENV={}
+HTTP_ENV = {}
 
 # HTTPS enivornment settings.
-HTTPS_ENV={}
+HTTPS_ENV = {}
 
 # Should we close all HTTP connections, ignoring the (usually absent)
 # 'Connection:' header?
-FORCE_HTTP_CONNECTION_CLOSE=0
+FORCE_HTTP_CONNECTION_CLOSE = 0
 
 # Port for the special "WebDAV source view" HTTP handler.  There is no
 # standard port for this handler, which is disabled by default.
-WEBDAV_SOURCE_PORT=[]
+WEBDAV_SOURCE_PORT = []
 
 # Port for the special "WebDAV source view over SSL" HTTP handler.  There is no
 # standard port for this handler, which is disabled by default.
-WEBDAV_SSL_SOURCE_PORT=[]
+WEBDAV_SSL_SOURCE_PORT = []
 
 # Should we use client X.509 certificate-based authentication?
-X509_REMOTE_USER=None
+X509_REMOTE_USER = None
 
 ## FTP configuration
 
 # Port for the FTP Server. The standard port for FTP services is 21.
-FTP_PORT=8021
+FTP_PORT = 8021
 
 ## PCGI configuration
 
 # You can configure the PCGI server manually, or have it read its
 # configuration information from a PCGI info file.
-PCGI_FILE='Zope.cgi'
+PCGI_FILE = "Zope.cgi"
 
 ## Monitor configuration
-MONITOR_PORT=0
+MONITOR_PORT = 0
 
 ## ICP configuration
-ICP_PORT=0
+ICP_PORT = 0
 
 # Module to be published, which must be Main or Zope
-MODULE='Zope'
+MODULE = "Zope"
 
 # The size of the thread pool, if ZODB3 is used.
-NUMBER_OF_THREADS=4
+NUMBER_OF_THREADS = 4
 
 # Localization support
-LOCALE_ID=None
+LOCALE_ID = None
 
 # Socket path or port for the FastCGI Server
-FCGI_PORT=None
+FCGI_PORT = None
 
 # Detailed log file
-DETAILED_LOG_FILE=''
+DETAILED_LOG_FILE = ""
 
 # Use a daemon process
 USE_DAEMON = 1
@@ -383,26 +385,33 @@ USE_DAEMON = 1
 ########################################################################
 # Handle command-line arguments:
 
+
 def server_info(old, v, offset=0):
     # interpret v as a port or address/port and get new value
-    if v == '-': v=''
-    l=v.find(':')
+    if v == "-":
+        v = ""
+    l = v.find(":")
     if l >= 0:
-        a=v[:l]
-        v=v[l+1:]
+        a = v[:l]
+        v = v[l + 1 :]
     else:
-        a=IP_ADDRESS
+        a = IP_ADDRESS
 
-    if not v: return v
+    if not v:
+        return v
 
     try:
-        v=int(v)
-        if v < 0: raise 'Invalid port', v
-        v=v+offset
-    except: raise 'Invalid port', v
+        v = int(v)
+        if v < 0:
+            raise ValueError("Invalid port", v)
+        v = v + offset
+    except:
+        raise ValueError("Invalid port", v)
 
-    if isinstance(old, IntType): old=[(a,v)]
-    else: old.append((a,v))
+    if isinstance(old, IntType):
+        old = [(a, v)]
+    else:
+        old.append((a, v))
 
     return old
 
@@ -410,105 +419,122 @@ def server_info(old, v, offset=0):
 try:
     opts, args = getopt.getopt(
         sys.argv[1:],
-        'hz:Z:t:i:a:d:u:w:W:y:Y:x:f:p:m:Sl:2DP:rF:L:XM:C',
-        ['icp=', 'force-http-connection-close'
-    ])
+        "hz:Z:t:i:a:d:u:w:W:y:Y:x:f:p:m:Sl:2DP:rF:L:XM:C",
+        ["icp=", "force-http-connection-close"],
+    )
 
-    DEBUG=0
-    READ_ONLY=0
-    if sys.platform == 'win32':
+    DEBUG = 0
+    READ_ONLY = 0
+    if sys.platform == "win32":
         USE_DAEMON = 0
-
 
     # Get environment variables
     for a in args:
-        if a.find('='):
-            a=a.split('=')
-            o=a[0]
-            v='='.join(a[1:])
+        if a.find("="):
+            a = a.split("=")
+            o = a[0]
+            v = "=".join(a[1:])
             if o:
-                os.environ[o]=v
-                HTTP_ENV[o]=v
+                os.environ[o] = v
+                HTTP_ENV[o] = v
         else:
-            raise 'Invalid argument', a
+            raise ValueError("Invalid argument", a)
 
     for o, v in opts:
-        if o=='-z': here=v
-        elif o=='-Z':
-            if v in ('-', '0', ''):
-                USE_DAEMON=0
-            elif sys.platform != 'win32':
+        if o == "-z":
+            here = v
+        elif o == "-Z":
+            if v in ("-", "0", ""):
+                USE_DAEMON = 0
+            elif sys.platform != "win32":
                 USE_DAEMON = 1
-        elif o=='-r': READ_ONLY=1
-        elif o=='-t':
-            try: v=int(v)
-            except: raise 'Invalid number of threads', v
-            NUMBER_OF_THREADS=v
+        elif o == "-r":
+            READ_ONLY = 1
+        elif o == "-t":
+            try:
+                v = int(v)
+            except:
+                raise ValueError("Invalid number of threads", v)
+            NUMBER_OF_THREADS = v
 
-        elif o=='-i':
-            try: v=int(v)
-            except: raise 'Invalid value for -i option', v
+        elif o == "-i":
+            try:
+                v = int(v)
+            except:
+                raise ValueError("Invalid value for -i option", v)
             sys.setcheckinterval(v)
 
-        elif o=='-a': IP_ADDRESS=v
-        elif o=='-d':
-            if v=='-': v=''
-            DNS_IP=v
-        elif o=='-u': UID=v
-        elif o=='-D':
-            os.environ['Z_DEBUG_MODE']='1'
-            DEBUG=1
-        elif o=='-S': sys.ZMANAGED=1
-        elif o=='-X':
-            MONITOR_PORT=HTTP_PORT=FTP_PORT=FCGI_PORT=ICP_PORT=0
-            WEBDAV_SOURCE_PORT=0
-            PCGI_FILE=''
-        elif o=='-m':
-            MONITOR_PORT=server_info(MONITOR_PORT, v)
-        elif o=='-w':
-            HTTP_PORT=server_info(HTTP_PORT, v)
-        elif o=='-y':
-            HTTPS_PORT=server_info(HTTPS_PORT, v)
-        elif o=='-C' or o=='--force-http-connection-close':
-            FORCE_HTTP_CONNECTION_CLOSE=1
-        elif o=='-W':
-            WEBDAV_SOURCE_PORT=server_info(WEBDAV_SOURCE_PORT, v)
-        elif o=='-Y':
-            WEBDAV_SSL_SOURCE_PORT=server_info(WEBDAV_SSL_SOURCE_PORT, v)
-        elif o=='-x':
-            if v in ('-', '0', ''):
-                X509_REMOTE_USER=None
+        elif o == "-a":
+            IP_ADDRESS = v
+        elif o == "-d":
+            if v == "-":
+                v = ""
+            DNS_IP = v
+        elif o == "-u":
+            UID = v
+        elif o == "-D":
+            os.environ["Z_DEBUG_MODE"] = "1"
+            DEBUG = 1
+        elif o == "-S":
+            sys.ZMANAGED = 1
+        elif o == "-X":
+            MONITOR_PORT = HTTP_PORT = FTP_PORT = FCGI_PORT = ICP_PORT = 0
+            WEBDAV_SOURCE_PORT = 0
+            PCGI_FILE = ""
+        elif o == "-m":
+            MONITOR_PORT = server_info(MONITOR_PORT, v)
+        elif o == "-w":
+            HTTP_PORT = server_info(HTTP_PORT, v)
+        elif o == "-y":
+            HTTPS_PORT = server_info(HTTPS_PORT, v)
+        elif o == "-C" or o == "--force-http-connection-close":
+            FORCE_HTTP_CONNECTION_CLOSE = 1
+        elif o == "-W":
+            WEBDAV_SOURCE_PORT = server_info(WEBDAV_SOURCE_PORT, v)
+        elif o == "-Y":
+            WEBDAV_SSL_SOURCE_PORT = server_info(WEBDAV_SSL_SOURCE_PORT, v)
+        elif o == "-x":
+            if v in ("-", "0", ""):
+                X509_REMOTE_USER = None
             else:
-                X509_REMOTE_USER=1
-        elif o=='-f':
-            FTP_PORT=server_info(FTP_PORT, v)
-        elif o=='-P':
-            HTTP_PORT=server_info(HTTP_PORT, v, 80)
-            FTP_PORT=server_info(FTP_PORT, v, 21)
-        elif o=='--icp':
-            ICP_PORT=server_info(ICP_PORT, v)
+                X509_REMOTE_USER = 1
+        elif o == "-f":
+            FTP_PORT = server_info(FTP_PORT, v)
+        elif o == "-P":
+            HTTP_PORT = server_info(HTTP_PORT, v, 80)
+            FTP_PORT = server_info(FTP_PORT, v, 21)
+        elif o == "--icp":
+            ICP_PORT = server_info(ICP_PORT, v)
 
-        elif o=='-p':
-            if v=='-': v=''
-            PCGI_FILE=v
-        elif o=='-h':
+        elif o == "-p":
+            if v == "-":
+                v = ""
+            PCGI_FILE = v
+        elif o == "-h":
             print(__doc__ % vars())
             sys.exit(0)
-        elif o=='-2': MODULE='Main'
-        elif o=='-l': LOG_FILE=v
-        elif o=='-L':
-            if v: LOCALE_ID=v
-            else: LOCALE_ID=''
-        elif o=='-F':
-            if v=='-': v=''
-            FCGI_PORT=v
-        elif o=='-M': DETAILED_LOG_FILE=v
+        elif o == "-2":
+            MODULE = "Main"
+        elif o == "-l":
+            LOG_FILE = v
+        elif o == "-L":
+            if v:
+                LOCALE_ID = v
+            else:
+                LOCALE_ID = ""
+        elif o == "-F":
+            if v == "-":
+                v = ""
+            FCGI_PORT = v
+        elif o == "-M":
+            DETAILED_LOG_FILE = v
 
-except SystemExit: sys.exit(0)
+except SystemExit:
+    sys.exit(0)
 except:
     print(__doc__ % vars())
     print()
-    print('Error:')
+    print("Error:")
     print("%s: %s" % (sys.exc_type, sys.exc_value))
     sys.exit(1)
 
@@ -519,37 +545,41 @@ except:
 # OK, let's get going!
 
 # Jigger path:
-sys.path=[os.path.join(here,'lib','python'),here
-          ]+filter(None, sys.path)
-
+sys.path = [os.path.join(here, "lib", "python"), here] + filter(None, sys.path)
 
 
 # Try to set the locale if specified on the command
 # line. If the locale module is not available or the
 # requested locale is not supported by the local
-# machine, raise an error so that the user is made
+# machine, raise ValueError(an error so that the user is made)
 # aware of the problem.
+
 
 def set_locale(val):
     try:
         import locale
     except:
         raise SystemExit(
-            'The locale module could not be imported.\n'
-            'To use localization options, you must ensure\n'
-            'that the locale module is compiled into your\n'
-            'Python installation.')
+            "The locale module could not be imported.\n"
+            "To use localization options, you must ensure\n"
+            "that the locale module is compiled into your\n"
+            "Python installation."
+        )
     try:
         locale.setlocale(locale.LC_ALL, val)
     except:
         raise SystemExit(
-            'The specified locale is not supported by your system.\n'
-            'See your operating system documentation for more\n'
-            'information on locale support.')
+            "The specified locale is not supported by your system.\n"
+            "See your operating system documentation for more\n"
+            "information on locale support."
+        )
+
+
 if LOCALE_ID is not None:
     set_locale(LOCALE_ID)
 
 import zdaemon
+
 # from this point forward we can use the zope logger
 # importing ZDaemon before importing ZServer causes ZServer logging
 # not to work.
@@ -560,18 +590,20 @@ import zdaemon
 import ZServer
 
 # install signal handlers if on posix
-if os.name == 'posix':
+if os.name == "posix":
     from Signals import Signals
+
     Signals.registerZopeSignals()
 
 # Location of the ZServer pid file. When Zope starts up it will write
 # its PID to this file.  If Zope is run under zdaemon control, zdaemon
 # will write to this pidfile instead of Zope.
-PID_FILE=os.path.join(CLIENT_HOME, 'Z2.pid')
+PID_FILE = os.path.join(CLIENT_HOME, "Z2.pid")
 
 if USE_DAEMON and not READ_ONLY:
     import App.FindHomes
-    sys.ZMANAGED=1
+
+    sys.ZMANAGED = 1
     # zdaemon.run creates a process which "manages" the actual Zope
     # process (restarts it if it dies).  The management process passes along
     # signals that it receives to its child.
@@ -579,10 +611,18 @@ if USE_DAEMON and not READ_ONLY:
 
 os.chdir(CLIENT_HOME)
 
+
 def _warn_nobody():
-    zLOG.LOG("z2", zLOG.INFO, ("Running Zope as 'nobody' can compromise "
-                               "your Zope files; consider using a "
-                               "dedicated user account for Zope") )
+    zLOG.LOG(
+        "z2",
+        zLOG.INFO,
+        (
+            "Running Zope as 'nobody' can compromise "
+            "your Zope files; consider using a "
+            "dedicated user account for Zope"
+        ),
+    )
+
 
 try:
     # Import logging support
@@ -590,7 +630,7 @@ try:
     import ZLogger
 
     if READ_ONLY:
-        if hasattr(zLOG, '_set_stupid_dest'):
+        if hasattr(zLOG, "_set_stupid_dest"):
             zLOG._set_stupid_dest(sys.stderr)
         else:
             zLOG._stupid_dest = sys.stderr
@@ -599,34 +639,36 @@ try:
 
     if DETAILED_LOG_FILE:
         from ZServer import DebugLogger
-        logfile=os.path.join(CLIENT_HOME, DETAILED_LOG_FILE)
-        zLOG.LOG('z2', zLOG.BLATHER,
-                 'Using detailed request log file %s' % logfile)
-        DL=DebugLogger.DebugLogger(logfile)
-        DebugLogger.log=DL.log
-        DebugLogger.reopen=DL.reopen
-        sys.__detailedlog=DL
+
+        logfile = os.path.join(CLIENT_HOME, DETAILED_LOG_FILE)
+        zLOG.LOG("z2", zLOG.BLATHER, "Using detailed request log file %s" % logfile)
+        DL = DebugLogger.DebugLogger(logfile)
+        DebugLogger.log = DL.log
+        DebugLogger.reopen = DL.reopen
+        sys.__detailedlog = DL
 
     # Import Zope (or Main)
-    if MODULE == 'Zope':
+    if MODULE == "Zope":
         import Zope
+
         Zope.startup()
     else:
-        exec "import "+MODULE in {}
+        importlib.import_module(MODULE)
 
     # Location of the ZServer log file. This file logs all ZServer activity.
     # You may wish to create different logs for different servers. See
     # medusa/logger.py for more information.
     if not os.path.isabs(LOG_FILE):
-        LOG_PATH=os.path.join(CLIENT_HOME, LOG_FILE)
+        LOG_PATH = os.path.join(CLIENT_HOME, LOG_FILE)
     else:
-        LOG_PATH=LOG_FILE
+        LOG_PATH = LOG_FILE
 
     # import ZServer stuff
 
     # First, we need to increase the number of threads
-    if MODULE=='Zope':
+    if MODULE == "Zope":
         from ZServer import setNumberOfThreads
+
         setNumberOfThreads(NUMBER_OF_THREADS)
 
     from ZServer import resolver, logger, asyncore
@@ -634,7 +676,7 @@ try:
     from ZServer import zhttp_server, zhttp_handler
     from ZServer import zhttps_server, zhttps0_handler, zhttps_handler
     from ZServer.WebDAVSrcHandler import WebDAVSrcHandler
-    from ZServer import PCGIServer,FTPServer,FCGIServer
+    from ZServer import PCGIServer, FTPServer, FCGIServer
 
     from ZServer import secure_monitor_server
 
@@ -648,92 +690,103 @@ try:
 
         import base64, string, time
 
-        def log (self, bytes):
-            user_agent=self.get_header('user-agent')
-            if not user_agent: user_agent=''
-            referer=self.get_header('referer')
-            if not referer: referer=''
+        def log(self, bytes):
+            user_agent = self.get_header("user-agent")
+            if not user_agent:
+                user_agent = ""
+            referer = self.get_header("referer")
+            if not referer:
+                referer = ""
 
-            get_peer_cert = getattr(self.channel, 'get_peer_cert', None)
+            get_peer_cert = getattr(self.channel, "get_peer_cert", None)
             if get_peer_cert is not None:
                 name = str(get_peer_cert().get_subject())
             else:
-                name = 'Anonymous'
-            auth=self.get_header('Authorization')
+                name = "Anonymous"
+            auth = self.get_header("Authorization")
             if auth is not None:
-                if string.lower(auth[:6]) == 'basic ':
-                    try: decoded=base64.decodestring(auth[6:])
-                    except base64.binascii.Error: decoded=''
-                    t = string.split(decoded, ':', 1)
+                if string.lower(auth[:6]) == "basic ":
+                    try:
+                        decoded = base64.decodestring(auth[6:])
+                    except base64.binascii.Error:
+                        decoded = ""
+                    t = string.split(decoded, ":", 1)
                     if len(t) < 2:
-                        name = 'Unknown (bad auth string)'
+                        name = "Unknown (bad auth string)"
                     else:
                         name = t[0]
 
-            self.channel.server.logger.log (
+            self.channel.server.logger.log(
                 self.channel.addr[0],
-                ' - %s [%s] "%s" %d %d "%s" "%s"\n' % (
+                ' - %s [%s] "%s" %d %d "%s" "%s"\n'
+                % (
                     name,
-                    self.log_date_string (time.time()),
+                    self.log_date_string(time.time()),
                     self.request,
                     self.reply_code,
                     bytes,
                     referer,
-                    user_agent
-                    )
-                )
+                    user_agent,
+                ),
+            )
 
         from ZServer.medusa import http_server
+
         http_server.http_request.log = log
 
     # Resolver and Logger, used by other servers
     if DNS_IP:
         rs = resolver.caching_resolver(DNS_IP)
     else:
-        rs=None
+        rs = None
 
     if READ_ONLY:
-        lg = logger.file_logger('-') # log to stdout
-        zLOG.LOG('z2', zLOG.BLATHER, 'Logging access log to stdout')
-    elif 'ZSYSLOG_ACCESS' in os.environ:
+        lg = logger.file_logger("-")  # log to stdout
+        zLOG.LOG("z2", zLOG.BLATHER, "Logging access log to stdout")
+    elif "ZSYSLOG_ACCESS" in os.environ:
         if "ZSYSLOG_ACCESS_FACILITY" in os.environ:
             lg = logger.syslog_logger(
-                os.environ['ZSYSLOG_ACCESS'],
-                facility=os.environ['ZSYSLOG_ACCESS_FACILITY'])
+                os.environ["ZSYSLOG_ACCESS"],
+                facility=os.environ["ZSYSLOG_ACCESS_FACILITY"],
+            )
         else:
-            lg = logger.syslog_logger(os.environ['ZSYSLOG_ACCESS'])
-        zLOG.LOG('z2', zLOG.BLATHER, 'Using local syslog access log')
-    elif 'ZSYSLOG_ACCESS_SERVER' in os.environ:
-        (addr, port) = os.environ['ZSYSLOG_ACCESS_SERVER'].split( ':')
+            lg = logger.syslog_logger(os.environ["ZSYSLOG_ACCESS"])
+        zLOG.LOG("z2", zLOG.BLATHER, "Using local syslog access log")
+    elif "ZSYSLOG_ACCESS_SERVER" in os.environ:
+        (addr, port) = os.environ["ZSYSLOG_ACCESS_SERVER"].split(":")
         lg = logger.syslog_logger((addr, int(port)))
-        zLOG.LOG('z2', zLOG.BLATHER, 'Using remote syslog access log')
+        zLOG.LOG("z2", zLOG.BLATHER, "Using remote syslog access log")
     else:
         lg = logger.file_logger(LOG_PATH)
-        zLOG.LOG('z2', zLOG.BLATHER, 'Using access log file %s' % LOG_PATH)
+        zLOG.LOG("z2", zLOG.BLATHER, "Using access log file %s" % LOG_PATH)
     sys.__lg = lg
 
-    port_err=('\n\nZope wants to use %(socktype)s port %(port)s for its '
-              '%(protocol)s service, but it is already in use by another '
-              'application on this machine.  Either shut the application down '
-              'which is using this port, or start Zope with a different '
-              '%(protocol)s port via the "%(switch)s" command-line switch.\n')
+    port_err = (
+        "\n\nZope wants to use %(socktype)s port %(port)s for its "
+        "%(protocol)s service, but it is already in use by another "
+        "application on this machine.  Either shut the application down "
+        "which is using this port, or start Zope with a different "
+        '%(protocol)s port via the "%(switch)s" command-line switch.\n'
+    )
 
     # HTTP Server
     if HTTP_PORT:
-        if isinstance(HTTP_PORT, IntType): HTTP_PORT=((IP_ADDRESS, HTTP_PORT),)
+        if isinstance(HTTP_PORT, IntType):
+            HTTP_PORT = ((IP_ADDRESS, HTTP_PORT),)
         for address, port in HTTP_PORT:
             try:
-                hs = zhttp_server(
-                    ip=address,
-                    port=port,
-                    resolver=rs,
-                    logger_object=lg)
+                hs = zhttp_server(ip=address, port=port, resolver=rs, logger_object=lg)
             except socket.error as why:
-                if why[0] == 98: # address in use
-                    raise port_err % {'port':port,
-                                      'socktype':'TCP',
-                                      'protocol':'HTTP',
-                                      'switch':'-w'}
+                if why[0] == 98:  # address in use
+                    raise ValueError(
+                        port_err
+                        % {
+                            "port": port,
+                            "socktype": "TCP",
+                            "protocol": "HTTP",
+                            "switch": "-w",
+                        }
+                    )
                 raise
             # Handler for a published module. zhttp_handler takes 3 arguments:
             # The name of the module to publish, and optionally the URI base
@@ -746,67 +799,66 @@ try:
             # environment to reflect the CGI environment of the other web
             # server.
             try:
-                del HTTP_ENV['HTTPS']
+                del HTTP_ENV["HTTPS"]
             except KeyError:
                 pass
-            zh = zhttp_handler(MODULE, '', HTTP_ENV)
+            zh = zhttp_handler(MODULE, "", HTTP_ENV)
             if FORCE_HTTP_CONNECTION_CLOSE:
                 zh._force_connection_close = 1
             hs.install_handler(zh)
 
     # HTTPS Server
     if HTTPS_PORT:
-        ssl_ctx = SSL.Context('sslv23')
-        ssl_ctx.load_cert_chain('%s/server.pem' % INSTANCE_HOME)
-        ssl_ctx.load_verify_locations('%s/ca.pem' % INSTANCE_HOME)
-        ssl_ctx.load_client_CA('%s/ca.pem' % INSTANCE_HOME)
-        #ssl_ctx.set_allow_unknown_ca(1)
+        ssl_ctx = SSL.Context("sslv23")
+        ssl_ctx.load_cert_chain("%s/server.pem" % INSTANCE_HOME)
+        ssl_ctx.load_verify_locations("%s/ca.pem" % INSTANCE_HOME)
+        ssl_ctx.load_client_CA("%s/ca.pem" % INSTANCE_HOME)
+        # ssl_ctx.set_allow_unknown_ca(1)
         ssl_ctx.set_session_id_ctx(MODULE)
-        ssl_ctx.set_tmp_dh('%s/dh1024.pem' % INSTANCE_HOME)
+        ssl_ctx.set_tmp_dh("%s/dh1024.pem" % INSTANCE_HOME)
         if X509_REMOTE_USER:
             ssl_ctx.set_verify(SSL.verify_peer, 10)
         else:
             ssl_ctx.set_verify(SSL.verify_none, 10)
-        if type(HTTPS_PORT) is type(0): HTTPS_PORT=((IP_ADDRESS, HTTPS_PORT),)
+        if type(HTTPS_PORT) is type(0):
+            HTTPS_PORT = ((IP_ADDRESS, HTTPS_PORT),)
 
         for address, port in HTTPS_PORT:
             hss = zhttps_server(
-                ip=address,
-                port=port,
-                ssl_ctx=ssl_ctx,
-                resolver=rs,
-                logger_object=lg)
+                ip=address, port=port, ssl_ctx=ssl_ctx, resolver=rs, logger_object=lg
+            )
 
             try:
-                del HTTPS_ENV['HTTP']
+                del HTTPS_ENV["HTTP"]
             except KeyError:
                 pass
-            HTTPS_ENV['HTTPS']='ON'
+            HTTPS_ENV["HTTPS"] = "ON"
 
             if X509_REMOTE_USER:
-                zsh = zhttps_handler(MODULE, '', HTTPS_ENV)
+                zsh = zhttps_handler(MODULE, "", HTTPS_ENV)
             else:
-                zsh = zhttps0_handler(MODULE, '', HTTPS_ENV)
+                zsh = zhttps0_handler(MODULE, "", HTTPS_ENV)
             hss.install_handler(zsh)
 
     # WebDAV source Server (runs HTTP, but munges request to return
     #  'manage_FTPget').
     if WEBDAV_SOURCE_PORT:
         if isinstance(WEBDAV_SOURCE_PORT, IntType):
-            WEBDAV_SOURCE_PORT=((IP_ADDRESS, WEBDAV_SOURCE_PORT),)
+            WEBDAV_SOURCE_PORT = ((IP_ADDRESS, WEBDAV_SOURCE_PORT),)
         for address, port in WEBDAV_SOURCE_PORT:
             try:
-                hs = zhttp_server(
-                    ip=address,
-                    port=port,
-                    resolver=rs,
-                    logger_object=lg)
+                hs = zhttp_server(ip=address, port=port, resolver=rs, logger_object=lg)
             except socket.error as why:
-                if why[0] == 98: # address in use
-                    raise port_err % {'port':port,
-                                      'socktype':'TCP',
-                                      'protocol':'WebDAV source',
-                                      'switch':'-W'}
+                if why[0] == 98:  # address in use
+                    raise ValueError(
+                        port_err
+                        % {
+                            "port": port,
+                            "socktype": "TCP",
+                            "protocol": "WebDAV source",
+                            "switch": "-W",
+                        }
+                    )
                 raise
 
             # Handler for a published module. zhttp_handler takes 3 arguments:
@@ -819,15 +871,16 @@ try:
             # from another web server to ZServer, and would like the CGI
             # environment to reflect the CGI environment of the other web
             # server.
-            zh = WebDAVSrcHandler(MODULE, '', HTTP_ENV)
+            zh = WebDAVSrcHandler(MODULE, "", HTTP_ENV)
             hs.install_handler(zh)
 
             # enable document retrieval of the document source on the
             # standard HTTP port
 
-            clients = os.environ.get('WEBDAV_SOURCE_PORT_CLIENTS')
+            clients = os.environ.get("WEBDAV_SOURCE_PORT_CLIENTS")
             if clients:
                 import re
+
                 sys.WEBDAV_SOURCE_PORT_CLIENTS = re.compile(clients).search
             else:
                 sys.WEBDAV_SOURCE_PORT_CLIENTS = None
@@ -835,62 +888,62 @@ try:
     # WebDAV-over-SSL source Server (runs HTTPS, but munges request to return
     #  'manage_FTPget').
     if WEBDAV_SSL_SOURCE_PORT:
-        ssl_ctx = SSL.Context('sslv23')
-        ssl_ctx.load_cert_chain('%s/server.pem' % INSTANCE_HOME)
-        ssl_ctx.load_verify_locations('%s/ca.pem' % INSTANCE_HOME)
-        ssl_ctx.load_client_CA('%s/ca.pem' % INSTANCE_HOME)
+        ssl_ctx = SSL.Context("sslv23")
+        ssl_ctx.load_cert_chain("%s/server.pem" % INSTANCE_HOME)
+        ssl_ctx.load_verify_locations("%s/ca.pem" % INSTANCE_HOME)
+        ssl_ctx.load_client_CA("%s/ca.pem" % INSTANCE_HOME)
         ssl_ctx.set_verify(SSL.verify_none, 10)
         ssl_ctx.set_session_id_ctx(MODULE)
-        ssl_ctx.set_tmp_dh('%s/dh1024.pem' % INSTANCE_HOME)
+        ssl_ctx.set_tmp_dh("%s/dh1024.pem" % INSTANCE_HOME)
         if type(WEBDAV_SSL_SOURCE_PORT) is type(0):
-            WEBDAV_SSL_SOURCE_PORT=((IP_ADDRESS, WEBDAV_SSL_SOURCE_PORT),)
+            WEBDAV_SSL_SOURCE_PORT = ((IP_ADDRESS, WEBDAV_SSL_SOURCE_PORT),)
         for address, port in WEBDAV_SSL_SOURCE_PORT:
             hss = zhttps_server(
-                ip=address,
-                port=port,
-                ssl_ctx=ssl_ctx,
-                resolver=rs,
-                logger_object=lg)
+                ip=address, port=port, ssl_ctx=ssl_ctx, resolver=rs, logger_object=lg
+            )
 
             try:
-                del HTTPS_ENV['HTTP']
+                del HTTPS_ENV["HTTP"]
             except KeyError:
                 pass
-            HTTPS_ENV['HTTPS']='ON'
+            HTTPS_ENV["HTTPS"] = "ON"
 
-            zsh = WebDAVSrcHandler(MODULE, '', HTTPS_ENV)
+            zsh = WebDAVSrcHandler(MODULE, "", HTTPS_ENV)
             hss.install_handler(zsh)
 
     # FTP Server
     if FTP_PORT:
-        if isinstance(FTP_PORT, IntType): FTP_PORT=((IP_ADDRESS, FTP_PORT),)
+        if isinstance(FTP_PORT, IntType):
+            FTP_PORT = ((IP_ADDRESS, FTP_PORT),)
         for address, port in FTP_PORT:
             try:
                 FTPServer(
-                   module=MODULE,
-                   ip=address,
-                   port=port,
-                   resolver=rs,
-                   logger_object=lg)
+                    module=MODULE, ip=address, port=port, resolver=rs, logger_object=lg
+                )
             except socket.error as why:
-                if why[0] == 98: # address in use
-                    raise port_err % {'port':port,
-                                      'socktype':'TCP',
-                                      'protocol':'FTP',
-                                      'switch':'-f'}
+                if why[0] == 98:  # address in use
+                    raise ValueError(
+                        port_err
+                        % {
+                            "port": port,
+                            "socktype": "TCP",
+                            "protocol": "FTP",
+                            "switch": "-f",
+                        }
+                    )
                 raise
 
     # PCGI Server
     if PCGI_FILE and not READ_ONLY:
-        PCGI_FILE=os.path.join(here, PCGI_FILE)
+        PCGI_FILE = os.path.join(here, PCGI_FILE)
         if os.path.exists(PCGI_FILE):
             zpcgi = PCGIServer(
                 module=MODULE,
                 ip=IP_ADDRESS,
                 pcgi_file=PCGI_FILE,
                 resolver=rs,
-                logger_object=lg)
-
+                logger_object=lg,
+            )
 
     # FastCGI Server
     if FCGI_PORT and not READ_ONLY:
@@ -901,73 +954,96 @@ try:
         except ValueError:
             fcgiPath = FCGI_PORT
         try:
-            zfcgi = FCGIServer(module=MODULE,
-                               ip=IP_ADDRESS,
-                               port=fcgiPort,
-                               socket_file=fcgiPath,
-                               resolver=rs,
-                               logger_object=lg)
+            zfcgi = FCGIServer(
+                module=MODULE,
+                ip=IP_ADDRESS,
+                port=fcgiPort,
+                socket_file=fcgiPath,
+                resolver=rs,
+                logger_object=lg,
+            )
         except socket.error as why:
-            if why[0] == 98: # address in use
-                raise port_err % {'port':fcgiPort,
-                                  'socktype':'TCP',
-                                  'protocol':'FastCGI',
-                                  'switch':'-F'}
+            if why[0] == 98:  # address in use
+                raise ValueError(
+                    port_err
+                    % {
+                        "port": fcgiPort,
+                        "socktype": "TCP",
+                        "protocol": "FastCGI",
+                        "switch": "-F",
+                    }
+                )
             raise
-
 
     # Monitor Server
     if MONITOR_PORT:
         from AccessControl.User import emergency_user
-        if not hasattr(emergency_user, '__null_user__'):
+
+        if not hasattr(emergency_user, "__null_user__"):
             pw = emergency_user._getPassword()
         else:
             pw = None
-            zLOG.LOG("z2", zLOG.WARNING, 'Monitor server not started'
-                     ' because no emergency user exists.')
+            zLOG.LOG(
+                "z2",
+                zLOG.WARNING,
+                "Monitor server not started" " because no emergency user exists.",
+            )
         if pw:
             if isinstance(MONITOR_PORT, IntType):
-                MONITOR_PORT=((IP_ADDRESS, MONITOR_PORT),)
+                MONITOR_PORT = ((IP_ADDRESS, MONITOR_PORT),)
             for address, port in MONITOR_PORT:
                 try:
-                    monitor=secure_monitor_server(
-                        password=pw,
-                        hostname=address,
-                        port=port)
+                    monitor = secure_monitor_server(
+                        password=pw, hostname=address, port=port
+                    )
                 except socket.error as why:
-                    if why[0] == 98: # address in use
-                        raise port_err % {'port':port,
-                                          'socktype':'TCP',
-                                          'protocol':'monitor server',
-                                          'switch':'-m'}
+                    if why[0] == 98:  # address in use
+                        raise ValueError(
+                            port_err
+                            % {
+                                "port": port,
+                                "socktype": "TCP",
+                                "protocol": "monitor server",
+                                "switch": "-m",
+                            }
+                        )
                     raise
 
     if ICP_PORT:
-        if isinstance(ICP_PORT, IntType): ICP_PORT=((IP_ADDRESS, ICP_PORT),)
+        if isinstance(ICP_PORT, IntType):
+            ICP_PORT = ((IP_ADDRESS, ICP_PORT),)
         from ZServer.ICPServer import ICPServer
+
         for address, port in ICP_PORT:
             try:
-                ICPServer(address,port)
+                ICPServer(address, port)
             except socket.error as why:
-                if why[0] == 98: # address in use
-                    raise port_err % {'port':port,
-                                      'socktype':'UDP',
-                                      'protocol':'ICP',
-                                      'switch':'--icp'}
+                if why[0] == 98:  # address in use
+                    raise ValueError(
+                        port_err
+                        % {
+                            "port": port,
+                            "socktype": "UDP",
+                            "protocol": "ICP",
+                            "switch": "--icp",
+                        }
+                    )
                 raise
 
     if not USE_DAEMON and not READ_ONLY:
-        if os.path.exists(PID_FILE): os.unlink(PID_FILE)
-        pf = open(PID_FILE, 'w')
-        pid='%s\n' % os.getpid()
+        if os.path.exists(PID_FILE):
+            os.unlink(PID_FILE)
+        pf = open(PID_FILE, "w")
+        pid = "%s\n" % os.getpid()
         pf.write(pid)
         pf.close()
 
     # Warn if we were started as nobody.
     try:
         import pwd
+
         if os.getuid():
-            if pwd.getpwuid(os.getuid())[0] == 'nobody':
+            if pwd.getpwuid(os.getuid())[0] == "nobody":
                 _warn_nobody()
     except:
         pass
@@ -979,27 +1055,33 @@ try:
             try:
                 import initgroups
             except:
-                raise SystemExit('initgroups is required to safely setuid')
+                raise SystemExit("initgroups is required to safely setuid")
             if UID == None:
-                raise SystemExit('A user was not specified to setuid '
-                                   'to; fix this to start as root (see '
-                                   'doc/SETUID.txt)')
+                raise SystemExit(
+                    "A user was not specified to setuid "
+                    "to; fix this to start as root (see "
+                    "doc/SETUID.txt)"
+                )
             import stat
+
             client_home_stat = os.stat(CLIENT_HOME)
             client_home_faults = []
-            if not (client_home_stat[stat.ST_MODE]&0o1000):
-                client_home_faults.append('does not have the sticky bit set')
+            if not (client_home_stat[stat.ST_MODE] & 0o1000):
+                client_home_faults.append("does not have the sticky bit set")
             if client_home_stat[stat.ST_UID] != 0:
-                client_home_faults.append('is not owned by root')
+                client_home_faults.append("is not owned by root")
             if client_home_faults:
-                client_home_faults.append('fix this to start as root (see '
-                                          'doc/SETUID.txt)')
-                err = '%s %s' % (CLIENT_HOME, ', '.join(client_home_faults))
+                client_home_faults.append(
+                    "fix this to start as root (see " "doc/SETUID.txt)"
+                )
+                err = "%s %s" % (CLIENT_HOME, ", ".join(client_home_faults))
                 raise SystemExit(err)
 
             try:
-                try:    UID = string.atoi(UID)
-                except: pass
+                try:
+                    UID = string.atoi(UID)
+                except:
+                    pass
                 gid = None
                 if isinstance(UID, StringType):
                     uid = pwd.getpwnam(UID)[2]
@@ -1009,8 +1091,8 @@ try:
                     gid = pwd.getpwuid(UID)[3]
                     UID = pwd.getpwuid(UID)[0]
                 else:
-                    raise KeyError
-                if UID == 'nobody':
+                    raise ValueError(KeyError)
+                if UID == "nobody":
                     _warn_nobody()
                 try:
                     initgroups.initgroups(UID, gid)
@@ -1030,28 +1112,32 @@ try:
         raise
 
     # Check umask sanity if we're on posix.
-    if os.name == 'posix' and not os.environ.get('Z_DEBUG_MODE'):
+    if os.name == "posix" and not os.environ.get("Z_DEBUG_MODE"):
         # umask is silly, blame POSIX.  We have to set it to get its value.
         current_umask = os.umask(0)
         os.umask(current_umask)
         if current_umask != 0o77:
-            current_umask = '%03o' % current_umask
-            zLOG.LOG("z2", zLOG.INFO, (
-                'Your umask of %s may be too permissive; for the security of '
-                'your Zope data, it is recommended you use 077' % current_umask
-                ))
+            current_umask = "%03o" % current_umask
+            zLOG.LOG(
+                "z2",
+                zLOG.INFO,
+                (
+                    "Your umask of %s may be too permissive; for the security of "
+                    "your Zope data, it is recommended you use 077" % current_umask
+                ),
+            )
 
 except:
     # Log startup exception and tell zdaemon not to restart us.
     try:
-        zLOG.LOG("z2", zLOG.PANIC, "Startup exception",
-                 error=sys.exc_info())
-    except: pass
+        zLOG.LOG("z2", zLOG.PANIC, "Startup exception", error=sys.exc_info())
+    except:
+        pass
     sys.exit(0)
 
 # Start Medusa, Ye Hass!
-Rand.load_file('%s/randpool.dat' % INSTANCE_HOME, -1)
-sys.ZServerExitCode=0
+Rand.load_file("%s/randpool.dat" % INSTANCE_HOME, -1)
+sys.ZServerExitCode = 0
 asyncore.loop()
-Rand.save_file('%s/randpool.dat' % INSTANCE_HOME)
+Rand.save_file("%s/randpool.dat" % INSTANCE_HOME)
 sys.exit(sys.ZServerExitCode)

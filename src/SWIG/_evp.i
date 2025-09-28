@@ -804,6 +804,41 @@ int pkey_write_pem(EVP_PKEY *pkey, BIO *f, EVP_CIPHER *cipher, PyObject *pyfunc)
     Py_DECREF(pyfunc);
     return ret;
 }
+
+PyObject *pkey_get_raw_pub_key_sha1(EVP_PKEY *pkey) {
+    unsigned char *pub_key_bytes = NULL;
+    int len = 0;
+    PyObject *ret = NULL;
+    unsigned char md[SHA_DIGEST_LENGTH];
+
+    /* Export the public key data into an allocated buffer. */
+    /* i2d_PublicKey() returns the number of bytes written, or -1 on error.
+     * It allocates the buffer and updates the pointer if the pointer is NULL.
+     */
+    len = i2d_PublicKey(pkey, &pub_key_bytes);
+
+    if (len < 0) {
+        m2_PyErr_Msg(_evp_err);
+        return NULL;
+    }
+
+    /* Compute SHA1 hash of the raw public key data (SKID mechanism 1) */
+    if (!SHA1(pub_key_bytes, len, md)) {
+        PyErr_SetString(_evp_err, "SHA1 digest computation failed");
+        OPENSSL_free(pub_key_bytes);
+        return NULL;
+    }
+
+    /* Create a Python bytes object from the SHA1 digest */
+    ret = PyBytes_FromStringAndSize((char*)md, SHA_DIGEST_LENGTH);
+
+    /* Free the buffer allocated by i2d_PublicKey */
+    if (pub_key_bytes) {
+        OPENSSL_free(pub_key_bytes);
+    }
+
+    return ret;
+}
 %}
 
 %typemap(out) EVP_PKEY * {

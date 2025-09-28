@@ -510,6 +510,15 @@ class PKey(object):
         """
         return m2.pkey_get_modulus(self.pkey)
 
+    def get_key_identifier(self) -> bytes:
+        """
+        Return the Subject Key Identifier (SKID) calculated as the SHA-1
+        hash of the raw public key bytes (method 1 in RFC 5280, section 4.2.1.2).
+
+        :return: SHA1 digest (20 bytes) of the public key.
+        """
+        return m2.pkey_get_raw_pub_key_sha1(self.pkey)
+
 
 def load_key(
     file: Union[str, bytes],

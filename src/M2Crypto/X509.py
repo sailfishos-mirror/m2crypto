@@ -118,7 +118,7 @@ def new_extension(
     value: str,
     critical: int = 0,
     _pyfree: int = 1,
-    pkey: Optional[EVP.PKey] = None
+    pkey: Optional[EVP.PKey] = None,
 ) -> X509_Extension:
     """
     Create a new X509_Extension instance using OpenSSL's internal V3 extension configuration.
@@ -156,9 +156,11 @@ def new_extension(
 
     # This block enforces context availability for subjectKeyIdentifier:hash
     # to prevent a SIGSEGV in OpenSSL > 3.0 when ctx->subject_cert is NULL.
-    if name == 'subjectKeyIdentifier' and value == 'hash' and pkey is None:
-        m2.x509v3_ctx_free(ctx) # Clean up the context object before raising error
-        raise X509Error("Cannot create 'subjectKeyIdentifier:hash' without a public key (pkey) context.")
+    if name == "subjectKeyIdentifier" and value == "hash" and pkey is None:
+        m2.x509v3_ctx_free(ctx)  # Clean up the context object before raising error
+        raise X509Error(
+            "Cannot create 'subjectKeyIdentifier:hash' without a public key (pkey) context."
+        )
 
     if pkey is not None:
         m2.X509V3_CTX_set_nconf_pkey(ctx, pkey._ptr())
@@ -763,6 +765,32 @@ class X509(object):
         md_obj.update(self.as_der())
         digest = md_obj.final()
         return binascii.hexlify(digest).upper().decode()
+
+    def add_subject_key_identifier(self) -> int:
+        """
+        Adds a Subject Key Identifier (SKI) extension to the certificate,
+        calculating the key identifier from the certificate's public key.
+
+        This bypasses the error-prone use of 'subjectKeyIdentifier', 'hash'
+        in new_extension, which requires a pre-configured OpenSSL context.
+
+        :return: 1 for success and 0 for failure.
+        """
+        pkey = self.get_pubkey()
+        # The SKID value is typically the SHA1 hash of the public key's contents.
+        # We compute the hash manually and then format it for the extension value.
+        skid_digest = pkey.get_key_identifier()
+
+        # Format the digest into the required OpenSSL extension value string format:
+        # A list of hex octets separated by colons (e.g., 'A1:B2:C3:D4:...')
+        value = ":".join(f"{b:02X}" for b in skid_digest)
+
+        # Create the extension directly with the computed value
+        # Note: SKID is usually non-critical (critical=0 by default for new_extension)
+        ext = new_extension("subjectKeyIdentifier", value)
+
+        # Add the extension to the certificate object
+        return self.add_ext(ext)
 
 
 def load_cert(file: Union[str, bytes], format: int = FORMAT_PEM) -> X509:

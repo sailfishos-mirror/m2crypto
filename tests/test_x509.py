@@ -686,6 +686,42 @@ class X509TestCase(unittest.TestCase):
         # Does this raise an exception?
         X509.load_cert("tests/easy_rsa.pem")
 
+    def test_add_subject_key_identifier(self):
+        # 1. Create a certificate (it needs a key pair and subject/issuer set up)
+        req, pk = self.mkreq(1024)
+        cert = X509.X509()
+        cert.set_serial_number(3)
+        cert.set_version(2)
+        cert.set_subject(req.get_subject())
+        cert.set_issuer(req.get_subject())  # Self-signed for simplicity
+        cert.set_pubkey(pk)
+
+        # 2. Add the Subject Key Identifier
+        # Assuming EVP.PKey has get_key_identifier() or similar for the SKID hash
+        result = cert.add_subject_key_identifier()
+        self.assertEqual(result, 1, "Failed to add subjectKeyIdentifier extension")
+
+        # 3. Verify the extension exists and its value format is correct
+        skid_ext = cert.get_ext("subjectKeyIdentifier")
+
+        # Check the name
+        self.assertEqual(skid_ext.get_name(), "subjectKeyIdentifier")
+
+        # Check that the value is non-empty and has the correct colon-separated hex format
+        value = skid_ext.get_value()
+        self.assertGreater(len(value), 10, "SKID value is too short or empty")
+        self.assertTrue(
+            all(c in "0123456789ABCDEF:" for c in value.upper()),
+            "SKID value contains invalid characters",
+        )
+        self.assertIn(":", value, "SKID value should be colon-separated hex string")
+
+        # 4. Sign the certificate (requires the SKID extension to be correctly formed)
+        cert.sign(pk, "sha256")
+        self.assertTrue(
+            cert.verify(pk), "Certificate signature failed after adding SKID"
+        )
+
 
 class X509StackTestCase(unittest.TestCase):
     def setUp(self):

@@ -699,6 +699,10 @@ x509v3_ext_conf(void *conf, X509V3_CTX *ctx, char *name, char *value) {
       PyMem_Free(ctx);
       return ext;
 }
+
+void x509v3_ctx_free(X509V3_CTX *ctx) {
+    PyMem_Free(ctx);
+}
 %}
 %typemap(out) X509_EXTENSION * ;
 

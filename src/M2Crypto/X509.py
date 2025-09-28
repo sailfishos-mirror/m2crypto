@@ -114,12 +114,54 @@ class X509_Extension(object):
 
 
 def new_extension(
-    name: str, value: str, critical: int = 0, _pyfree: int = 1
+    name: str,
+    value: str,
+    critical: int = 0,
+    _pyfree: int = 1,
+    pkey: Optional[EVP.PKey] = None
 ) -> X509_Extension:
     """
-    Create new X509_Extension instance.
+    Create a new X509_Extension instance using OpenSSL's internal V3 extension configuration.
+
+    This method relies on the OpenSSL 'x509v3_ext_conf' function to parse a
+    textual extension name and value into an X509_EXTENSION structure.
+
+    :param name: The short name of the extension (e.g.,
+                 'subjectAltName', 'basicConstraints').
+    :param value: The value string for the extension (e.g.,
+                  'DNS:example.com', 'CA:TRUE'). For complex
+                  extensions like 'subjectKeyIdentifier', the
+                  value often specifies the content, such as
+                  'hash' to compute the hash of the subject's
+                  public key.
+    :param critical: Set to 1 to mark the extension as critical,
+                  0 otherwise (default is 0).
+    :param _pyfree: Internal flag (default 1).
+    :param pkey: Optional EVP.PKey object. **Required** when the
+                 extension value requires an associated public
+                 key to be computed, such as when: - `name` is
+                 'subjectKeyIdentifier' and `value` is 'hash'. If
+                 an extension requires a public key context and
+                 `pkey` is None, an `X509Error` will be raised to
+                 prevent a Segmentation Fault (SIGSEGV) in modern
+                 OpenSSL versions by accessing an uninitialized
+                 context pointer.
+
+    :return: A new `X509_Extension` instance.
+    :raises X509Error: If the extension cannot be created (e.g.,
+                 invalid name/value) or if a required context
+                 (`pkey`) is missing.
     """
     ctx = m2.x509v3_set_nconf()
+
+    # This block enforces context availability for subjectKeyIdentifier:hash
+    # to prevent a SIGSEGV in OpenSSL > 3.0 when ctx->subject_cert is NULL.
+    if name == 'subjectKeyIdentifier' and value == 'hash' and pkey is None:
+        m2.x509v3_ctx_free(ctx) # Clean up the context object before raising error
+        raise X509Error("Cannot create 'subjectKeyIdentifier:hash' without a public key (pkey) context.")
+
+    if pkey is not None:
+        m2.X509V3_CTX_set_nconf_pkey(ctx, pkey._ptr())
     x509_ext_ptr = m2.x509v3_ext_conf(None, ctx, name, str(value))
     if x509_ext_ptr is None:
         raise X509Error(

@@ -170,6 +170,7 @@ class HTTPSHandler(AbstractHTTPHandler):  # type: ignore [no-redef]
             try:
                 original_close()
             finally:
+                del resp._connection
                 if the_connection_to_close:
                     the_connection_to_close.close()
 

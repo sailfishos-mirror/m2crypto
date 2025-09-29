@@ -1,3 +1,24 @@
+0.46.0 - 2025-10-01
+-------------------
+
+(Tested on Pythons between 3.6 and 3.14.0~rc3)
+
+- M2Crypto closes SSL connection on closing HTTPS Connection, and
+  some other related issues (#203, #278)
+- Modernize C API by eliminating use of deprecated
+  PyBytes_AsStringAndSize and related functions with Python
+  Buffer Protocol (#375)
+- Whole project is completely covered with type hints and is
+  checked by mypy (also while doing that, the whole project was
+  blackened) (#344)
+- Add logging support to C extension code sending messages to the
+  Python logging
+- Introducing first efforts to support Engine object (#229)
+- Reworked and fixed M2Crypto.m2xmlrpclib module (#163)
+- Reverted removal of demo/ subdirectory
+- Improve SMIME documentation (#377)
+- Some other minor bugs, improvements, and removal of dead code
+
 0.45.1 - 2025-04-23
 -------------------
 

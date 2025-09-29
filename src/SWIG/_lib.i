@@ -32,100 +32,9 @@ int time_t_bits() {
 }
 %}
 
-%{
-/* OpenSSL 1.0.2 copmatbility shim */
-#if OPENSSL_VERSION_NUMBER < 0x10002000L
-typedef void (*OPENSSL_sk_freefunc)(void *);
-typedef void *(*OPENSSL_sk_copyfunc)(const void *);
-typedef struct stack_st OPENSSL_STACK;
+/* logging with Python logging module */
+%include _python_logging.i
 
-# define MIN_NODES       4
-# define sk_deep_copy OPENSSL_sk_deep_copy
-
-void OPENSSL_sk_free(OPENSSL_STACK *st)
-{
-    if (st == NULL)
-        return;
-    OPENSSL_free(st->data);
-    OPENSSL_free(st);
-}
-
-OPENSSL_STACK *OPENSSL_sk_deep_copy(const OPENSSL_STACK *sk,
-                             OPENSSL_sk_copyfunc copy_func,
-                             OPENSSL_sk_freefunc free_func)
-{
-    OPENSSL_STACK *ret;
-    int i;
-
-    if (sk->num < 0)
-        return NULL;
-
-    if ((ret = OPENSSL_malloc(sizeof(*ret))) == NULL)
-        return NULL;
-
-    /* direct structure assignment */
-    *ret = *sk;
-
-    ret->num_alloc = sk->num > MIN_NODES ? (size_t)sk->num : MIN_NODES;
-    ret->data = OPENSSL_zalloc(sizeof(*ret->data) * ret->num_alloc);
-    if (ret->data == NULL) {
-        OPENSSL_free(ret);
-        return NULL;
-    }
-
-    for (i = 0; i < ret->num; ++i) {
-        if (sk->data[i] == NULL)
-            continue;
-        if ((ret->data[i] = copy_func(sk->data[i])) == NULL) {
-            while (--i >= 0)
-                if (ret->data[i] != NULL)
-                    free_func((void *)ret->data[i]);
-            OPENSSL_sk_free(ret);
-            return NULL;
-        }
-    }
-    return ret;
-}
-#endif /* OpenSSL 1.0.2 copmatbility shim */
-
-
-/* Blob interface. Deprecated. */
-
-Blob *blob_new(int len, const char *errmsg) {
-
-    Blob *blob;
-    if (!(blob=(Blob *)PyMem_Malloc(sizeof(Blob)))){
-        PyErr_SetString(PyExc_MemoryError, errmsg);
-        return NULL;
-    }
-    if (!(blob->data=(unsigned char *)PyMem_Malloc(len))) {
-        PyMem_Free(blob);
-        PyErr_SetString(PyExc_MemoryError, errmsg);
-        return NULL;
-    }
-    blob->len=len;
-    return blob;
-}
-
-Blob *blob_copy(Blob *from, const char *errmsg) {
-    Blob *blob=blob_new(from->len, errmsg);
-    if (!blob) {
-        PyErr_SetString(PyExc_MemoryError, errmsg);
-        return NULL;
-    }
-    memcpy(blob->data, from->data, from->len);
-    return blob;
-}
-
-void blob_free(Blob *blob) {
-    PyMem_Free(blob->data);
-    PyMem_Free(blob);
-}
-
-
-/* Python helpers. */
-
-%}
 %ignore m2_PyBuffer_Release;
 %ignore m2_PyErr_SetString_from_openssl_error;
 %ignore m2_PyObject_GetBuffer;
@@ -149,24 +58,28 @@ typedef struct bignum_st BIGNUM;
 };
 
 %{
-#if PY_VERSION_HEX < 0x02060000
-static int PyObject_CheckBuffer(PyObject *obj) {
-    (void)obj;
-    return 0;
-}
+/*
+ * Convert an OpenSSL error code into a Python Exception string.
+ */
+void m2_PyErr_SetString_from_openssl_error(PyObject *err_type, unsigned long err_code) {
+    char err_buf[256];
+    const char *reason_str = NULL;
 
-static int PyObject_GetBuffer(PyObject *obj, Py_buffer *view, int flags) {
-    (void)obj;
-    (void)view;
-    (void)flags;
-    return -1;
-}
+    reason_str = ERR_reason_error_string(err_code);
 
-static void PyBuffer_Release(Py_buffer *view) {
-    (void)view;
-}
-#endif /* PY_VERSION_HEX < 0x02060000 */
+    if (reason_str != NULL) {
+        // OpenSSL provided a reason string. Use it directly.
+        strncpy(err_buf, reason_str, sizeof(err_buf));
+        err_buf[sizeof(err_buf) - 1] = '\0';
+    } else {
+        // OpenSSL did not provide a specific reason string for this code.
+        // Create a fallback message including the raw error code for diagnostics.
+        snprintf(err_buf, sizeof(err_buf),
+                 "Unknown OpenSSL error code: %lu", err_code);
+    }
 
+    PyErr_SetString(err_type, err_buf);
+}
 
 static void m2_PyBuffer_Release(PyObject *obj, Py_buffer *view) {
   if (PyObject_CheckBuffer(obj))
@@ -214,26 +127,6 @@ static int m2_PyObject_GetBufferInt(PyObject *obj, Py_buffer *view, int flags)
 /*
  * Convert an OpenSSL error code into a Python Exception string.
  */
-void m2_PyErr_SetString_from_openssl_error(PyObject *err_type, unsigned long err_code) {
-    char err_buf[256];
-    const char *reason_str = NULL;
-
-    reason_str = ERR_reason_error_string(err_code);
-
-    if (reason_str != NULL) {
-        // OpenSSL provided a reason string. Use it directly.
-        strncpy(err_buf, reason_str, sizeof(err_buf));
-        err_buf[sizeof(err_buf) - 1] = '\0';
-    } else {
-        // OpenSSL did not provide a specific reason string for this code.
-        // Create a fallback message including the raw error code for diagnostics.
-        snprintf(err_buf, sizeof(err_buf),
-                 "Unknown OpenSSL error code: %lu", err_code);
-    }
-
-    PyErr_SetString(err_type, err_buf);
-}
-
 static BIGNUM*
 m2_PyObject_AsBIGNUM(PyObject* value, PyObject* _py_exc)
 {
@@ -282,12 +175,7 @@ m2_PyString_AsStringAndSizeInt(PyObject *obj, char **s, int *len)
 /* Works as PyFile_Name, but always returns a new object. */
 PyObject *m2_PyFile_Name(PyObject *pyfile) {
     PyObject *out = NULL;
-#if PY_MAJOR_VERSION >= 3
    out = PyObject_GetAttrString(pyfile, "name");
-#else
-   out = PyFile_Name(pyfile);
-   Py_XINCREF(out);
-#endif
     return out;
 }
 
@@ -737,55 +625,9 @@ BIGNUM *dec_to_bn(PyObject *value) {
 
 /* Various useful typemaps. */
 
-%typemap(in) Blob * {
-    Py_ssize_t len = 0;
-
-    if (!PyBytes_Check($input)) {
-        PyErr_SetString(PyExc_TypeError, "expected PyString");
-        return NULL;
-    }
-    len=PyBytes_Size($input);
-
-    if (len > INT_MAX) {
-        PyErr_SetString(PyExc_ValueError, "object too large");
-        return NULL;
-    }
-    $1=(Blob *)PyMem_Malloc(sizeof(Blob));
-    if (!$1) {
-        PyErr_SetString(PyExc_MemoryError, "malloc Blob");
-        return NULL;
-    }
-
-    $1->data=(unsigned char *)PyBytes_AsString($input);
-
-    $1->len=len;
-}
-
-%typemap(out) Blob * {
-    if ($1==NULL) {
-        Py_INCREF(Py_None);
-        $result=Py_None;
-    } else {
-
-        $result=PyBytes_FromStringAndSize((const char *)$1->data, $1->len);
-
-        PyMem_Free($1->data);
-        PyMem_Free($1);
-    }
-}
-
 %typemap(in) PyObject *pyfunc {
     if (!PyCallable_Check($input)) {
         PyErr_SetString(PyExc_TypeError, "expected PyCallable");
-        return NULL;
-    }
-    $1=$input;
-}
-
-%typemap(in) PyObject *pyblob {
-    if (!PyBytes_Check($input)) {
-
-        PyErr_SetString(PyExc_TypeError, "expected PyString");
         return NULL;
     }
     $1=$input;
@@ -805,9 +647,6 @@ BIGNUM *dec_to_bn(PyObject *value) {
 }
 
 /* Pointer checks. */
-
-%apply Pointer NONNULL { Blob * };
-
 
 /* A bunch of "straight-thru" functions. */
 

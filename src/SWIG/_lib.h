@@ -3,15 +3,6 @@
 
 #include <openssl/bn.h>
 
-typedef struct _blob {
-	unsigned char *data;
-	int len;
-} Blob;
-
-Blob *blob_new(int len, const char *errmsg);
-Blob *blob_copy(Blob *from, const char *errmsg);
-void blob_free(Blob *blob);
-
 static int m2_PyString_AsStringAndSizeInt(PyObject *obj, char **s, int *len);
 
 static BIGNUM* m2_PyObject_AsBIGNUM(PyObject* value, PyObject* _py_exc) ;

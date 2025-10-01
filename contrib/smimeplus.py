@@ -8,13 +8,16 @@ from email import Message
 
 
 class smimeplus(object):
-    def __init__(
-        self, cert, privkey, passphrase, cacert, randfile=None
-    ):
-        self.cipher = 'des_ede3_cbc'  # XXX make it configable??
+    def __init__(self, cert, privkey, passphrase, cacert, randfile=None):
+        self.cipher = "aes_256_cbc"  # XXX make it configable??
         self.setsender(cert, privkey, passphrase)
         self.setcacert(cacert)
-        self.randfile = randfile
+
+        if randfile is None and os.path.exists("/dev/urandom"):
+            # Default to /dev/urandom on POSIX-like systems if no file is specified
+            self.randfile = "/dev/urandom"
+        else:
+            self.randfile = randfile
         self.__loadrand()
 
     def __passcallback(self, v):
@@ -24,16 +27,25 @@ class smimeplus(object):
     def __loadrand(self):
         """Load random number file"""
         if self.randfile:
-            Rand.load_file(self.randfile, -1)
+            # On POSIX-like systems, only load a small amount from /dev/urandom
+            # to seed the PRNG, unless it's a dedicated file for state saving.
+            if self.randfile == "/dev/urandom":
+                # Read -1 bytes (all available), M2Crypto Rand.load_file() reads up to 1024 bytes
+                # from /dev/urandom by default if max_bytes is -1 (or similar logic).
+                # To be explicit, we can load a small seed.
+                Rand.load_file(self.randfile, 1024)
+            else:
+                # Load the full user-specified random file
+                Rand.load_file(self.randfile, -1)
 
     def __saverand(self):
         """Save random number file"""
-        if self.randfile:
+        if self.randfile and self.randfile != "/dev/urandom":
             Rand.save_file(self.randfile)
 
     def __gettext(self, msg):
         """Return a string representation of 'msg'"""
-        _data = ''
+        _data = ""
         if isinstance(msg, Message.Message):
             for _p in msg.walk():
                 _data = _data + _p.as_string()
@@ -81,11 +93,11 @@ class smimeplus(object):
         _stack = X509.X509_Stack()
         _stack.push(_x509)
 
-        # Load CA cert.
-        _tmpfile = persistdata(self.cacert)
+        # Load CA cert directly from the data into a BIO and then the X509_Store.
+        _ca_bio = self.__pack(self.cacert)
         _store = X509.X509_Store()
-        _store.load_info(_tmpfile)
-        os.remove(_tmpfile)
+        # load_info_bio is the typical replacement for file-based loading with a BIO.
+        _store.load_info_bio(_ca_bio)
 
         # prepare SMIME object
         _sender = SMIME.SMIME()
@@ -95,8 +107,10 @@ class smimeplus(object):
         # Load signed message, verify it, and return result
         _p7, _data = SMIME.smime_load_pkcs7_bio(self.__pack(smsg))
         try:
+            # Removed flags=SMIME.PKCS7_SIGNED which erroneously sets PKCS7_NOSIGS
+            # https://todo.sr.ht/~mcepl/m2crypto/329
             return _sender.verify(
-                _p7, _data, flags=SMIME.PKCS7_SIGNED
+                _p7, _data, flags=0  # Use flags=0 for standard verification
             )
         except SMIME.SMIME_Error:
             return None
@@ -118,7 +132,7 @@ class smimeplus(object):
         _p7 = _sender.encrypt(_buf)
 
         # Output p7 in mail-friendly format.
-        _out = self.__pack('')
+        _out = self.__pack("")
         _sender.write(_out, _p7)
 
         # Save the PRNG's state.
@@ -146,47 +160,25 @@ class smimeplus(object):
         except SMIME.SMIME_Error:
             return None
 
-    def addHeader(self, rcert, content, subject=''):
+    def addHeader(self, rcert, content, subject=""):
         """Add To, From, Subject Header to 'content'"""
         _scert = X509.load_cert_bio(self.__pack(self.cert))
-        _scertsubj = X509_Subject(str(_scert.get_subject()))
-        _rcert = X509.load_cert_bio(self.__pack(rcert))
-        _rcertsubj = X509_Subject(str(_rcert.get_subject()))
+        # Use get_components() to get CN and emailAddress
+        _scertsubj_data = _scert.get_subject().get_components()
 
-        _out = 'From: "%(CN)s" <%(emailAddress)s>\n' % _scertsubj
-        _out = _out + 'To: "%(CN)s" <%(emailAddress)s>\n' % _rcertsubj
-        _out = _out + 'Subject: %s\n' % subject
-        _out = _out + content
+        _rcert = X509.load_cert_bio(self.__pack(rcert))
+        # Use get_components() to get CN and emailAddress directly
+        _rcertsubj_data = _rcert.get_subject().get_components()
+
+        # The data comes from get_components, which returns bytes, so decode them.
+        _sender_cn = _scertsubj_data.get("CN", b"").decode()
+        _sender_email = _scertsubj_data.get("emailAddress", b"").decode()
+        _recipient_cn = _rcertsubj_data.get("CN", b"").decode()
+        _recipient_email = _rcertsubj_data.get("emailAddress", b"").decode()
+
+        _out = f'From: "{_sender_cn}" <{_sender_email}>\n'
+        _out += f'To: "{_recipient_cn}" <{_recipient_email}>\n'
+        _out += f"Subject: {subject}\n"
+        _out += content
 
         return _out
-
-
-class X509_Subject(UserDict.UserDict):
-    # This class needed to be rewritten or merge with X509_Name
-    def __init__(self, substr):
-        UserDict.UserDict.__init__(self)
-        try:
-            _data = substr.strip().split('/')
-        except AttributeError:
-            pass
-        else:
-            for _i in _data:
-                try:
-                    _k, _v = _i.split('=')
-                    self[_k] = _v
-                except ValueError:
-                    pass
-
-
-def persistdata(data, file=None, isbinary=False):
-    if not file:
-        file = tempfile.mktemp()
-    if isbinary:
-        _flag = 'wb'
-    else:
-        _flag = 'w'
-
-    _fh = open(file, _flag)
-    _fh.write(data)
-    _fh.close()
-    return file

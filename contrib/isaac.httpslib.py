@@ -1,4 +1,3 @@
-
 """M2Crypto support for Python 2.x's httplib.
 
 Copyright (c) 1999-2002 Ng Pheng Siong. All rights reserved."""
@@ -26,24 +25,24 @@ class HTTPSConnection(HTTPConnection):
     def __init__(self, host, port=None, **ssl):
         keys = ssl.keys()
         try:
-            keys.remove('key_file')
+            keys.remove("key_file")
         except ValueError:
             pass
         try:
-            keys.remove('cert_file')
+            keys.remove("cert_file")
         except ValueError:
             pass
         try:
-            keys.remove('ssl_context')
+            keys.remove("ssl_context")
         except ValueError:
             pass
         if keys:
             raise ValueError()
         try:
-            self.ssl_ctx = ssl['ssl_context']
+            self.ssl_ctx = ssl["ssl_context"]
             assert isinstance(self.ssl_ctx, SSL.Context)
         except KeyError:
-            self.ssl_ctx = SSL.Context('sslv23')
+            self.ssl_ctx = SSL.Context("sslv23")
         HTTPConnection.__init__(self, host, port)
 
     def connect(self):
@@ -72,12 +71,12 @@ class HTTPS(HTTP):
 
     _connection_class = HTTPSConnection
 
-    def __init__(self, host='', port=None, **ssl):
+    def __init__(self, host="", port=None, **ssl):
         HTTP.__init__(self, host, port)
         try:
-            self.ssl_ctx = ssl['ssl_context']
+            self.ssl_ctx = ssl["ssl_context"]
         except KeyError:
-            self.ssl_ctx = SSL.Context('sslv23')
+            self.ssl_ctx = SSL.Context("sslv23")
 
 
 # ISS Added.
@@ -100,9 +99,7 @@ class HTTPProxyConnection(HTTPConnection):
 
     """
 
-    def __init__(
-        self, proxy, host, port=None, username=None, password=None
-    ):
+    def __init__(self, proxy, host, port=None, username=None, password=None):
         # The connection goes through the proxy
         HTTPConnection.__init__(self, proxy)
         # save the proxy connection settings
@@ -133,7 +130,7 @@ class HTTPProxyConnection(HTTPConnection):
         # The URL has to include the real host
         hostname = self._host
         if self._port != self.default_port:
-            hostname = hostname + ':' + str(self._port)
+            hostname = hostname + ":" + str(self._port)
         newurl = "http://%s%s" % (hostname, url)
         # Piggyback on the parent class
         HTTPConnection.putrequest(self, method, newurl)
@@ -150,9 +147,7 @@ class HTTPProxyConnection(HTTPConnection):
 
         userpass = "%s:%s" % (self.__username, self.__password)
         enc_userpass = base64.encodestring(userpass).strip()
-        self.putheader(
-            "Proxy-Authorization", "Basic %s" % enc_userpass
-        )
+        self.putheader("Proxy-Authorization", "Basic %s" % enc_userpass)
 
 
 class HTTPSProxyResponse(HTTPResponse):
@@ -189,26 +184,16 @@ class HTTPSProxyConnection(HTTPProxyConnection):
 
     default_port = HTTPSConnection.default_port
 
-    def __init__(
-        self,
-        proxy,
-        host,
-        port=None,
-        username=None,
-        password=None,
-        **x509
-    ):
+    def __init__(self, proxy, host, port=None, username=None, password=None, **x509):
         for key in x509.keys():
-            if key not in ['cert_file', 'key_file', 'ssl_context']:
+            if key not in ["cert_file", "key_file", "ssl_context"]:
                 raise ValueError()
-        self.key_file = x509.get('key_file')
-        self.cert_file = x509.get('cert_file')
+        self.key_file = x509.get("key_file")
+        self.cert_file = x509.get("cert_file")
         # ISS Added
-        self.ssl_ctx = x509.get('ssl_context')
+        self.ssl_ctx = x509.get("ssl_context")
         # Piggybacking on HTTPProxyConnection
-        HTTPProxyConnection.__init__(
-            self, proxy, host, port, username, password
-        )
+        HTTPProxyConnection.__init__(self, proxy, host, port, username, password)
 
     def connect(self):
         """Connect (using SSL) to the host and port specified in __init__
@@ -253,7 +238,7 @@ class HTTPSProxyConnection(HTTPProxyConnection):
             ssl = socket.ssl(self.sock, self.key_file, self.cert_file)
             self.sock = FakeSocket(self.sock, ssl)
         if self.debuglevel > 0:
-            print('socket type:', self.sock)
+            print("socket type:", self.sock)
 
     def putrequest(self, method, url):
         """Send a request to the server.

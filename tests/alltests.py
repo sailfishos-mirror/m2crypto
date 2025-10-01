@@ -46,6 +46,7 @@ def suite():
         "tests.test_x509",
         "tests.test_util",
         "tests.test_timeout",
+        "tests.test_xmlrpc",
     ]
     if os.name == "posix":
         modules_to_test.append("tests.test_ssl")

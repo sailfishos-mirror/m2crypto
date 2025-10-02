@@ -25,7 +25,8 @@ ifeq ($(CUR_VERSION),)
 endif
 
 # Find the most recently built wheel file in the dist directory.
-LATEST_WHEEL = $(firstword $(wildcard dist/[mM]2[Cc]rypto-$(CUR_VERSION)*.whl))
+LATEST_WHEEL := $(firstword $(wildcard dist/[mM]2[Cc]rypto-$(CUR_VERSION)*.whl))
+LATEST_TAR := $(firstword $(wildcard dist/[mM]2[Cc]rypto-$(CUR_VERSION)*.tar.gz))
 
 # The directory where the package is installed for testing.
 BUILD_LIB_DIR = $(shell find build -maxdepth 1 -type d -name "lib.*")
@@ -74,6 +75,8 @@ install: wheel ## Install the wheel into the local 'build' directory.
 
 sdist: $(SRC_FILES)
 	$(PYTHON) setup.py sdist
+	$(PYTHON) -mtwine check --strict $(LATEST_TAR)
+	$(PYTHON) -mpyroma --quiet --min=10 $(LATEST_TAR)
 
 # 'check' depends on the package being installed locally.
 check: install ## Run the unit tests.
@@ -85,7 +88,7 @@ check: install ## Run the unit tests.
 
 # 'clean' is a manual operation to remove all generated files.
 clean: ## Remove all generated files and build artifacts.
-	rm -rf build src/m2crypto.egg-info $(LATEST_WHEEL)
+	rm -rf build src/m2crypto.egg-info $(LATEST_WHEEL) $(LATEST_TAR) $(WHEEL_SENTINEL)
 	rm -f src/SWIG/_m2crypto_wrap.c
 	find . -type d -name "__pycache__" -delete
 

@@ -19,7 +19,6 @@ recursive-include system_shadowing *
 include INSTALL.rst
 include README.rst
 include CHANGES
-include LICENCE
 
 # include Swig-generated files
 include src/SWIG/_m2crypto_wrap.c

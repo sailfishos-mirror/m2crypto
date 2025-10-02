@@ -54,8 +54,8 @@ working for you.
 
 - And much more.
 
-M2Crypto is released under a very liberal MIT licence. See
-LICENCE for details.
+M2Crypto is released under a very liberal BSD-2-Clause licence. See
+LICENSES/BSD-2-Clause.txt for details.
 
 To install, see the file INSTALL.
 

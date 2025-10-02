@@ -1,3 +1,7 @@
+(text of the license differs slightly from the standard
+BSD-2-Clause, but it is the closest fit, and it is functionally
+equivalent)
+
 Copyright (c) 1999-2004 Ng Pheng Siong. All rights reserved.
 
 Portions copyright (c) 2004-2006 Open Source Applications Foundation.

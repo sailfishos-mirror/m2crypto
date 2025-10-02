@@ -1,3 +1,9 @@
+0.46.1 - 2025-10-02
+-------------------
+
+- Correct license to BSD-2-Clause and update references
+- Specify in setup.cfg that we require Python >= 3.6
+
 0.46.0 - 2025-10-01
 -------------------
 

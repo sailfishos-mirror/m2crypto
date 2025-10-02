@@ -90,7 +90,7 @@ check: install ## Run the unit tests.
 clean: ## Remove all generated files and build artifacts.
 	rm -rf build src/m2crypto.egg-info $(LATEST_WHEEL) $(LATEST_TAR) $(WHEEL_SENTINEL)
 	rm -f src/SWIG/_m2crypto_wrap.c
-	find . -type d -name "__pycache__" -delete
+	find . -type d -name "__pycache__" -exec rm -r {} +
 
 # A self-documenting 'help' target.
 help: ## Show this help message.

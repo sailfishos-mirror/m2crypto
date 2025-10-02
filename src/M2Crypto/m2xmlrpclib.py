@@ -63,7 +63,7 @@ class SSL_Transport(Transport):
         handler: str,
         request_body: SizedBufferType,  # type: ignore[override]
         verbose: int = 0,
-    ) -> tuple[Marshallable, ...]:
+    ) -> Tuple[Marshallable, ...]:
 
         # Handle username and password.
         user_passwd, host_port = self.splituser(host)

@@ -1,3 +1,8 @@
+0.46.2 - 2025-10-02
+-------------------
+
+- fix[m2xmlrpclib]: make the module compatible with Python 3.6
+
 0.46.1 - 2025-10-02
 -------------------
 
@@ -285,7 +290,7 @@
 -------------------
 
 - 471582f - setup.py: use ${CPP} as path to cpp <Duncan Macleod>
-- efb1580 - Bump pipeline OpenSSL from 1.1.0i to 1.1.0j 
+- efb1580 - Bump pipeline OpenSSL from 1.1.0i to 1.1.0j
 - 35bb71b - Stub wchar_t helpers and ignore unused WCHAR defs <makepost>
 - effc7be - Add type comment to setup.py <Matěj Cepl>
 

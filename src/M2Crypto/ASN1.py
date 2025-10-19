@@ -34,9 +34,13 @@ class ASN1_Integer:
 
         return m2.asn1_integer_cmp(self.asn1int, other.asn1int)
 
+    @staticmethod
+    def m2_asn1_integer_free(obj: C.ASN1_Integer) -> None:
+        m2.asn1_integer_free(obj)
+
     def __del__(self) -> None:
         if self._pyfree:
-            m2.asn1_integer_free(self.asn1int)
+            self.m2_asn1_integer_free(self.asn1int)
 
     def __int__(self) -> int:
         ret = m2.asn1_integer_get(self.asn1int)
@@ -70,9 +74,13 @@ class ASN1_String:
     def __str__(self) -> str:
         return self.__bytes__().decode()
 
+    @staticmethod
+    def m2_asn1_string_free(obj: C.ASN1_String) -> None:
+        m2.asn1_string_free(obj)
+
     def __del__(self) -> None:
         if getattr(self, "_pyfree", 0):
-            m2.asn1_string_free(self.asn1str)
+            self.m2_asn1_string_free(self.asn1str)
 
     def _ptr(self):
         return self.asn1str
@@ -92,15 +100,18 @@ class ASN1_String:
 
 class ASN1_Object:
 
-    m2_asn1_object_free = m2.asn1_object_free
 
     def __init__(self, asn1obj: C.ASN1_Object, _pyfree: int = 0) -> None:
         self.asn1obj = asn1obj
         self._pyfree = _pyfree
 
+    @staticmethod
+    def m2_asn1_object_free(obj: C.ASN1_Object) -> None:
+        m2.asn1_object_free(obj)
+
     def __del__(self) -> None:
         if self._pyfree:
-            m2.asn1_object_free(self.asn1obj)
+            self.m2_asn1_object_free(self.asn1obj)
 
     def _ptr(self):
         return self.asn1obj
@@ -185,7 +196,6 @@ class ASN1_TIME:
         "Nov",
         "Dec",
     ]
-    m2_asn1_time_free = m2.asn1_time_free
 
     def __init__(
         self,
@@ -202,9 +212,13 @@ class ASN1_TIME:
             self._pyfree = 1
         self.owner: Any = None
 
+    @staticmethod
+    def m2_asn1_time_free(obj: C.ASN1_Time) -> None:
+        m2.asn1_time_free(obj)
+
     def __del__(self) -> None:
         if getattr(self, "_pyfree", 0):
-            m2.asn1_time_free(self.asn1_time)
+            self.m2_asn1_time_free(self.asn1_time)
 
     def __str__(self) -> str:
         # assert m2.asn1_time_type_check(self.asn1_time), "'asn1_time' type error'"
@@ -282,19 +296,20 @@ class ASN1_UTCTIME:
 
     def __init__(
         self,
-        asn1_utctime: Optional[C.ASN1_Time] = None,
+        asn1_utctime: Optional[C.ASN1_UTCTime] = None,
         _pyfree: int = 0,
     ):
         if asn1_utctime is not None:
             assert m2.asn1_time_type_check(asn1_utctime), \
                 "'asn1_utctime' type error'"
-            self.asn1_utctime = asn1_utctime
+            self.asn1_utctime: C.ASN1_UTCTime = asn1_utctime
             self._pyfree = _pyfree
         else:
             self.asn1_utctime: C.ASN1_UTCTime = m2.asn1_utctime_new()  # type: ignore [no-redef]
             self._pyfree = 1
         self.owner: Any = None
 
+    @staticmethod
     def m2_asn1_utctime_free(obj: C.ASN1_UTCTime) -> None:
         m2.asn1_utctime_free(obj)
 
@@ -325,7 +340,7 @@ class ASN1_UTCTIME:
         #     "'asn1_utctime' type error'''
         return m2.asn1_utctime_set_string(self.asn1_utctime, string)
 
-    def set_time(self, time: int) -> C.ASN1_Time:
+    def set_time(self, time: int) -> C.ASN1_UTCTime:
         """
         Set time from seconds since epoch (int).
 
@@ -364,7 +379,7 @@ class ASN1_UTCTIME:
             dt = dt.replace(tzinfo=UTC)
         return dt
 
-    def set_datetime(self, date: datetime.datetime) -> C.ASN1_Time:
+    def set_datetime(self, date: datetime.datetime) -> C.ASN1_UTCTime:
         """
         Set time from datetime.datetime object.
 

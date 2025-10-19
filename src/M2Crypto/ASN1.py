@@ -34,9 +34,13 @@ class ASN1_Integer:
 
         return m2.asn1_integer_cmp(self.asn1int, other.asn1int)
 
+    @staticmethod
+    def m2_asn1_integer_free(obj: C.ASN1_Integer) -> None:
+        m2.asn1_integer_free(obj)
+
     def __del__(self) -> None:
         if self._pyfree:
-            m2.asn1_integer_free(self.asn1int)
+            self.m2_asn1_integer_free(self.asn1int)
 
     def __int__(self) -> int:
         ret = m2.asn1_integer_get(self.asn1int)
@@ -70,9 +74,13 @@ class ASN1_String:
     def __str__(self) -> str:
         return self.__bytes__().decode()
 
+    @staticmethod
+    def m2_asn1_string_free(obj: C.ASN1_String) -> None:
+        m2.asn1_string_free(obj)
+
     def __del__(self) -> None:
         if getattr(self, "_pyfree", 0):
-            m2.asn1_string_free(self.asn1str)
+            self.m2_asn1_string_free(self.asn1str)
 
     def _ptr(self):
         return self.asn1str
@@ -92,15 +100,18 @@ class ASN1_String:
 
 class ASN1_Object:
 
-    m2_asn1_object_free = m2.asn1_object_free
 
     def __init__(self, asn1obj: C.ASN1_Object, _pyfree: int = 0) -> None:
         self.asn1obj = asn1obj
         self._pyfree = _pyfree
 
+    @staticmethod
+    def m2_asn1_object_free(obj: C.ASN1_Object) -> None:
+        m2.asn1_object_free(obj)
+
     def __del__(self) -> None:
         if self._pyfree:
-            m2.asn1_object_free(self.asn1obj)
+            self.m2_asn1_object_free(self.asn1obj)
 
     def _ptr(self):
         return self.asn1obj
@@ -185,39 +196,38 @@ class ASN1_TIME:
         "Nov",
         "Dec",
     ]
-    m2_asn1_time_free = m2.asn1_time_free
 
     def __init__(
         self,
         asn1_time: Optional[C.ASN1_Time] = None,
         _pyfree: int = 0,
-        asn1_utctime: Optional[C.ASN1_Time] = None,
     ):
-        # handle old keyword parameter
-        if asn1_time is None:
-            asn1_time = asn1_utctime
         if asn1_time is not None:
-            assert m2.asn1_time_type_check(asn1_time), "'asn1_time' type error'"
+            # assert m2.asn1_time_type_check(asn1_time), "'asn1_time' type error'"
             self.asn1_time = asn1_time
             self._pyfree = _pyfree
         else:
             # that's (ASN1_TIME*)
-            self.asn1_time: bytes = m2.asn1_time_new()  # type: ignore [no-redef]
+            self.asn1_time: C.ASN1_Time = m2.asn1_time_new()  # type: ignore [no-redef]
             self._pyfree = 1
         self.owner: Any = None
 
+    @staticmethod
+    def m2_asn1_time_free(obj: C.ASN1_Time) -> None:
+        m2.asn1_time_free(obj)
+
     def __del__(self) -> None:
         if getattr(self, "_pyfree", 0):
-            m2.asn1_time_free(self.asn1_time)
+            self.m2_asn1_time_free(self.asn1_time)
 
     def __str__(self) -> str:
-        assert m2.asn1_time_type_check(self.asn1_time), "'asn1_time' type error'"
+        # assert m2.asn1_time_type_check(self.asn1_time), "'asn1_time' type error'"
         buf = BIO.MemoryBuffer()
         m2.asn1_time_print(buf.bio_ptr(), self.asn1_time)
         return buf.read_all().decode()
 
     def _ptr(self):
-        assert m2.asn1_time_type_check(self.asn1_time), "'asn1_time' type error'"
+        # assert m2.asn1_time_type_check(self.asn1_time), "'asn1_time' type error''"
         return self.asn1_time
 
     def set_string(self, string: str) -> int:
@@ -227,7 +237,7 @@ class ASN1_TIME:
         :return:  1 if the time value is successfully set and 0
                   otherwise
         """
-        assert m2.asn1_time_type_check(self.asn1_time), "'asn1_time' type error'"
+        # assert m2.asn1_time_type_check(self.asn1_time), "'asn1_time' type error'''
         return m2.asn1_time_set_string(self.asn1_time, string)
 
     def set_time(self, time: int) -> C.ASN1_Time:
@@ -237,7 +247,7 @@ class ASN1_TIME:
         :return: pointer to a time structure or NULL if an error
                  occurred
         """
-        assert m2.asn1_time_type_check(self.asn1_time), "'asn1_time' type error'"
+        # assert m2.asn1_time_type_check(self.asn1_time), "'asn1_time' type error'''
         return m2.asn1_time_set(self.asn1_time, time)
 
     def get_datetime(self) -> datetime.datetime:
@@ -281,4 +291,102 @@ class ASN1_TIME:
         return self.set_time(int(time.mktime(date.timetuple())))
 
 
-ASN1_UTCTIME = ASN1_TIME
+class ASN1_UTCTIME:
+    _ssl_months = ASN1_TIME._ssl_months
+
+    def __init__(
+        self,
+        asn1_utctime: Optional[C.ASN1_UTCTime] = None,
+        _pyfree: int = 0,
+    ):
+        if asn1_utctime is not None:
+            assert m2.asn1_time_type_check(asn1_utctime), \
+                "'asn1_utctime' type error'"
+            self.asn1_utctime: C.ASN1_UTCTime = asn1_utctime
+            self._pyfree = _pyfree
+        else:
+            self.asn1_utctime: C.ASN1_UTCTime = m2.asn1_utctime_new()  # type: ignore [no-redef]
+            self._pyfree = 1
+        self.owner: Any = None
+
+    @staticmethod
+    def m2_asn1_utctime_free(obj: C.ASN1_UTCTime) -> None:
+        m2.asn1_utctime_free(obj)
+
+    def __del__(self) -> None:
+        if getattr(self, "_pyfree", 0):
+            self.m2_asn1_utctime_free(self.asn1_utctime)
+
+    def __str__(self) -> str:
+        # assert m2.asn1_time_type_check(self.asn1_utctime), \
+        #     "'asn1_utctime' type error'"
+        buf = BIO.MemoryBuffer()
+        m2.asn1_utctime_print(buf.bio_ptr(), self.asn1_utctime)
+        return buf.read_all().decode()
+
+    def _ptr(self):
+        # assert m2.asn1_time_type_check(self.asn1_utctime), \
+        #     "'asn1_utctime' type error'"
+        return self.asn1_utctime
+
+    def set_string(self, string: str) -> int:
+        """
+        Set time from UTC string.
+
+        :return:  1 if the time value is successfully set and 0
+                  otherwise
+        """
+        # assert m2.asn1_time_type_check(self.asn1_utctime), \
+        #     "'asn1_utctime' type error'''
+        return m2.asn1_utctime_set_string(self.asn1_utctime, string)
+
+    def set_time(self, time: int) -> C.ASN1_UTCTime:
+        """
+        Set time from seconds since epoch (int).
+
+        :return: pointer to a time structure or NULL if an error
+                 occurred
+        """
+        # assert m2.asn1_time_type_check(self.asn1_utctime), \
+        #     "'asn1_utctime' type error'"
+        return m2.asn1_utctime_set(self.asn1_utctime, time)
+
+    def get_datetime(self) -> datetime.datetime:
+        """
+        Get time as datetime.datetime object
+
+        :return: always return datetime object
+        :raises: ValueError if anything wrong happens
+        """
+        date = str(self)
+
+        timezone = None
+        if " " not in date:
+            raise ValueError("Invalid date: %s" % date)
+        month, rest = date.split(" ", 1)
+        if month not in self._ssl_months:
+            raise ValueError("Invalid date %s: Invalid month: %s" % (date, month))
+        if rest.endswith(" GMT"):
+            timezone = UTC
+            rest = rest[:-4]
+        if "." in rest:
+            dt = datetime.datetime.strptime(rest, "%d %H:%M:%S.%f %Y")
+        else:
+            dt = datetime.datetime.strptime(rest, "%d %H:%M:%S %Y")
+        dt = dt.replace(month=self._ssl_months.index(month) + 1)
+        if timezone:
+            dt = dt.replace(tzinfo=UTC)
+        return dt
+
+    def set_datetime(self, date: datetime.datetime) -> C.ASN1_UTCTime:
+        """
+        Set time from datetime.datetime object.
+
+        :return: pointer to a time structure or NULL if an error
+                 occurred
+        """
+        local = LocalTimezone()
+        if date.tzinfo is None:
+            date = date.replace(tzinfo=local)
+        date = date.astimezone(local)
+        return self.set_time(int(time.mktime(date.timetuple())))

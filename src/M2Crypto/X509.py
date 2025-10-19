@@ -45,7 +45,30 @@ class X509Error(ValueError):
 
 m2.x509_init(X509Error)
 
-V_OK: int = m2.X509_V_OK
+V_OK = m2.X509_V_OK  # type: int
+
+
+def x509_store_default_cb(ok, ctx):
+    # type: (int, X509_Store_Context) -> int
+    return ok
+
+
+def new_extension(name, value, critical=0, _pyfree=1):
+    # type: (str, bytes, int, int) -> X509_Extension
+    """
+    Create new X509_Extension instance.
+    """
+    if name == "subjectKeyIdentifier" and value.strip("0123456789abcdefABCDEF:") != "":
+        raise ValueError("value must be precomputed hash")
+    ctx = m2.x509v3_set_nconf()
+    x509_ext_ptr = m2.x509v3_ext_conf(None, ctx, name, value)
+    if x509_ext_ptr is None:
+        raise X509Error(
+            "Cannot create X509_Extension with name '%s' and value '%s'" % (name, value)
+        )
+    x509_ext = X509_Extension(x509_ext_ptr, _pyfree)
+    x509_ext.set_critical(critical)
+    return x509_ext
 
 
 class X509_Extension(object):
@@ -195,11 +218,9 @@ class X509_Extension_Stack(object):
             self._pyfree = _pyfree
             num = m2.sk_x509_extension_num(self.stack)
             for i in range(num):
-                # Set _pyfree=0, the C stack owns the extension objects.
                 self.pystack.append(
                     X509_Extension(
-                        m2.sk_x509_extension_value(self.stack, i),
-                        _pyfree=0,
+                        m2.sk_x509_extension_value(self.stack, i), _pyfree=_pyfree
                     )
                 )
         else:
@@ -586,15 +607,29 @@ class X509(object):
 
     def set_not_before(self, asn1_time: ASN1.ASN1_TIME) -> int:
         """
-        :return: 1 on success, 0 on failure
+        Set the notBefore field of the certificate.
         """
-        return m2.x509_set_not_before(self.x509, asn1_time._ptr())
+        if isinstance(asn1_time, ASN1.ASN1_UTCTIME):
+            # Convert ASN1_UTCTIME to ASN1_TIME
+            dt_obj = asn1_time.get_datetime()
+            temp_asn1_time = ASN1.ASN1_TIME()
+            temp_asn1_time.set_datetime(dt_obj)
+            return m2.x509_set_not_before(self.x509, temp_asn1_time.asn1_time)
+        else:
+            return m2.x509_set_not_before(self.x509, asn1_time.asn1_time)
 
     def set_not_after(self, asn1_time: ASN1.ASN1_TIME) -> int:
         """
-        :return: 1 on success, 0 on failure
+        Set the notAfter field of the certificate.
         """
-        return m2.x509_set_not_after(self.x509, asn1_time._ptr())
+        if isinstance(asn1_time, ASN1.ASN1_UTCTIME):
+            # Convert ASN1_UTCTIME to ASN1_TIME
+            dt_obj = asn1_time.get_datetime()
+            temp_asn1_time = ASN1.ASN1_TIME()
+            temp_asn1_time.set_datetime(dt_obj)
+            return m2.x509_set_not_after(self.x509, temp_asn1_time.asn1_time)
+        else:
+            return m2.x509_set_not_after(self.x509, asn1_time.asn1_time)
 
     def get_not_before(self) -> ASN1.ASN1_TIME:
         time_ptr = m2.x509_get_not_before(self.x509)

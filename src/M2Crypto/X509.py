@@ -586,15 +586,29 @@ class X509(object):
 
     def set_not_before(self, asn1_time: ASN1.ASN1_TIME) -> int:
         """
-        :return: 1 on success, 0 on failure
+        Set the notBefore field of the certificate.
         """
-        return m2.x509_set_not_before(self.x509, asn1_time._ptr())
+        if isinstance(asn1_time, ASN1.ASN1_UTCTIME):
+            # Convert ASN1_UTCTIME to ASN1_TIME
+            dt_obj = asn1_time.get_datetime()
+            temp_asn1_time = ASN1.ASN1_TIME()
+            temp_asn1_time.set_datetime(dt_obj)
+            return m2.x509_set_not_before(self.x509, temp_asn1_time.asn1_time)
+        else:
+            return m2.x509_set_not_before(self.x509, asn1_time.asn1_time)
 
     def set_not_after(self, asn1_time: ASN1.ASN1_TIME) -> int:
         """
-        :return: 1 on success, 0 on failure
+        Set the notAfter field of the certificate.
         """
-        return m2.x509_set_not_after(self.x509, asn1_time._ptr())
+        if isinstance(asn1_time, ASN1.ASN1_UTCTIME):
+            # Convert ASN1_UTCTIME to ASN1_TIME
+            dt_obj = asn1_time.get_datetime()
+            temp_asn1_time = ASN1.ASN1_TIME()
+            temp_asn1_time.set_datetime(dt_obj)
+            return m2.x509_set_not_after(self.x509, temp_asn1_time.asn1_time)
+        else:
+            return m2.x509_set_not_after(self.x509, asn1_time.asn1_time)
 
     def get_not_before(self) -> ASN1.ASN1_TIME:
         time_ptr = m2.x509_get_not_before(self.x509)

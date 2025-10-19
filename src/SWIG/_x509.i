@@ -190,26 +190,17 @@ extern ASN1_OBJECT *X509_NAME_ENTRY_get_object(X509_NAME_ENTRY *);
 %rename(x509_name_entry_get_data) X509_NAME_ENTRY_get_data;
 extern ASN1_STRING *X509_NAME_ENTRY_get_data(X509_NAME_ENTRY *);
 
-%typemap(in) (const unsigned char *, int) {
-    if (PyBytes_Check($input)) {
-        Py_ssize_t len;
-
-        $1 = PyBytes_AsString($input);
-        len = PyBytes_Size($input);
-
-        if (len > INT_MAX) {
-            PyErr_SetString(_x509_err, "object too large");
-            return NULL;
-        }
-        $2 = len;
-    } else {
-        PyErr_SetString(PyExc_TypeError, "expected string");
-        return NULL;
+%inline %{
+int x509_name_entry_set_data(X509_NAME_ENTRY *ne, int type, PyObject *data) {
+    Py_buffer buf;
+    if (m2_PyObject_GetBuffer(data, &buf, PyBUF_SIMPLE) == -1) {
+        return 0;
     }
-}
-%rename(x509_name_entry_set_data) X509_NAME_ENTRY_set_data;
-extern int X509_NAME_ENTRY_set_data(X509_NAME_ENTRY *, int, const unsigned char *, int);
-%typemap(in) (const unsigned char *, int);
+    int ret = X509_NAME_ENTRY_set_data(ne, type, (const unsigned char *)buf.buf, buf.len);
+    m2_PyBuffer_Release(data, &buf);
+    return ret;
+  }
+%}
 
 %rename(x509_req_new) X509_REQ_new;
 extern X509_REQ * X509_REQ_new();

@@ -191,19 +191,11 @@ extern ASN1_OBJECT *X509_NAME_ENTRY_get_object(X509_NAME_ENTRY *);
 extern ASN1_STRING *X509_NAME_ENTRY_get_data(X509_NAME_ENTRY *);
 
 %typemap(in) (const unsigned char *, int) {
-#if PY_MAJOR_VERSION >= 3
     if (PyBytes_Check($input)) {
         Py_ssize_t len;
 
         $1 = PyBytes_AsString($input);
         len = PyBytes_Size($input);
-#else
-    if (PyString_Check($input)) {
-        Py_ssize_t len;
-
-        $1 = (unsigned char *)PyString_AsString($input);
-        len = PyString_Size($input);
-#endif // PY_MAJOR_VERSION >= 3
 
         if (len > INT_MAX) {
             PyErr_SetString(_x509_err, "object too large");

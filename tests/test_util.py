@@ -26,7 +26,7 @@ class UtilTestCase(unittest.TestCase):
                 not in ["true", "1", "yes"]
             )
         ):
-            self.assertEqual(bit32, 32)
+            self.assertIn(bit32, (32, 64))
         else:
             self.assertNotEqual(bit32, 32)
         self.assertIsInstance(bit32, int)

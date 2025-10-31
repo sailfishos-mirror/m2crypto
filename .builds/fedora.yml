@@ -23,6 +23,7 @@ secrets:
 tasks:
   - build: |
      cd m2crypto
+     echo "BUILD_SUBMITTER = $BUILD_SUBMITTER"
      export PATH=$PATH:$HOME/.local/bin
      python3 -mpip install --user -r dev-requirements.txt
      python3 -mpip wheel --verbose  --no-cache-dir --no-clean --no-build-isolation --wheel-dir dist/ --editable .
@@ -36,10 +37,17 @@ tasks:
   - test: |
      cd m2crypto
      PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest -b -v tests.alltests.suite
-     [ -n "$GIT_REF" ] && REASON="$JOB_ID ($GIT_REF)"
-     [ -n "$PATCHSET_URL" ] && REASON="$JOB_ID ($PATCHSET_URL)"
-     echo "Sourcehut build $BUILD_REASON finished with the result $? ($JOB_URL)." \
-         | .builds/irc-send irc.ergo.chat commit-bot mcepl "#m2crypto"
+     case $BUILD_SUBMITTER in
+        *git.sr.ht*)
+             [ -n "$GIT_REF" ] && REASON="$JOB_ID ($GIT_REF)"
+             [ -n "$PATCHSET_URL" ] && REASON="$JOB_ID ($PATCHSET_URL)"
+             echo "Sourcehut build $BUILD_REASON finished with the result $? ($JOB_URL)." \
+                 | .builds/irc-send irc.libera.chat m2bot mcepl "#m2crypto"
+        ;;
+     esac
+  - prepare_artifacts: |
+     cd m2crypto
+     zip -9rmT artifacts.zip dist/*
   - readme: |
      cd m2crypto
      printf "GIT_REF: %s\n" "${GIT_REF}"

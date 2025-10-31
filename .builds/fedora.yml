@@ -69,3 +69,6 @@ tasks:
 artifacts:
   - m2crypto/src/SWIG/_m2crypto_wrap.c
   - m2crypto/artifacts.zip
+  # https://is.gd/Z5VJlI
+  # - pygn/dist/pygn-*.tar.gz
+  # - pygn/dist/pygn-*.whl

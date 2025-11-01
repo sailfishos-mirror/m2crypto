@@ -53,7 +53,7 @@ def suite():
         modules_to_test.append("tests.test_ssl")
     elif os.name == "nt":
         modules_to_test.append("tests.test_ssl_win")
-    if m2.OPENSSL_VERSION_NUMBER >= 0x90800F and m2.OPENSSL_NO_EC == 0:
+    if m2.OPENSSL_NO_EC == 0:
         modules_to_test.append("tests.test_ecdh")
         modules_to_test.append("tests.test_ecdsa")
         modules_to_test.append("tests.test_ec_curves")

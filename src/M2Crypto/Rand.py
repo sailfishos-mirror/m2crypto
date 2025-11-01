@@ -142,11 +142,10 @@ def rand_pseudo_bytes(num: int) -> Tuple[bytes, int]:
     """
     import warnings
 
-    if m2.OPENSSL_VERSION_NUMBER >= 0x10100000:
-        warnings.warn(
-            "The underlying OpenSSL method has been "
-            + "deprecated. Use Rand.rand_bytes instead.",
-            DeprecationWarning,
-        )
+    warnings.warn(
+        "The underlying OpenSSL method has been "
+        + "deprecated. Use Rand.rand_bytes instead.",
+        DeprecationWarning,
+    )
 
     return m2.rand_pseudo_bytes(num)  # pylint: disable=no-member

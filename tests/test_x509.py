@@ -366,16 +366,12 @@ class X509TestCase(unittest.TestCase):
             self.assertEqual(cert.get_serial_number(), 1)
             self.assertEqual(cert.get_issuer().CN, "The Issuer Monkey")
 
-            if m2.OPENSSL_VERSION_NUMBER >= 0x90800F:
-                self.assertFalse(cert.check_ca())
-                self.assertFalse(cert.check_purpose(m2.X509_PURPOSE_SSL_SERVER, 1))
-                self.assertFalse(cert.check_purpose(m2.X509_PURPOSE_NS_SSL_SERVER, 1))
-                self.assertTrue(cert.check_purpose(m2.X509_PURPOSE_SSL_SERVER, 0))
-                self.assertTrue(cert.check_purpose(m2.X509_PURPOSE_NS_SSL_SERVER, 0))
-                self.assertTrue(cert.check_purpose(m2.X509_PURPOSE_ANY, 0))
-            else:
-                with self.assertRaises(AttributeError):
-                    cert.check_ca()
+            self.assertFalse(cert.check_ca())
+            self.assertFalse(cert.check_purpose(m2.X509_PURPOSE_SSL_SERVER, 1))
+            self.assertFalse(cert.check_purpose(m2.X509_PURPOSE_NS_SSL_SERVER, 1))
+            self.assertTrue(cert.check_purpose(m2.X509_PURPOSE_SSL_SERVER, 0))
+            self.assertTrue(cert.check_purpose(m2.X509_PURPOSE_NS_SSL_SERVER, 0))
+            self.assertTrue(cert.check_purpose(m2.X509_PURPOSE_ANY, 0))
 
     def mkcacert(self, utc):
         req, pk = self.mkreq(1024, ca=1)
@@ -404,17 +400,13 @@ class X509TestCase(unittest.TestCase):
         cert.add_ext(ext)
         cert.sign(pk, "sha256")
 
-        if m2.OPENSSL_VERSION_NUMBER >= 0x0090800F:
-            self.assertTrue(cert.check_ca())
-            self.assertTrue(cert.check_purpose(m2.X509_PURPOSE_SSL_SERVER, 1))
-            self.assertTrue(cert.check_purpose(m2.X509_PURPOSE_NS_SSL_SERVER, 1))
-            self.assertTrue(cert.check_purpose(m2.X509_PURPOSE_ANY, 1))
-            self.assertTrue(cert.check_purpose(m2.X509_PURPOSE_SSL_SERVER, 0))
-            self.assertTrue(cert.check_purpose(m2.X509_PURPOSE_NS_SSL_SERVER, 0))
-            self.assertTrue(cert.check_purpose(m2.X509_PURPOSE_ANY, 0))
-        else:
-            with self.assertRaises(AttributeError):
-                cert.check_ca()
+        self.assertTrue(cert.check_ca())
+        self.assertTrue(cert.check_purpose(m2.X509_PURPOSE_SSL_SERVER, 1))
+        self.assertTrue(cert.check_purpose(m2.X509_PURPOSE_NS_SSL_SERVER, 1))
+        self.assertTrue(cert.check_purpose(m2.X509_PURPOSE_ANY, 1))
+        self.assertTrue(cert.check_purpose(m2.X509_PURPOSE_SSL_SERVER, 0))
+        self.assertTrue(cert.check_purpose(m2.X509_PURPOSE_NS_SSL_SERVER, 0))
+        self.assertTrue(cert.check_purpose(m2.X509_PURPOSE_ANY, 0))
 
         return cert, pk, pkey
 

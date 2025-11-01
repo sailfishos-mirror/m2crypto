@@ -44,8 +44,8 @@ typedef unsigned __int64 uint64_t;
 
 %{
 #if defined __GNUC__ && __GNUC__ < 5
-#pragma GCC diagnostic ignored "-Wunused-label"
-#pragma GCC diagnostic warning "-Wstrict-prototypes"
+PRAGMA_IGNORE_UNUSED_LABEL
+PRAGMA_WARN_STRICT_PROTOTYPES
 #endif
 
 #include <openssl/err.h>

@@ -19,9 +19,6 @@
 #include <ceval.h>
 %}
 
-/* OpenSSL 1.1 compatibility shim */
-%include _lib11_compat.i
-
 /* Python 3 compatibility shim */
 %include _py3k_compat.i
 

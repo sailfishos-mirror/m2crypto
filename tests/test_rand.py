@@ -44,10 +44,7 @@ class RandTestCase(unittest.TestCase):
             rand_env = ("RANDFILE", "HOME")
             is_admin = False
         key = next((k for k in rand_env if os.environ.get(k)), None)
-        if is_admin and m2.OPENSSL_VERSION_NUMBER < 0x1010000F:
-            path = "C:\\"
-        else:
-            path = os.path.join(os.environ[key])
+        path = os.path.join(os.environ[key])
         self.assertIsNotNone(key, "Could not find required environment")
         rand_file = os.path.abspath(os.path.join(path, ".rnd"))
         self.assertEqual(os.path.abspath(Rand.rand_file_name()), rand_file)

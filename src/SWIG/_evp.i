@@ -20,22 +20,6 @@ Copyright (c) 2009-2010 Heikki Toivonen. All rights reserved.
 #include <openssl/ec.h>
 #include <openssl/opensslv.h>
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-
-HMAC_CTX *HMAC_CTX_new(void) {
-    HMAC_CTX *ret = PyMem_Malloc(sizeof(HMAC_CTX));
-    HMAC_CTX_init(ret);
-    return ret;
-}
-#define HMAC_CTX_reset(ctx) HMAC_CTX_init(ctx)
-#define HMAC_CTX_free(ctx)          \
-    do  {                           \
-        HMAC_CTX_cleanup(ctx);      \
-        PyMem_Free((void *)ctx);    \
-    } while(0)
-
-#define EVP_CIPHER_CTX_reset(ctx) EVP_CIPHER_CTX_init(ctx)
-#endif
 %}
 
 /*
@@ -61,7 +45,6 @@ extern const EVP_MD *EVP_sha1(void);
 %rename(ripemd160) EVP_ripemd160;
 extern const EVP_MD *EVP_ripemd160(void);
 
-#if OPENSSL_VERSION_NUMBER >= 0x0090800fL
 %rename(sha224) EVP_sha224;
 extern const EVP_MD *EVP_sha224(void);
 %rename(sha256) EVP_sha256;
@@ -70,7 +53,6 @@ extern const EVP_MD *EVP_sha256(void);
 extern const EVP_MD *EVP_sha384(void);
 %rename(sha512) EVP_sha512;
 extern const EVP_MD *EVP_sha512(void);
-#endif
 
 %rename(digest_init) EVP_DigestInit;
 extern int EVP_DigestInit(EVP_MD_CTX *, const EVP_MD *);
@@ -176,7 +158,7 @@ extern int EVP_CIPHER_CTX_set_padding(EVP_CIPHER_CTX *x, int padding);
 extern void EVP_PKEY_free(EVP_PKEY *);
 %rename(pkey_assign) EVP_PKEY_assign;
 extern int EVP_PKEY_assign(EVP_PKEY *, int, char *);
-#if OPENSSL_VERSION_NUMBER >= 0x0090800fL && !defined(OPENSSL_NO_EC)
+#ifndef OPENSSL_NO_EC
 %rename(pkey_assign_ec) EVP_PKEY_assign_EC_KEY;
 extern int EVP_PKEY_assign_EC_KEY(EVP_PKEY *, EC_KEY *);
 %rename(pkey_set1_ec) EVP_PKEY_set1_EC_KEY;
@@ -679,7 +661,6 @@ PyObject *digest_sign_final(EVP_MD_CTX *ctx) {
     return ret;
 }
 
-#if OPENSSL_VERSION_NUMBER >= 0x10101000L
 PyObject *digest_sign(EVP_MD_CTX *ctx, PyObject *msg) {
     PyObject *ret;
     Py_buffer msgbuf;
@@ -717,7 +698,6 @@ PyObject *digest_sign(EVP_MD_CTX *ctx, PyObject *msg) {
     return ret;
 
 }
-#endif
 
 int digest_verify_init(EVP_MD_CTX *ctx, EVP_PKEY *pkey) {
     return EVP_DigestVerifyInit(ctx, NULL, NULL, NULL, pkey);
@@ -749,7 +729,6 @@ int digest_verify_final(EVP_MD_CTX *ctx, PyObject *blob) {
     return ret;
 }
 
-#if OPENSSL_VERSION_NUMBER >= 0x10101000L
 int digest_verify(EVP_MD_CTX *ctx, PyObject *sig, PyObject *msg) {
     Py_buffer sigbuf, msgbuf;
     int ret;
@@ -768,7 +747,6 @@ int digest_verify(EVP_MD_CTX *ctx, PyObject *sig, PyObject *msg) {
     m2_PyBuffer_Release(msg, &msgbuf);
     return ret;
 }
-#endif
 %}
 
 %typemap(out) EVP_MD * {

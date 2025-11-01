@@ -6,7 +6,7 @@
 
 %include <openssl/opensslconf.h>
 
-#if OPENSSL_VERSION_NUMBER < 0x0090800fL || defined(OPENSSL_NO_EC)
+#ifdef OPENSSL_NO_EC
 #undef OPENSSL_NO_EC
 %constant OPENSSL_NO_EC = 1;
 #else

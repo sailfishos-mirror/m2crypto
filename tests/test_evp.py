@@ -180,27 +180,26 @@ class EVPTestCase(unittest.TestCase):
                 util.octx_to_num(EVP.hmac(b"key", b"data", algo="ripemd160")),
             )
 
-        if m2.OPENSSL_VERSION_NUMBER >= 0x90800F:
-            self.assertEqual(
-                util.octx_to_num(EVP.hmac(b"key", b"data", algo="sha224")),
-                2660082265842109788381286338540662430962855478412025487066970872635,
-                util.octx_to_num(EVP.hmac(b"key", b"data", algo="sha224")),
-            )
-            self.assertEqual(
-                util.octx_to_num(EVP.hmac(b"key", b"data", algo="sha256")),
-                36273358097036101702192658888336808701031275731906771612800928188662823394256,
-                util.octx_to_num(EVP.hmac(b"key", b"data", algo="sha256")),
-            )
-            self.assertEqual(
-                util.octx_to_num(EVP.hmac(b"key", b"data", algo="sha384")),
-                30471069101236165765942696708481556386452105164815350204559050657318908408184002707969468421951222432574647369766282,
-                util.octx_to_num(EVP.hmac(b"key", b"data", algo="sha384")),
-            )
-            self.assertEqual(
-                util.octx_to_num(EVP.hmac(b"key", b"data", algo="sha512")),
-                3160730054100700080556942280820129108466291087966635156623014063982211353635774277148932854680195471287740489442390820077884317620321797003323909388868696,
-                util.octx_to_num(EVP.hmac(b"key", b"data", algo="sha512")),
-            )
+        self.assertEqual(
+            util.octx_to_num(EVP.hmac(b"key", b"data", algo="sha224")),
+            2660082265842109788381286338540662430962855478412025487066970872635,
+            util.octx_to_num(EVP.hmac(b"key", b"data", algo="sha224")),
+        )
+        self.assertEqual(
+            util.octx_to_num(EVP.hmac(b"key", b"data", algo="sha256")),
+            36273358097036101702192658888336808701031275731906771612800928188662823394256,
+            util.octx_to_num(EVP.hmac(b"key", b"data", algo="sha256")),
+        )
+        self.assertEqual(
+            util.octx_to_num(EVP.hmac(b"key", b"data", algo="sha384")),
+            30471069101236165765942696708481556386452105164815350204559050657318908408184002707969468421951222432574647369766282,
+            util.octx_to_num(EVP.hmac(b"key", b"data", algo="sha384")),
+        )
+        self.assertEqual(
+            util.octx_to_num(EVP.hmac(b"key", b"data", algo="sha512")),
+            3160730054100700080556942280820129108466291087966635156623014063982211353635774277148932854680195471287740489442390820077884317620321797003323909388868696,
+            util.octx_to_num(EVP.hmac(b"key", b"data", algo="sha512")),
+        )
 
         with self.assertRaises(ValueError):
             EVP.hmac(b"key", b"data", algo="sha513")
@@ -367,10 +366,6 @@ class EVPTestCase(unittest.TestCase):
         pubkey.verify_update(b"test  message not")
         self.assertEqual(pubkey.verify_final(sig), 0)
 
-    @unittest.skipIf(
-        m2.OPENSSL_VERSION_NUMBER < 0x10101000,
-        "Relies on support for Ed25519 which was introduced in OpenSSL 1.1.1",
-    )
     def test_digest_verify(self):
         pkey = EVP.load_key("tests/ed25519.priv.pem")
         pkey.reset_context(None)
@@ -395,10 +390,7 @@ class EVPTestCase(unittest.TestCase):
         pkey.digest_verify_init()
         self.assertEqual(pkey.digest_verify(sig, b"test  message  not"), 0)
 
-    @unittest.skipIf(
-        m2.OPENSSL_VERSION_NUMBER < 0x90800F or m2.OPENSSL_NO_EC != 0,
-        "Relies on support for EC",
-    )
+    @unittest.skipIf(m2.OPENSSL_NO_EC != 0, "Relies on support for EC")
     def test_digest_verify_final(self):
         pkey = EVP.load_key("tests/ec.priv.pem")
         pkey.reset_context("sha256")

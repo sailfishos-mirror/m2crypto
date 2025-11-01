@@ -49,8 +49,6 @@ from tests.fips import fips_mode
 
 log = logging.getLogger("test_SSL")
 
-OPENSSL111 = m2.OPENSSL_VERSION_NUMBER > 0x10101000
-
 # FIXME
 # It would be probably better if the port was randomly selected.
 # https://fedorahosted.org/libuser/browser/tests/alloc_port.c
@@ -198,7 +196,7 @@ class HttpslibSSLClientTestCase(BaseSSLClientTestCase):
             self.stop_server(pid)
         self.assertIn(self.test_output, data.decode())
 
-    @unittest.skipIf(OPENSSL111, "Doesn't work with OpenSSL 1.1.1")
+    @unittest.skip("Doesn't work with OpenSSL 1.1.1")
     def test_HTTPSConnection_resume_session(self):
         pid = self.start_server(self.args)
         try:
@@ -498,11 +496,6 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
             ctx = SSL.Context()
             s = SSL.Connection(ctx)
             s.set_cipher_list("AES128-SHA")
-            if not OPENSSL111:
-                with self.assertRaisesRegex(
-                    SSL.SSLError, "sslv3 alert handshake failure"
-                ):
-                    s.connect(self.srv_addr)
             s.close()
         finally:
             self.stop_server(pid)
@@ -514,20 +507,13 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
             ctx = SSL.Context()
             s = SSL.Connection(ctx)
             s.set_cipher_list("EXP-RC2-MD5")
-            if not OPENSSL111:
-                with self.assertRaisesRegex(SSL.SSLError, "no ciphers available"):
-                    s.connect(self.srv_addr)
             s.close()
         finally:
             self.stop_server(pid)
 
     def test_cipher_ok(self):
-        if OPENSSL111:
-            TCIPHER = "TLS_AES_256_GCM_SHA384"
-            self.args = self.args + ["-ciphersuites", TCIPHER]
-        else:
-            TCIPHER = "AES128-SHA"
-            self.args = self.args + ["-cipher", TCIPHER]
+        TCIPHER = "TLS_AES_256_GCM_SHA384"
+        self.args = self.args + ["-ciphersuites", TCIPHER]
 
         pid = self.start_server(self.args)
         try:
@@ -546,10 +532,6 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
                 cipher_stack[0].name(),
             )
 
-            if not OPENSSL111:
-                with self.assertRaises(IndexError):
-                    cipher_stack.__getitem__(2)
-
             # For some reason there are 2 entries in the stack
             # self.assertEqual(len(cipher_stack), 1, len(cipher_stack))
             self.assertEqual(s.get_cipher_list(), TCIPHER, s.get_cipher_list())
@@ -558,14 +540,6 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
             i = 0
             for cipher in cipher_stack:
                 i += 1
-                if not OPENSSL111:
-                    cipname = cipher.name()
-                    self.assertEqual(
-                        cipname,
-                        "AES128-SHA",
-                        '"%s" (%s)' % (cipname, type(cipname)),
-                    )
-                    self.assertEqual("AES128-SHA-128", str(cipher))
             # For some reason there are 2 entries in the stack
             # self.assertEqual(i, 1, i)
             self.assertEqual(i, len(cipher_stack))
@@ -870,9 +844,6 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
             ctx.set_verify(SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9)
             ctx.load_verify_locations("tests/ca.pem")
             s = SSL.Connection(ctx)
-            if not OPENSSL111:
-                with self.assertRaises(SSL.SSLError):
-                    s.connect(self.srv_addr)
             s.close()
         finally:
             self.stop_server(pid)

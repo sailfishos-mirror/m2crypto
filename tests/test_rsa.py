@@ -236,11 +236,10 @@ class RSATestCase(unittest.TestCase):
         """
         algos = {"sha256": "", "ripemd160": "", "md5": ""}
 
-        if m2.OPENSSL_VERSION_NUMBER >= 0x90800F:
-            algos["sha224"] = ""
-            algos["sha256"] = ""
-            algos["sha384"] = ""
-            algos["sha512"] = ""
+        algos["sha224"] = ""
+        algos["sha256"] = ""
+        algos["sha384"] = ""
+        algos["sha512"] = ""
 
         message = b"This is the message string"
         digest = hashlib.sha256(message).digest()
@@ -258,56 +257,53 @@ class RSATestCase(unittest.TestCase):
                 "verification failed with algorithm %s" % algo,
             )
 
-    if m2.OPENSSL_VERSION_NUMBER >= 0x90708F:
+    def test_sign_and_verify_rsassa_pss(self):
+        """
+        Testing signing and verifying using rsassa_pss
 
-        def test_sign_and_verify_rsassa_pss(self):
-            """
-            Testing signing and verifying using rsassa_pss
+        The maximum size of the salt has to decrease as the
+        size of the digest increases because of the size of
+        our test key limits it.
+        """
+        message = b"This is the message string"
+        import hashlib
 
-            The maximum size of the salt has to decrease as the
-            size of the digest increases because of the size of
-            our test key limits it.
-            """
-            message = b"This is the message string"
-            import hashlib
+        algos = {"sha256": 43}
+        if not fips_mode:
+            algos["md5"] = 47
+            algos["ripemd160"] = 43
 
-            algos = {"sha256": 43}
-            if not fips_mode:
-                algos["md5"] = 47
-                algos["ripemd160"] = 43
+        algos["sha224"] = 35
+        algos["sha256"] = 31
+        algos["sha384"] = 15
+        algos["sha512"] = 0
 
-            if m2.OPENSSL_VERSION_NUMBER >= 0x90800F:
-                algos["sha224"] = 35
-                algos["sha256"] = 31
-                algos["sha384"] = 15
-                algos["sha512"] = 0
+        for algo, salt_max in algos.items():
+            try:
+                h = hashlib.new(algo)
+            except ValueError:
+                algos[algo] = (None, None)
+                continue
+            h.update(message)
+            digest = h.digest()
+            algos[algo] = (salt_max, digest)
 
-            for algo, salt_max in algos.items():
-                try:
-                    h = hashlib.new(algo)
-                except ValueError:
-                    algos[algo] = (None, None)
-                    continue
-                h.update(message)
-                digest = h.digest()
-                algos[algo] = (salt_max, digest)
-
-            rsa = RSA.load_key(self.privkey)
-            rsa2 = RSA.load_pub_key(self.pubkey)
-            for algo, (salt_max, digest) in algos.items():
-                if salt_max is None or digest is None:
-                    continue
-                for salt_length in range(0, salt_max):
-                    signature = rsa.sign_rsassa_pss(digest, algo, salt_length)
-                    verify = rsa2.verify_rsassa_pss(
-                        digest, signature, algo, salt_length
-                    )
-                    self.assertEqual(
-                        verify,
-                        1,
-                        "verification failed with algorithm "
-                        "%s salt length %d" % (algo, salt_length),
-                    )
+        rsa = RSA.load_key(self.privkey)
+        rsa2 = RSA.load_pub_key(self.pubkey)
+        for algo, (salt_max, digest) in algos.items():
+            if salt_max is None or digest is None:
+                continue
+            for salt_length in range(0, salt_max):
+                signature = rsa.sign_rsassa_pss(digest, algo, salt_length)
+                verify = rsa2.verify_rsassa_pss(
+                    digest, signature, algo, salt_length
+                )
+                self.assertEqual(
+                    verify,
+                    1,
+                    "verification failed with algorithm "
+                    "%s salt length %d" % (algo, salt_length),
+                )
 
     def test_sign_bad_method(self):
         """

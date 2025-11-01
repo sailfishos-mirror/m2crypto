@@ -479,12 +479,7 @@ int passphrase_callback(char *buf, int num, int v, void *arg) {
 
 %inline %{
 
-void lib_init() {
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-    SSLeay_add_all_algorithms();
-    ERR_load_ERR_strings();
-#endif
-}
+void lib_init() { }
 
 /* Bignum routines that aren't not numerous enough to
 warrant a separate file. */

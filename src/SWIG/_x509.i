@@ -35,10 +35,8 @@ IMPLEMENT_ASN1_FUNCTIONS(SEQ_CERT)
 %apply Pointer NONNULL { X509_NAME_ENTRY * };
 %apply Pointer NONNULL { EVP_PKEY * };
 
-#if OPENSSL_VERSION_NUMBER >= 0x0090800fL
 %rename(x509_check_ca) X509_check_ca;
 extern int X509_check_ca(X509 *);
-#endif
 
 %rename(x509_new) X509_new;
 extern X509 *X509_new( void );
@@ -165,13 +163,8 @@ extern int X509_NAME_add_entry_by_NID(X509_NAME *, int, int, unsigned char *, in
 %threadallow X509_NAME_print_ex;
 extern int X509_NAME_print_ex(BIO *, X509_NAME *, int, unsigned long);
 
-#if OPENSSL_VERSION_NUMBER >= 0x10000000L
 %rename(x509_name_hash) X509_NAME_hash_old;
 extern unsigned long X509_NAME_hash_old(X509_NAME *);
-#else
-%rename(x509_name_hash) X509_NAME_hash;
-extern unsigned long X509_NAME_hash(X509_NAME *);
-#endif
 
 %rename(x509_name_get_index_by_nid) X509_NAME_get_index_by_NID;
 extern int X509_NAME_get_index_by_NID(X509_NAME *, int, int);

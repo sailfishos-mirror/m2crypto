@@ -30,12 +30,10 @@ extern int RSA_check_key(const RSA *);
 
 %constant int NID_sha1 = NID_sha1;
 
-#if OPENSSL_VERSION_NUMBER >= 0x0090800fL
 %constant int NID_sha224 = NID_sha224;
 %constant int NID_sha256 = NID_sha256;
 %constant int NID_sha384 = NID_sha384;
 %constant int NID_sha512 = NID_sha512;
-#endif
 
 %constant int NID_md5 = NID_md5;
 
@@ -350,7 +348,6 @@ PyObject *rsa_private_decrypt(RSA *rsa, PyObject *from, int padding) {
     return ret;
 }
 
-#if OPENSSL_VERSION_NUMBER >= 0x0090708fL
 PyObject *rsa_padding_add_pkcs1_pss(RSA *rsa, PyObject *digest, EVP_MD *hash, int salt_length) {
     unsigned char *tbuf;
     int result, tlen;
@@ -412,7 +409,6 @@ int rsa_verify_pkcs1_pss(RSA *rsa, PyObject *digest, PyObject *signature, EVP_MD
     m2_PyBuffer_Release(signature, &sbuf);
     return ret;
 }
-#endif
 
 PyObject *rsa_sign(RSA *rsa, PyObject *py_digest_string, int method_type) {
     int digest_len = 0;

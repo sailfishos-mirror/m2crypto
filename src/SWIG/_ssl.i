@@ -32,9 +32,7 @@ typedef unsigned __int64 uint64_t;
 #endif
 %}
 
-#if OPENSSL_VERSION_NUMBER >= 0x10100005L
 %include <openssl/safestack.h>
-#endif
 
 %apply Pointer NONNULL { SSL_CTX * };
 %apply Pointer NONNULL { SSL * };
@@ -270,10 +268,8 @@ void ssl_init(PyObject *ssl_err, PyObject *ssl_timeout_err) {
 }
 
 const SSL_METHOD *tlsv1_method(void) {
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
     PyErr_WarnEx(PyExc_DeprecationWarning,
                  "Function TLSv1_method has been deprecated.", 1);
-#endif
     return TLSv1_method();
 }
 

@@ -11,8 +11,8 @@
 // Buffer size for formatted log message
 #define LOG_MSG_MAX_SIZE 512
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-function"
+PRAGMA_PUSH_WARNINGS
+PRAGMA_IGNORE_UNUSED_FUNCTION
 static void log_msg(int type, const char *format, ...)
 {
     static PyObject *logging = NULL;
@@ -68,5 +68,5 @@ static void log_msg(int type, const char *format, ...)
         PyErr_Clear();
     }
 }
-#pragma GCC diagnostic pop
+PRAGMA_POP_WARNINGS
 %}

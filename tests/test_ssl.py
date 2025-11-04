@@ -1090,33 +1090,116 @@ class Urllib2SSLClientTestCase(BaseSSLClientTestCase):
             self.stop_server(pid)
 
 
+import ssl
+import socket
+import threading
+
+
+class ChunkedHTTPSServer(threading.Thread):
+    """Simple HTTPS server that sends a chunked response."""
+
+    def __init__(self, host, port, certfile, keyfile):
+        super().__init__(daemon=True)
+        self.host = host
+        self.port = port
+        self.certfile = certfile
+        self.keyfile = keyfile
+        self.ready = threading.Event()
+        self.stop_event = threading.Event()
+
+        # Create and bind the socket
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.server_socket.bind((self.host, self.port))
+        self.server_socket.listen(1)
+        self.server_socket.settimeout(0.5)
+
+    def run(self):
+        self.ready.set()
+
+        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ssl_context.load_cert_chain(self.certfile, self.keyfile)
+
+        while not self.stop_event.is_set():
+            try:
+                conn, addr = self.server_socket.accept()
+            except socket.timeout:
+                continue
+            except OSError:
+                break
+
+            try:
+                ssl_conn = ssl_context.wrap_socket(conn, server_side=True)
+
+                # Read the request
+                request = ssl_conn.recv(4096)
+
+                # Send properly formatted chunked response
+                response = (
+                    b"HTTP/1.1 200 OK\r\n"
+                    b"Content-Type: text/plain\r\n"
+                    b"Transfer-Encoding: chunked\r\n"
+                    b"\r\n"
+                    b"4\r\n"      # Chunk size: 4 bytes
+                    b"foo\n\r\n"  # Data: "foo\n"
+                    b"7\r\n"      # Chunk size: 7 bytes
+                    b"foobar\n\r\n"  # Data: "foobar\n"
+                    b"0\r\n"      # Last chunk (size 0)
+                    b"\r\n"       # Final CRLF
+                )
+                ssl_conn.sendall(response)
+                ssl_conn.close()
+            except Exception as e:
+                log.debug("ChunkedHTTPSServer error: %s", e)
+            finally:
+                if conn:
+                    try:
+                        conn.close()
+                    except:
+                        pass
+
+    def stop(self):
+        self.stop_event.set()
+        try:
+            self.server_socket.close()
+        except:
+            pass
+
+
 class Urllib2TEChunkedSSLClientTestCase(BaseSSLClientTestCase):
     """Test a response with "Transfer-Encoding: chunked"."""
 
     def setUp(self):
-        super(Urllib2TEChunkedSSLClientTestCase, self).setUp()
-        self.args = [
-            "s_server",
-            "-quiet",
-            "-HTTP",
-            "-accept",
-            str(self.srv_port),
-        ]
+        # Don't call parent setUp - we manage our own server
+        self.srv_host = srv_host
+        self.srv_port = allocate_srv_port()
+
+        # Start our custom chunked server
+        self.server = ChunkedHTTPSServer(
+            self.srv_host,
+            self.srv_port,
+            certfile="tests/server.pem",
+            keyfile="tests/server_key.pem",
+        )
+        self.server.start()
+
+        # Wait for server to be ready
+        if not self.server.ready.wait(timeout=5):
+            self.fail("Chunked HTTPS server failed to start")
+
+    def tearDown(self):
+        self.server.stop()
+        self.server.join(timeout=2)
 
     def test_transfer_encoding_chunked(self):
-        pid = self.start_server(self.args)
-        try:
-            url = "https://%s:%s/te_chunked_response.txt" % (
-                srv_host,
-                self.srv_port,
-            )
-            o = m2urllib2.build_opener()
-            u = o.open(url)
-            data = u.read()
-            self.assertEqual(b"foo\nfoobar\n", data)
-        finally:
-            self.stop_server(pid)
+        """Test that chunked transfer encoding is handled correctly."""
+        url = "https://%s:%s/" % (self.srv_host, self.srv_port)
+        o = m2urllib2.build_opener()
+        u = o.open(url)
+        data = u.read()
+        u.close()
 
+        self.assertEqual(b"foo\nfoobar\n", data)
 
 @unittest.skip("Twisted integration has been temporarily switched off.")
 class TwistedSSLClientTestCase(BaseSSLClientTestCase):

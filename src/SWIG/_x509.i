@@ -13,6 +13,7 @@
 #include <openssl/asn1.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
+#include <openssl/x509_vfy.h>
 
 #include <openssl/asn1t.h>
 
@@ -33,6 +34,8 @@ IMPLEMENT_ASN1_FUNCTIONS(SEQ_CERT)
 %apply Pointer NONNULL { X509_REQ * };
 %apply Pointer NONNULL { X509_NAME * };
 %apply Pointer NONNULL { X509_NAME_ENTRY * };
+%apply Pointer NONNULL { X509_STORE * };
+%apply Pointer NONNULL { X509_STORE_CTX * };
 %apply Pointer NONNULL { EVP_PKEY * };
 
 %rename(x509_check_ca) X509_check_ca;
@@ -48,6 +51,10 @@ extern void X509_free(X509 *);
 extern void X509_CRL_free(X509_CRL *);
 %rename(x509_crl_new) X509_CRL_new;
 extern X509_CRL * X509_CRL_new();
+%rename(x509_store_ctx_new) X509_STORE_CTX_new;
+extern X509_STORE_CTX *X509_STORE_CTX_new( void );
+%rename(x509_store_ctx_init) X509_STORE_CTX_init;
+extern int X509_STORE_CTX_init( X509_STORE_CTX *, X509_STORE *, X509 *, STACK_OF(X509) *);
 
 %rename(x509_print) X509_print;
 %threadallow X509_print;
@@ -163,7 +170,12 @@ extern int X509_NAME_add_entry_by_NID(X509_NAME *, int, int, unsigned char *, in
 %threadallow X509_NAME_print_ex;
 extern int X509_NAME_print_ex(BIO *, X509_NAME *, int, unsigned long);
 
-%rename(x509_name_hash) X509_NAME_hash_old;
+/* Desire is for x509_name_hash to match up to openssl's version.
+   If the old version is desired, call it expliticlty.
+*/
+%rename(x509_name_hash) X509_NAME_hash;
+extern unsigned long X509_NAME_hash(X509_NAME *);
+%rename(x509_name_hash_old) X509_NAME_hash_old;
 extern unsigned long X509_NAME_hash_old(X509_NAME *);
 
 %rename(x509_name_get_index_by_nid) X509_NAME_get_index_by_NID;
@@ -228,6 +240,14 @@ extern X509_STORE *X509_STORE_new(void);
 extern void X509_STORE_free(X509_STORE *);
 %rename(x509_store_add_cert) X509_STORE_add_cert;
 extern int X509_STORE_add_cert(X509_STORE *, X509 *);
+
+%rename(x509_store_add_crl) X509_STORE_add_crl;
+extern int X509_STORE_add_crl(X509_STORE*, X509_CRL* );
+%rename(x509_store_set_flags) X509_STORE_set_flags;
+extern int X509_STORE_set_flags(X509_STORE*, unsigned int );
+%rename(x509_store_ctx_set0_crls) X509_STORE_CTX_set0_crls;
+extern void X509_STORE_CTX_set0_crls(X509_STORE_CTX *ctx, STACK_OF(X509_CRL) *);
+
 %rename(x509_store_set_verify_cb) X509_STORE_set_verify_cb;
 extern void X509_STORE_set_verify_cb(X509_STORE *st,
                                      int (*verify_cb)(int ok, X509_STORE_CTX *ctx));
@@ -384,8 +404,6 @@ However I add it here for consistency */
 %constant int VERIFY_X509_STRICT  = X509_V_FLAG_X509_STRICT;
 #endif
 
-
-
 /* x509.h */
 %constant int XN_FLAG_COMPAT = 0;
 %constant int XN_FLAG_SEP_COMMA_PLUS = (1 << 16);
@@ -410,6 +428,14 @@ However I add it here for consistency */
             XN_FLAG_SEP_COMMA_PLUS | \
             XN_FLAG_DN_REV | \
             XN_FLAG_DUMP_UNKNOWN_FIELDS);
+
+/* x509_vfy.h */
+%constant int X509_VP_FLAG_DEFAULT                    = 0x1;
+%constant int X509_VP_FLAG_OVERWRITE                  = 0x2;
+%constant int X509_VP_FLAG_RESET_FLAGS                = 0x4;
+%constant int X509_VP_FLAG_LOCKED                     = 0x8;
+%constant int X509_VP_FLAG_ONCE                       = 0x10;
+
 
 /* Cribbed from rsa.h. */
 %constant int RSA_3                           = 0x3L;
@@ -576,6 +602,11 @@ PyObject *x509_name_get_der(X509_NAME *name) {
     return PyBytes_FromStringAndSize(pder, pderlen);
 }
 
+/* sk_X509_crl_new_null() is a macro returning "STACK_OF(X509_CRL) *". */
+STACK_OF(X509_CRL) *sk_x509_crl_new_null(void) {
+    return sk_X509_CRL_new_null();
+}
+
 /* sk_X509_free() is a macro. */
 void sk_x509_free(STACK_OF(X509) *stack) {
     sk_X509_free(stack);
@@ -589,6 +620,23 @@ int sk_x509_push(STACK_OF(X509) *stack, X509 *x509) {
 /* sk_X509_pop() is a macro. */
 X509 *sk_x509_pop(STACK_OF(X509) *stack) {
     return sk_X509_pop(stack);
+}
+%}
+
+%inline %{
+/* sk_X509_CRL_free() is a macro. */
+void sk_x509_crl_free(STACK_OF(X509_CRL) *stack) {
+    sk_X509_CRL_free(stack);
+}
+
+/* sk_X509_CRL_push() is a macro. */
+int sk_x509_crl_push(STACK_OF(X509_CRL) *stack, X509_CRL *crl) {
+    return sk_X509_CRL_push(stack, crl);
+}
+
+/* sk_X509_CRL_pop() is a macro. */
+X509_CRL *sk_x509_crl_pop(STACK_OF(X509_CRL) *stack) {
+    return sk_X509_CRL_pop(stack);
 }
 %}
 

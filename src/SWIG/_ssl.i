@@ -38,7 +38,11 @@ typedef unsigned __int64 uint64_t;
 %apply Pointer NONNULL { SSL * };
 %apply Pointer NONNULL { SSL_CIPHER * };
 %apply Pointer NONNULL { STACK_OF(SSL_CIPHER) * };
-%apply Pointer NONNULL { STACK_OF(X509) * };
+/* Allowing STACK_OF(X509) to be a null pointer for methods
+   such as X509_STORE_CTX_init, which uses a NULL STACK_OF(X509)
+   to signify no untrsuted chain will be used.
+*/
+/*%apply Pointer NONNULL { STACK_OF(X509) * };*/
 %apply Pointer NONNULL { BIO * };
 %apply Pointer NONNULL { DH * };
 %apply Pointer NONNULL { RSA * };
@@ -1100,6 +1104,13 @@ int sk_x509_num(STACK_OF(X509) *stack) {
 
 X509 *sk_x509_value(STACK_OF(X509) *stack, int idx) {
     return sk_X509_value(stack, idx);
+}
+
+int sk_x509_crl_num(STACK_OF(X509_CRL) *stack) {
+    return sk_X509_CRL_num(stack);
+}
+X509_CRL *sk_x509_crl_value(STACK_OF(X509_CRL) *stack, int idx) {
+    return sk_X509_CRL_value(stack, idx);
 }
 %}
 

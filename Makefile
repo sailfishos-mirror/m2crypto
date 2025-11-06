@@ -25,15 +25,15 @@ ifeq ($(CUR_VERSION),)
 endif
 
 # Find the most recently built wheel file in the dist directory.
-LATEST_WHEEL := $(firstword $(wildcard dist/[mM]2[Cc]rypto-$(CUR_VERSION)*.whl))
-LATEST_TAR := $(firstword $(wildcard dist/[mM]2[Cc]rypto-$(CUR_VERSION)*.tar.gz))
+LATEST_WHEEL = $(firstword $(wildcard dist/[mM]2[Cc]rypto-$(CUR_VERSION)*.whl))
+LATEST_TAR = $(firstword $(wildcard dist/[mM]2[Cc]rypto-$(CUR_VERSION)*.tar.gz))
 
 # The directory where the package is installed for testing.
-BUILD_LIB_DIR = $(shell find build -maxdepth 1 -type d -name "lib.*")
+BUILD_LIB_DIR = build/lib
 
 # Phony targets are actions, not files. Declaring them prevents conflicts
 # with files of the same name and improves performance.
-.PHONY: all wheel install check clean help
+.PHONY: all wheel install check clean help certs
 
 # The default 'all' target now runs the full build and test cycle.
 all: check ## Build the wheel (if needed), install it locally, and run tests.
@@ -78,9 +78,12 @@ sdist: $(SRC_FILES)
 	$(PYTHON) -mtwine check --strict $(LATEST_TAR)
 	$(PYTHON) -mpyroma --quiet --min=10 $(LATEST_TAR)
 
+certs: install
+	cd tests/crl_data; python3 create_certs_to_revoke.py
+
 # 'check' depends on the package being installed locally.
-check: install ## Run the unit tests.
-	@if [ -z "$(BUILD_LIB_DIR)" ]; then \
+check: certs ## Run the unit tests.
+	@if [ ! -d "$(BUILD_LIB_DIR)" ]; then \
 		echo "Error: Build library directory not found. Run 'make install' first."; \
 		exit 1; \
 	fi

@@ -73,6 +73,12 @@ extern EVP_PKEY *X509_get_pubkey(X509 *);
 extern int X509_set_pubkey(X509 *, EVP_PKEY *);
 %rename(x509_get_issuer_name) X509_get_issuer_name;
 extern X509_NAME *X509_get_issuer_name(X509 *);
+%rename(x509_crl_get_issuer) X509_CRL_get_issuer;
+extern X509_NAME *X509_CRL_get_issuer(X509_CRL *);
+%rename(x509_CRL_get_lastUpdate) X509_CRL_get0_lastUpdate;
+extern const ASN1_TIME *X509_CRL_get0_lastUpdate(const X509_CRL *crl);
+%rename(x509_CRL_get_nextUpdate) X509_CRL_get0_nextUpdate;
+extern const ASN1_TIME *X509_CRL_get0_nextUpdate(const X509_CRL *crl);
 %rename(x509_set_issuer_name) X509_set_issuer_name;
 extern int X509_set_issuer_name(X509 *, X509_NAME *);
 %rename(x509_get_subject_name) X509_get_subject_name;
@@ -554,6 +560,11 @@ ASN1_TIME *x509_get_not_after(X509 *x) {
 
 int x509_sign(X509 *x, EVP_PKEY *pkey, EVP_MD *md) {
     return X509_sign(x, pkey, md);
+}
+
+/* x509_CRL_verify() is a macro */
+int x509_crl_verify(X509_CRL *crl, EVP_PKEY *pkey){
+    return X509_CRL_verify(crl, pkey);
 }
 
 /* x509_gmtime_adj() is a macro. */

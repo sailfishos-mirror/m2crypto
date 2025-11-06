@@ -58,5 +58,8 @@ CA.sh -signreq
 cp newcert.pem ../recipient.pem
 openssl rsa <newkey.pem >../recipient_key.pem
 
+To generate test data for the CRL tests
+cd crl_data
+run: "./create_certs_to_revoke.py"
 
 Finally run the tests and edit for new values.

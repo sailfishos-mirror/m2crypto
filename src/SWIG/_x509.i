@@ -49,6 +49,21 @@ extern X509 *X509_dup(X509 *);
 extern void X509_free(X509 *);
 %rename(x509_crl_free) X509_CRL_free;
 extern void X509_CRL_free(X509_CRL *);
+
+%rename(x509_crl_get_issuer) X509_CRL_get_issuer;
+extern X509_NAME *X509_CRL_get_issuer(const X509_CRL *);
+%rename(x509_crl_set_issuer) X509_CRL_set_issuer_name;
+extern int X509_CRL_set_issuer_name(X509_CRL *, X509_NAME *);
+
+%rename(x509_CRL_get_lastUpdate) X509_CRL_get0_lastUpdate;
+extern const ASN1_TIME *X509_CRL_get0_lastUpdate(const X509_CRL *crl);
+
+%rename(x509_CRL_get_nextUpdate) X509_CRL_get0_nextUpdate;
+extern const ASN1_TIME *X509_CRL_get0_nextUpdate(const X509_CRL *crl);
+
+%rename(x509_crl_verify) X509_CRL_verify;
+extern int X509_CRL_verify(X509_CRL *crl, EVP_PKEY *r);
+
 %rename(x509_crl_new) X509_CRL_new;
 extern X509_CRL * X509_CRL_new();
 %rename(x509_store_ctx_new) X509_STORE_CTX_new;

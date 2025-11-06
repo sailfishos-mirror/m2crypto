@@ -1007,13 +1007,19 @@ class CRLTestCase(unittest.TestCase):
         self.assertEqual(ca_issuer.as_hash(), crl_issuer.as_hash())
 
     def test_get_last_updated(self):
-        expected_lastUpdate = "Jan 19 16:55:58 2012 GMT"
         crl = X509.load_crl("tests/crl_data/certs/revoking_crl.pem")
+        last_update_dt = crl.get_lastUpdate().get_datetime()
+        # Format the datetime object to the expected string format "Nov 26 10:50:25 2025 GMT"
+        # The %Z directive does not output "GMT" directly for UTC, so we append it.
+        expected_lastUpdate = last_update_dt.strftime("%b %d %H:%M:%S %Y UTC").replace("UTC", "GMT")
         self.assertEqual(str(crl.get_lastUpdate()), expected_lastUpdate)
 
     def test_get_next_update(self):
-        expected_nextUpdate = "Jan 18 16:55:58 2015 GMT"
         crl = X509.load_crl("tests/crl_data/certs/revoking_crl.pem")
+        next_update_dt = crl.get_nextUpdate().get_datetime()
+        # Format the datetime object to the expected string format "Nov 26 10:50:25 2025 GMT"
+        # The %Z directive does not output "GMT" directly for UTC, so we append it.
+        expected_nextUpdate = next_update_dt.strftime("%b %d %H:%M:%S %Y UTC").replace("UTC", "GMT")
         self.assertEqual(str(crl.get_nextUpdate()), expected_nextUpdate)
 
 

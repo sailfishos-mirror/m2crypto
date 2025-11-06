@@ -86,6 +86,9 @@ check: install ## Run the unit tests.
 	fi
 	PYTHONPATH="$(BUILD_LIB_DIR)" $(PYTHON) -m unittest discover -b -v tests
 
+mypy:
+	python3 -mmypy src/M2Crypto
+
 # 'clean' is a manual operation to remove all generated files.
 clean: ## Remove all generated files and build artifacts.
 	rm -rf build src/m2crypto.egg-info $(LATEST_WHEEL) $(LATEST_TAR) $(WHEEL_SENTINEL)

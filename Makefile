@@ -21,7 +21,7 @@ WHEEL_SENTINEL = $(DIST_DIR)/.wheel_built
 # Depends on blackening of that file to have all values covered by doublequotes
 CUR_VERSION = $(shell awk -F'"' '/^__version__/ { print $$2 }' src/M2Crypto/__init__.py)
 ifeq ($(CUR_VERSION),)
-    $(error Cannot extract version from src/M2Crypto/__init__.py)
+$(error Cannot extract version from src/M2Crypto/__init__.py)
 endif
 
 # Find the most recently built wheel file in the dist directory.
@@ -33,7 +33,7 @@ BUILD_LIB_DIR = $(shell find build -maxdepth 1 -type d -name "lib.*")
 
 # Phony targets are actions, not files. Declaring them prevents conflicts
 # with files of the same name and improves performance.
-.PHONY: all wheel install check clean help
+.PHONY: all wheel install check clean help certs
 
 # The default 'all' target now runs the full build and test cycle.
 all: check ## Build the wheel (if needed), install it locally, and run tests.
@@ -52,8 +52,7 @@ $(WHEEL_SENTINEL): $(SRC_FILES)
 		--no-cache-dir \
 		--no-clean \
 		--no-build-isolation \
-		--wheel-dir $(DIST_DIR)/ \
-		--editable .
+		--wheel-dir $(DIST_DIR)/ .
 	@touch $@
 
 # 'install' depends on the wheel being created first.
@@ -78,6 +77,9 @@ sdist: $(SRC_FILES)
 	$(PYTHON) -mtwine check --strict $(LATEST_TAR)
 	$(PYTHON) -mpyroma --quiet --min=10 $(LATEST_TAR)
 
+certs: install
+	cd tests/crl_data; python3 create_certs_to_revoke.py
+
 # 'check' depends on the package being installed locally.
 check: install ## Run the unit tests.
 	@if [ -z "$(BUILD_LIB_DIR)" ]; then \
@@ -85,6 +87,13 @@ check: install ## Run the unit tests.
 		exit 1; \
 	fi
 	PYTHONPATH="$(BUILD_LIB_DIR)" $(PYTHON) -m unittest discover -b -v tests
+
+doctest: install
+	@if [ -z "$(BUILD_LIB_DIR)" ]; then ; \
+		echo "Error: Build library directory not found. Run 'make install' first."; \
+		exit 1; \
+	fi
+	PYTHONPATH="$(BUILD_LIB_DIR)" make -C doc doctest
 
 mypy:
 	python3 -mmypy src/M2Crypto

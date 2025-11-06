@@ -1296,16 +1296,18 @@ class X509_Store(object):
         return ret
 
 
-def load_crl_string(crl_string):
+def load_crl_string(crl_string: Union[str, bytes]) -> 'CRL':
     """
     Load CRL from a string.
 
-    @type string: string
-    @param string: String containing a CRL in PEM format.
+    @type crl_string: str or bytes
+    @param crl_string: String or bytes containing a CRL in PEM format.
 
-    @rtype: M2Crypto.X509.X509_CRL
-    @return: M2Crypto.X509.X509_CRL object.
+    @rtype: M2Crypto.X509.CRL
+    @return: M2Crypto.X509.CRL object.
     """
+    if isinstance(crl_string, str):
+        crl_string = crl_string.encode('utf-8')
     bio = BIO.MemoryBuffer(crl_string)
     cptr = m2.x509_crl_read_pem(bio._ptr())
     if cptr is None:
@@ -1596,19 +1598,19 @@ class CRL(object):
         """
         Return the lastUpdate
 
-        @rtype: ASN1.ASN1_UTCTIME
+        @rtype: ASN1.ASN1_TIME
         @return: Time value of the last update
         """
-        return ASN1.ASN1_UTCTIME(m2.x509_CRL_get_lastUpdate(self.crl))
+        return ASN1.ASN1_TIME(m2.x509_CRL_get_lastUpdate(self.crl))
 
     def get_nextUpdate(self):
         """
         Return the nextUpdate
 
-        @rtype: ASN1.ASN1_UTCTIME
+        @rtype: ASN1.ASN1_TIME
         @return: Time value of the next update
         """
-        return ASN1.ASN1_UTCTIME(m2.x509_CRL_get_nextUpdate(self.crl))
+        return ASN1.ASN1_TIME(m2.x509_CRL_get_nextUpdate(self.crl))
 
     def _ptr(self):
         return self.crl

@@ -2,6 +2,9 @@ stages:
   - build
   - deploy
 
+variables:
+  PIP_BREAK_SYSTEM_PACKAGES_OPTION: '--break-system-packages'
+
 include: '/.gitlab-ci-windows.yml'
 
 
@@ -9,9 +12,9 @@ include: '/.gitlab-ci-windows.yml'
   script:
     - mkdir -p $HOME/.local/bin
     - export PATH=$PATH:$HOME/.local/bin
-    - python3 -mpip install --break-system-packages --user -r dev-requirements.txt
+    - python3 -mpip install $PIP_BREAK_SYSTEM_PACKAGES_OPTION --user -r dev-requirements.txt
     - python3 -mpip wheel --verbose --no-cache-dir --no-clean --no-build-isolation --wheel-dir dist/ --editable .
-    - python3 -mpip install --break-system-packages -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/[mM]2[cC]rypto*.whl
+    - python3 -mpip install $PIP_BREAK_SYSTEM_PACKAGES_OPTION -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/[mM]2[cC]rypto*.whl
     - export PYTHONPATH=$(readlink -f build/lib.*)
     - python3 -mdoctest -v src/M2Crypto/SSL/Checker.py
     - python3 -munittest discover -b -v tests
@@ -95,10 +98,10 @@ python3-doctest:
     script:
         - mkdir -p $HOME/.local/bin
         - export PATH=$PATH:$HOME/.local/bin
-        - python3 -mpip install --break-system-packages --user -r dev-requirements.txt
+        - python3 -mpip install $PIP_BREAK_SYSTEM_PACKAGES_OPTION --user -r dev-requirements.txt
         - python3 -mpip wheel --verbose --no-cache-dir --no-clean --no-build-isolation --wheel-dir dist/ --editable .
-        - python3 -mpip install --break-system-packages -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/[mM]2[cC]rypto*.whl
-        - python3 -mpip install --break-system-packages --user -r doc/requirements.txt
+        - python3 -mpip install $PIP_BREAK_SYSTEM_PACKAGES_OPTION -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/[mM]2[cC]rypto*.whl
+        - python3 -mpip install $PIP_BREAK_SYSTEM_PACKAGES_OPTION --user -r doc/requirements.txt
         - PYTHONPATH=$(readlink -f build/lib.*) make -C doc/ doctest
 
 
@@ -136,6 +139,8 @@ fedora-rawhide:
 
 leap:
     extends: .common_python_build_steps
+    variables:
+      PIP_BREAK_SYSTEM_PACKAGES_OPTION: ''
     # image: registry.suse.com/bci/bci-base:latest
     image: opensuse/leap
     rules:
@@ -186,7 +191,7 @@ build-sdist:
     script:
         - mkdir -p $HOME/.local/bin
         - export PATH=$PATH:$HOME/.local/bin
-        - python3 -mpip install --break-system-packages --user -r dev-requirements.txt
+        - python3 -mpip install $PIP_BREAK_SYSTEM_PACKAGES_OPTION --user -r dev-requirements.txt
         - python3 -mbuild . --sdist
 
 

@@ -48,29 +48,6 @@ m2.x509_init(X509Error)
 V_OK = m2.X509_V_OK  # type: int
 
 
-def x509_store_default_cb(ok, ctx):
-    # type: (int, X509_Store_Context) -> int
-    return ok
-
-
-def new_extension(name, value, critical=0, _pyfree=1):
-    # type: (str, bytes, int, int) -> X509_Extension
-    """
-    Create new X509_Extension instance.
-    """
-    if name == "subjectKeyIdentifier" and value.strip("0123456789abcdefABCDEF:") != "":
-        raise ValueError("value must be precomputed hash")
-    ctx = m2.x509v3_set_nconf()
-    x509_ext_ptr = m2.x509v3_ext_conf(None, ctx, name, value)
-    if x509_ext_ptr is None:
-        raise X509Error(
-            "Cannot create X509_Extension with name '%s' and value '%s'" % (name, value)
-        )
-    x509_ext = X509_Extension(x509_ext_ptr, _pyfree)
-    x509_ext.set_critical(critical)
-    return x509_ext
-
-
 class X509_Extension(object):
     """
     X509 Extension
@@ -185,12 +162,39 @@ def new_extension(
             "Cannot create 'subjectKeyIdentifier:hash' without a public key (pkey) context."
         )
 
+    # Enhanced handling for authorityKeyIdentifier extension
+    if name == "authorityKeyIdentifier":
+        # authorityKeyIdentifier requires issuer context which we don't have
+        # Provide a helpful error message instead of the cryptic OpenSSL error
+        if value.startswith("keyid:"):
+            m2.x509v3_ctx_free(ctx)
+            raise X509Error(
+                "Cannot create 'authorityKeyIdentifier' with keyid without issuer certificate context. "
+                "This extension requires the issuer certificate to be set in the X509V3_CTX. "
+                "For testing purposes, consider using other extensions like 'basicConstraints' or "
+                "'subjectAltName' that don't require issuer context."
+            )
+        elif value.startswith("issuer"):
+            m2.x509v3_ctx_free(ctx)
+            raise X509Error(
+                "Cannot create 'authorityKeyIdentifier' with issuer without issuer certificate context. "
+                "This extension requires the issuer certificate to be set in the X509V3_CTX."
+            )
+
+    # Pre-process hex strings to remove colons for better compatibility
+    # This helps with extensions like subjectKeyIdentifier when provided as hex
+    if name == "subjectKeyIdentifier" and ":" in value:
+        # Remove colons from hex strings for better OpenSSL compatibility
+        processed_value = value.replace(":", "")
+    else:
+        processed_value = value
+
     if pkey is not None:
         m2.X509V3_CTX_set_nconf_pkey(ctx, pkey._ptr())
-    x509_ext_ptr = m2.x509v3_ext_conf(None, ctx, name, str(value))
+    x509_ext_ptr = m2.x509v3_ext_conf(None, ctx, name, str(processed_value))
     if x509_ext_ptr is None:
         raise X509Error(
-            "Cannot create X509_Extension with name '%s' and value '%s'" % (name, value)
+            "Cannot create X509_Extension with name '%s' and value '%s'" % (name, processed_value)
         )
     x509_ext = X509_Extension(x509_ext_ptr, _pyfree)
     x509_ext.set_critical(critical)

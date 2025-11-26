@@ -355,6 +355,22 @@ class Connection:
                 raise SSLVerificationError("post connection check failed")
         return ret
 
+    def handshake_on_existing_socket(self, server_side: bool = False) -> Optional[int]:
+        """
+        Perform SSL handshake on an existing socket.
+        This is useful for implementing STARTTLS.
+
+        :param server_side: Whether to perform handshake on the server side.
+        :return: same as accept_ssl or connect_ssl
+        """
+        self.setup_ssl()
+        if server_side:
+            self.set_accept_state()
+            return self.accept_ssl()
+        else:
+            self.set_connect_state()
+            return self.connect_ssl()
+
     def shutdown(self, how: int) -> None:
         m2.ssl_set_shutdown1(self.ssl, how)
 

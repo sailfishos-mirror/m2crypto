@@ -13,6 +13,7 @@ packages:
   - softhsm
   - opensc
   - python3-setuptools
+  - python3-build
   - python3-twisted
   - python3-irc
   - python3-docutils
@@ -29,6 +30,7 @@ tasks:
      echo "BUILD_SUBMITTER = $BUILD_SUBMITTER"
      export PATH=$PATH:$HOME/.local/bin
      python3 -mpip install --user -r dev-requirements.txt
+     python3 -mbuild --sdist --no-isolation .
      python3 -mpip wheel --verbose  --no-cache-dir --no-clean --no-build-isolation --wheel-dir dist/ --editable .
      find . -name \*.c
      find . -name \*.whl -o -name \*.tar.gz

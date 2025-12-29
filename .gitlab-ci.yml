@@ -97,14 +97,15 @@ python3-doctest:
     - .irc_notification
   before_script:
     - apt-get update -q -y
-    - apt-get install -y swig libssl-dev python3-dev python3-pip openssl python3-setuptools python3-twisted python3-pip python3-irc python3-sphinx python3-sphinx-rtd-theme python3-cryptography
+    - apt-get install -y swig libssl-dev python3-dev python3-pip openssl python3-setuptools python3-twisted
     - python3 -mpip install $PIP_BREAK_SYSTEM_PACKAGES_OPTION --user -r dev-requirements.txt
+    - python3 -mpip install $PIP_BREAK_SYSTEM_PACKAGES_OPTION --user sphinx sphinx-rtd-theme cryptography irc
   script:
     - *common_setup_script
     - *common_python_build_script
     - |
       source $CI_PROJECT_DIR/.env_setup
-      PYTHONPATH=$(readlink -f "$BUILD_LIB_DIR") make -C doc/ doctest
+      PYTHONPATH=$(readlink -f "$BUILD_LIB_DIR") make -C doc/ doctest SPHINXBUILD="python3 -m sphinx"
 
 fedora:
   image: quay.io/fedora/fedora:latest

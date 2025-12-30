@@ -17,7 +17,7 @@ include: '/.gitlab-ci-windows.yml'
 .common_python_build:
   script: &common_python_build_script
     - |
-      python3 -mpip wheel --verbose --no-cache-dir --no-clean --no-build-isolation --no-index --wheel-dir dist/ .
+      python3 -mpip wheel --verbose --no-cache-dir --no-clean --no-build-isolation --wheel-dir dist/ .
       mkdir -p build/lib
       BUILD_LIB_DIR="build/lib"
       python3 -mpip install $PIP_BREAK_SYSTEM_PACKAGES_OPTION -v --upgrade --target "$BUILD_LIB_DIR" --no-compile --ignore-installed --no-deps --no-index dist/[mM]2[cC]rypto*.whl

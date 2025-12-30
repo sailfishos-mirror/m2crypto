@@ -215,7 +215,7 @@ OpenSSL's pseudo-random number generator via M2Crypto::
         return BIO.MemoryBuffer(text)
 
     # Make a MemoryBuffer of the message.
-    buf = makebuf('a sign of our times')
+    buf = makebuf(b'a sign of our times')
 
     # Seed the PRNG.
     Rand.load_file('randpool.dat', -1)
@@ -236,16 +236,16 @@ format, and pretend that our messages are sent and received
 correctly::
 
     # Recreate buf.
-    buf = makebuf('a sign of our times')
+    buf = makebuf(b'a sign of our times')
 
     # Output p7 in mail-friendly format.
     out = BIO.MemoryBuffer()
-    out.write('From: sender@example.dom\n')
-    out.write('To: recipient@example.dom\n')
-    out.write('Subject: M2Crypto S/MIME testing\n')
+    out.write(b'From: sender@example.dom\n')
+    out.write(b'To: recipient@example.dom\n')
+    out.write(b'Subject: M2Crypto S/MIME testing\n')
     s.write(out, p7, buf)
 
-    print(out.read())
+    print(out.read().decode())
 
     # Save the PRNG's state.
     Rand.save_file('randpool.dat')
@@ -363,7 +363,7 @@ We now demonstrate how to generate an S/MIME-encrypted message::
         return BIO.MemoryBuffer(text)
 
     # Make a MemoryBuffer of the message.
-    buf = makebuf('a sign of our times')
+    buf = makebuf(b'a sign of our times')
 
     # Seed the PRNG.
     Rand.load_file('randpool.dat', -1)
@@ -385,12 +385,12 @@ We now demonstrate how to generate an S/MIME-encrypted message::
 
     # Output p7 in mail-friendly format.
     out = BIO.MemoryBuffer()
-    out.write('From: sender@example.dom\n')
-    out.write('To: recipient@example.dom\n')
-    out.write('Subject: M2Crypto S/MIME testing\n')
+    out.write(b'From: sender@example.dom\n')
+    out.write(b'To: recipient@example.dom\n')
+    out.write(b'Subject: M2Crypto S/MIME testing\n')
     s.write(out, p7)
 
-    print(out.read())
+    print(out.read().decode())
 
     # Save the PRNG's state.
     Rand.save_file('randpool.dat')
@@ -479,7 +479,7 @@ Here's how to generate an S/MIME-signed/encrypted message::
         return BIO.MemoryBuffer(text)
 
     # Make a MemoryBuffer of the message.
-    buf = makebuf('a sign of our times')
+    buf = makebuf(b'a sign of our times')
 
     # Seed the PRNG.
     Rand.load_file('randpool.dat', -1)
@@ -511,12 +511,12 @@ Here's how to generate an S/MIME-signed/encrypted message::
 
     # Output p7 in mail-friendly format.
     out = BIO.MemoryBuffer()
-    out.write('From: sender@example.dom\n')
-    out.write('To: recipient@example.dom\n')
-    out.write('Subject: M2Crypto S/MIME testing\n')
+    out.write(b'From: sender@example.dom\n')
+    out.write(b'To: recipient@example.dom\n')
+    out.write(b'Subject: M2Crypto S/MIME testing\n')
     s.write(out, p7)
 
-    print(out.read())
+    print(out.read().decode())
 
     # Save the PRNG's state.
     Rand.save_file('randpool.dat')
@@ -667,16 +667,16 @@ SMTP::
             p7 = s.encrypt(tmp_bio)
 
         out = BIO.MemoryBuffer()
-        out.write('From: %s\r\n' % from_addr)
-        out.write('To: %s\r\n' % string.join(to_addrs, ", "))
-        out.write('Subject: %s\r\n' % subject)
+        out.write(b'From: %s\r\n' % from_addr)
+        out.write(b'To: %s\r\n' % string.join(to_addrs, ", "))
+        out.write(b'Subject: %s\r\n' % subject)
         if encrypt:
             s.write(out, p7)
         else:
             if sign:
                 s.write(out, p7, msg_bio, SMIME.PKCS7_TEXT)
             else:
-                out.write('\r\n')
+                out.write(b'\r\n')
                 out.write(msg)
         out.close()
 

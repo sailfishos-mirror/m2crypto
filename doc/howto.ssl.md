@@ -54,7 +54,7 @@ Twisted SSL connections with M2Crypto.
 ## Secure SSL
 
 It is recommended that you read the book Network Security with OpenSSL
-by John Viega, Matt Messier and Pravir Chandra, ISBN 059600270X.
+by John Viega, Matt Messier and Pravir Chandra, ISBN [059600270X].
 
 Using M2Crypto does not automatically make an SSL connection secure.
 There are various steps that need to be made before we can make that
@@ -129,3 +129,92 @@ and decrypt traffic (provided that it has the appropriate keying
 material)."
 
 ssldump is written by Eric Rescorla.
+
+## HTTPS with PKCS#11 Engine Support
+
+Here is an example of using a PKCS#11 engine with HTTPSConnection
+(without proxy). This example demonstrates how to correctly load the
+engine, certificate, and private key, and associate them with an SSL
+Context.
+
+```python
+from M2Crypto import SSL, httpslib, X509, RSA, m2, Engine
+
+slot_id = "slot_00"
+pin = "1234"
+
+# 'loader' is the dynamic engine used to load the shared object
+loader = Engine.load_dynamic_engine("pkcs11", "c:/tests_python/pkcs11.dll")
+
+# 'pkcs11' is the actual engine instance we want to use
+pkcs11 = Engine.Engine("pkcs11")
+pkcs11.ctrl_cmd_string("MODULE_PATH", "C:/WINDOWS/system32/OcsCryptoki.dll")
+
+# Initialize the PKCS#11 engine explicitly
+pkcs11.init()
+
+# Login (if required by the token/engine)
+pkcs11.ctrl_cmd_string("PIN", pin)
+
+# Load from the PKCS#11 engine, NOT the loader
+cert = pkcs11.load_certificate(slot_id)
+key = pkcs11.load_private_key(slot_id)
+
+ctx = SSL.Context('tlsv1')
+
+# Use the loaded objects (fixed typo: certi -> cert)
+m2.ssl_ctx_use_x509(ctx.ctx, cert.x509)
+m2.ssl_ctx_use_pkey_privkey(ctx.ctx, key.pkey)
+
+ctx.set_verify(SSL.verify_none, depth=1)
+con = httpslib.HTTPSConnection('url', 443, ssl_context=ctx)
+```
+
+## HTTPS via Proxy with Engine Support
+
+When using `ProxyHTTPSConnection` to tunnel HTTPS through a proxy, you
+may need to use an OpenSSL Engine (e.g., for smartcards or HSMs). You
+should configure an `SSL.Context` with the engine and pass it to the
+connection.
+
+Here is an example:
+
+```python
+from M2Crypto import Engine, SSL, httpslib, m2
+
+# Load the dynamic engine and configure it to use the PKCS#11 module
+Engine.load_dynamic()
+e = Engine.Engine('dynamic')
+e.ctrl_cmd_string('SO_PATH', '/path/to/engine.so')
+e.ctrl_cmd_string('ID', 'pkcs11')
+e.ctrl_cmd_string('LIST_ADD', '1')
+e.ctrl_cmd_string('LOAD', None)
+e.ctrl_cmd_string('MODULE_PATH', '/path/to/pkcs11/module.so')
+e.ctrl_cmd_string('PIN', '1234')
+e.init()
+e.set_default(m2.ENGINE_METHOD_ALL)
+
+# Load the client certificate and private key from the smartcard
+# Note: The exact method to load cert/key depends on the engine and key ID format
+cert = e.load_certificate('certificate_id')
+pkey = e.load_private_key('private_key_id', '1234')
+
+# Create an SSL context and configure it to use the client certificate
+ctx = SSL.Context('tlsv1')
+ctx.load_cert_chain(cert, pkey)
+
+# Create a ProxyHTTPSConnection and use it to make a request
+# Ensure you do not call con.connect() manually if you use methods that trigger it (like request())
+con = httpslib.ProxyHTTPSConnection('proxy.example.com', 8080, ssl_context=ctx)
+con.putrequest('GET', 'https://target.example.com/path')
+con.endheaders()
+
+# con.connect() is called implicitly by endheaders/send,
+# or you can call it manually if you haven't sent headers yet.
+# Do NOT call it twice.
+
+res = con.getresponse()
+print(res.read())
+```
+
+[059600270X]: https://meta.wikimedia.org/wiki/Special:BookSources/0321480910

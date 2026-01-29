@@ -1,3 +1,31 @@
+0.47.0 - 2026-02-08
+-------------------
+
+- feat: added full SWIG bindings for the ASN1_UTCTIME
+- refactor(SWIG): adopt Python Buffer Protocol for
+  X509_NAME_ENTRY_set_data
+- fix: allow 64-bit time_t on 32-bit systems in test_is32bit
+- feat(provider): add initial OpenSSL providers support
+- feat: stop supporting 32bit packages on Windows
+- fix: improve detection of OpenSSL on Windows
+- ci: run doctest
+- fix: _matchIPAddress is failing
+- feat: Add degenerate PKCS7 (.p7c) support
+- fix(setup): add `packaging` as a requirement
+- feat(asn1): introduce dedicated ASN1_UTCTIME class
+- feat(CRL): add content of m2crypto-0.21.1-x509_crl.patch
+- refactor(x509): CRL handling and testing
+- feat: add function to provide the equivalent of `openssl ciphers`.
+- fix(X509): refactor new_extension to prevent memory corruption
+- ci: add tests showing the use of M2Crypto for STARTTLS protocol
+- doc: convert documentation to MyST
+- doc: various improvements of documentation
+- revert: remove support for Engine
+- fix(engine): make the compilation of Engine conditional on
+  OPENSSL_NO_ENGINE
+- fix(https): make HTTPS Connection work with Proxy
+- doc: add an example of using HTTPS with PKCS#11 Engine
+
 0.46.2 - 2025-10-02
 -------------------
 

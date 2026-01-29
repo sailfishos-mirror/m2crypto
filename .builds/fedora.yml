@@ -57,17 +57,6 @@ tasks:
   - prepare_artifacts: |
      cd m2crypto
      zip -9rmT artifacts.zip dist/*
-  - readme: |
-     cd m2crypto
-     printf "GIT_REF: %s\n" "${GIT_REF}"
-     python3 -mdocutils --strict README.rst >/dev/null
-     case $GIT_REF in
-        *master*)
-            python3 -mdocutils README.rst \
-              | sed -n '1,/<body>/d;/<\/body>/q;p' \
-              |hut git -r m2crypto update --readme -
-        ;;
-     esac
 artifacts:
   - m2crypto/src/SWIG/_m2crypto_wrap.c
   - m2crypto/artifacts.zip

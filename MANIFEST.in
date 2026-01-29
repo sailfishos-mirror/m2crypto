@@ -16,8 +16,8 @@ recursive-exclude .keys *
 recursive-include system_shadowing *
 
 # include package documentation files
-include INSTALL.rst
-include README.rst
+include INSTALL.md
+include README.md
 include CHANGES
 
 # include Swig-generated files

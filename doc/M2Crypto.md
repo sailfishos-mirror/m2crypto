@@ -1,210 +1,232 @@
-M2Crypto Package
-================
+# M2Crypto Package
 
-:mod:`M2Crypto` Package
------------------------
+## {mod}`M2Crypto` Package
 
+```{eval-rst}
 .. automodule:: M2Crypto.__init__
     :members:
     :undoc-members:
     :show-inheritance:
+```
 
-:mod:`ASN1` Module
-------------------
+## {mod}`ASN1` Module
 
+```{eval-rst}
 .. automodule:: M2Crypto.ASN1
     :members:
     :undoc-members:
     :show-inheritance:
+```
 
-:mod:`AuthCookie` Module
-------------------------
+## {mod}`AuthCookie` Module
 
+```{eval-rst}
 .. automodule:: M2Crypto.AuthCookie
     :members:
     :undoc-members:
     :show-inheritance:
+```
 
-:mod:`BIO` Module
------------------
+## {mod}`BIO` Module
 
+```{eval-rst}
 .. automodule:: M2Crypto.BIO
     :members:
     :undoc-members:
     :show-inheritance:
+```
 
-:mod:`BN` Module
-----------------
+## {mod}`BN` Module
 
+```{eval-rst}
 .. automodule:: M2Crypto.BN
     :members:
     :undoc-members:
     :show-inheritance:
+```
 
-:mod:`DH` Module
-----------------
+## {mod}`DH` Module
 
+```{eval-rst}
 .. automodule:: M2Crypto.DH
     :members:
     :undoc-members:
     :show-inheritance:
+```
 
-:mod:`DSA` Module
------------------
+## {mod}`DSA` Module
 
+```{eval-rst}
 .. automodule:: M2Crypto.DSA
     :members:
     :undoc-members:
     :show-inheritance:
+```
 
-:mod:`EC` Module
-----------------
+## {mod}`EC` Module
 
+```{eval-rst}
 .. automodule:: M2Crypto.EC
     :members:
     :undoc-members:
     :show-inheritance:
+```
 
-:mod:`EVP` Module
------------------
+## {mod}`EVP` Module
 
+```{eval-rst}
 .. automodule:: M2Crypto.EVP
     :members:
     :undoc-members:
     :show-inheritance:
+```
 
-:mod:`Err` Module
------------------
+## {mod}`Err` Module
 
+```{eval-rst}
 .. automodule:: M2Crypto.Err
     :members:
     :undoc-members:
     :show-inheritance:
+```
 
-:mod:`RC4` Module
------------------
+## {mod}`RC4` Module
 
+```{eval-rst}
 .. automodule:: M2Crypto.RC4
     :members:
     :undoc-members:
     :show-inheritance:
+```
 
-:mod:`RSA` Module
------------------
+## {mod}`RSA` Module
 
+```{eval-rst}
 .. automodule:: M2Crypto.RSA
     :members:
     :undoc-members:
     :show-inheritance:
+```
 
-:mod:`Rand` Module
-------------------
+## {mod}`Rand` Module
 
+```{eval-rst}
 .. automodule:: M2Crypto.Rand
     :members:
     :undoc-members:
     :show-inheritance:
+```
 
-:mod:`SMIME` Module
--------------------
+## {mod}`SMIME` Module
 
+```{eval-rst}
 .. automodule:: M2Crypto.SMIME
     :members:
     :undoc-members:
     :show-inheritance:
+```
 
-:mod:`X509` Module
-------------------
+## {mod}`X509` Module
 
+```{eval-rst}
 .. automodule:: M2Crypto.X509
     :members:
     :undoc-members:
     :show-inheritance:
+```
 
-:mod:`callback` Module
-----------------------
+## {mod}`callback` Module
 
+```{eval-rst}
 .. automodule:: M2Crypto.callback
     :members:
     :undoc-members:
     :show-inheritance:
+```
 
-:mod:`ftpslib` Module
----------------------
+## {mod}`ftpslib` Module
 
+```{eval-rst}
 .. automodule:: M2Crypto.ftpslib
     :members:
     :undoc-members:
     :show-inheritance:
+```
 
-:mod:`httpslib` Module
-----------------------
+## {mod}`httpslib` Module
 
+```{eval-rst}
 .. automodule:: M2Crypto.httpslib
     :members:
     :undoc-members:
     :show-inheritance:
+```
 
-:mod:`m2` Module
-----------------
+## {mod}`m2` Module
 
+```{eval-rst}
 .. automodule:: M2Crypto.m2
     :members:
     :undoc-members:
     :show-inheritance:
+```
 
-:mod:`m2crypto` Module
-----------------------
+## {mod}`m2crypto` Module
 
+```{eval-rst}
 .. automodule:: M2Crypto.m2crypto
     :members:
     :undoc-members:
     :show-inheritance:
+```
 
-:mod:`m2urllib` Module
-----------------------
+## {mod}`m2urllib` Module
 
+```{eval-rst}
 .. automodule:: M2Crypto.m2urllib
     :members:
     :undoc-members:
     :show-inheritance:
+```
 
-:mod:`m2urllib2` Module
------------------------
+## {mod}`m2urllib2` Module
 
+```{eval-rst}
 .. automodule:: M2Crypto.m2urllib2
     :members:
     :undoc-members:
     :show-inheritance:
+```
 
-:mod:`m2xmlrpclib` Module
--------------------------
+## {mod}`m2xmlrpclib` Module
 
+```{eval-rst}
 .. automodule:: M2Crypto.m2xmlrpclib
     :members:
     :undoc-members:
     :show-inheritance:
+```
 
-:mod:`threading` Module
------------------------
+## {mod}`threading` Module
 
+```{eval-rst}
 .. automodule:: M2Crypto.threading
     :members:
     :undoc-members:
     :show-inheritance:
+```
 
-:mod:`util` Module
-------------------
+## {mod}`util` Module
 
+```{eval-rst}
 .. automodule:: M2Crypto.util
     :members:
     :undoc-members:
     :show-inheritance:
+```
 
-Subpackages
------------
+## Subpackages
 
-.. toctree::
-
-    M2Crypto.SSL
-
+```{toctree}
+M2Crypto.SSL
+```

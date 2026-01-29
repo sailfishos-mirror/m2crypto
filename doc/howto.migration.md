@@ -1,35 +1,33 @@
-:orphan:
+---
+orphan: true
+---
 
-.. _howto-migration:
+(howto-migration)=
 
-HOWTO: Migrating from M2Crypto to PyCA/cryptography
-###################################################
+# HOWTO: Migrating from M2Crypto to PyCA/cryptography
 
-Introduction
-************
+## Introduction
 
-`PyCA/cryptography <https://github.com/pyca/cryptography>`__ is a
+[PyCA/cryptography](https://github.com/pyca/cryptography) is a
 package which provides cryptographic recipes and primitives to Python
 developers.
 
 This document has instructions on how to migrate from M2Crypto to
 PyCA/cryptography for features that are currently supported.
 
-S/MIME
-******
+## S/MIME
 
-Signing
-=======
+### Signing
 
 If your application does S/MIME signing, it can be migrated to
-`PyCA/cryptography <https://github.com/pyca/cryptography>`__ by using
-the ``PKCS7`` API, particularly the ``PKCS7SignatureBuilder`` class. Below
+[PyCA/cryptography](https://github.com/pyca/cryptography) by using
+the `PKCS7` API, particularly the `PKCS7SignatureBuilder` class. Below
 is an example migration showcasing the equivalent APIs and parameters in
-`PyCA/cryptography <https://github.com/pyca/cryptography>`__.
+[PyCA/cryptography](https://github.com/pyca/cryptography).
 
-M2Crypto
---------
+#### M2Crypto
 
+```{eval-rst}
 .. testcode::
 
     from M2Crypto import BIO, SMIME
@@ -43,16 +41,19 @@ M2Crypto
     buf = BIO.MemoryBuffer(data)
     s.write(out, p7, buf)
     print(out.read())
+```
 
+```{eval-rst}
 .. testoutput::
    :hide:
 
    b'MIME-Version: 1.0\nContent-Type: multipart/signed;...
 
+```
 
-PyCA/cryptography
------------------
+#### PyCA/cryptography
 
+```{eval-rst}
 .. testcode::
 
     from cryptography.hazmat.primitives.serialization import load_pem_private_key, pkcs7, Encoding
@@ -73,26 +74,27 @@ PyCA/cryptography
         Encoding.SMIME, [pkcs7.PKCS7Options.DetachedSignature]
     )
     print(output)
+```
 
+```{eval-rst}
 .. testoutput::
    :hide:
 
    b'MIME-Version: 1.0\r\nContent-Type: multipart/signed;...
 
+```
 
-RSA
-***
+## RSA
 
 Following are migration examples for common operations with RSA key pairs.
-The documentation for the relevant ``PyCA/cryptography`` APIs can be found
-`here <https://cryptography.io/en/latest/hazmat/primitives/asymmetric/rsa/>`__.
+The documentation for the relevant `PyCA/cryptography` APIs can be found
+[here](https://cryptography.io/en/latest/hazmat/primitives/asymmetric/rsa/).
 
-Signing and verifying
-=====================
+### Signing and verifying
 
-M2Crypto
---------
+#### M2Crypto
 
+```{eval-rst}
 .. testcode::
 
     from M2Crypto import RSA
@@ -105,16 +107,19 @@ M2Crypto
     assert key.verify(digest, signature, algo='sha1') == 1
 
     print(signature.hex())
+```
 
+```{eval-rst}
 .. testoutput::
    :hide:
 
    12068af2140bb2907fc0086872ae...
 
+```
 
-PyCA/cryptography
------------------
+#### PyCA/cryptography
 
+```{eval-rst}
 .. testcode::
 
     from cryptography.hazmat.primitives.asymmetric import padding
@@ -129,19 +134,21 @@ PyCA/cryptography
     public_key.verify(signature, message, padding.PKCS1v15(), hashes.SHA1())
 
     print(signature.hex())
+```
 
+```{eval-rst}
 .. testoutput::
    :hide:
 
    12068af2140bb2907fc0086872ae...
 
+```
 
-Encrypting and decrypting
-=========================
+### Encrypting and decrypting
 
-M2Crypto
---------
+#### M2Crypto
 
+```{eval-rst}
 .. testcode::
 
     from M2Crypto import RSA
@@ -153,10 +160,11 @@ M2Crypto
 
     assert plain_text == message
 
+```
 
-PyCA/cryptography
------------------
+#### PyCA/cryptography
 
+```{eval-rst}
 .. testcode::
 
     from cryptography.hazmat.primitives.asymmetric import padding
@@ -171,20 +179,19 @@ PyCA/cryptography
 
     assert plain_text == message
 
+```
 
-X.509 certificates
-******************
+## X.509 certificates
 
 Following are migration examples for common operations with X.509 certificates.
-The documentation for the relevant ``PyCA/cryptography`` APIs can be found
-`here <https://cryptography.io/en/latest/x509/>`__.
+The documentation for the relevant `PyCA/cryptography` APIs can be found
+[here](https://cryptography.io/en/latest/x509/).
 
-Loading and examining certificates
-==================================
+### Loading and examining certificates
 
-M2Crypto
---------
+#### M2Crypto
 
+```{eval-rst}
 .. testcode::
 
     from M2Crypto import X509
@@ -193,7 +200,9 @@ M2Crypto
     print(cert.get_subject())
     print(cert.get_not_before())
     print(cert.get_not_after())
+```
 
+```{eval-rst}
 .. testoutput::
    :hide:
 
@@ -201,10 +210,11 @@ M2Crypto
    /C=US/ST=California/O=M2Crypto/CN=X509
    Apr 22 14:50:27 2025 GMT
    Apr 20 14:50:27 2035 GMT
+```
 
-PyCA/cryptography
------------------
+#### PyCA/cryptography
 
+```{eval-rst}
 .. testcode::
 
     from cryptography import x509
@@ -215,7 +225,9 @@ PyCA/cryptography
     print(cert.not_valid_before_utc)
     print(cert.not_valid_after_utc)
 
+```
 
+```{eval-rst}
 .. testoutput::
    :hide:
 
@@ -224,19 +236,19 @@ PyCA/cryptography
    2025-04-22 14:50:27+00:00
    2035-04-20 14:50:27+00:00
 
+```
 
-Signature verification
-==================================
+### Signature verification
+
 Note that this example only checks that the signature of a certificate
 matches a public key, as described in
-`the OpenSSL documentation <https://www.openssl.org/docs/man3.2/man3/X509_verify.html>`__.
+[the OpenSSL documentation](https://www.openssl.org/docs/man3.2/man3/X509_verify.html).
 For complete X.509 path validation see
-`PyCA/cryptography's X.509 verification module <https://cryptography.io/en/latest/x509/verification>`__.
+[PyCA/cryptography's X.509 verification module](https://cryptography.io/en/latest/x509/verification).
 
+#### M2Crypto
 
-M2Crypto
---------
-
+```{eval-rst}
 .. testcode::
 
     from M2Crypto import X509
@@ -244,10 +256,11 @@ M2Crypto
     cacert = X509.load_cert("../tests/ca.pem")
     assert cert.verify(cacert.get_pubkey()) == 1
 
+```
 
-PyCA/cryptography
------------------
+#### PyCA/cryptography
 
+```{eval-rst}
 .. testcode::
 
     from cryptography.x509 import load_pem_x509_certificate
@@ -256,4 +269,4 @@ PyCA/cryptography
     with open('../tests/x509.pem', 'rb') as cert_data:
         cert = load_pem_x509_certificate(cert_data.read())
     cert.verify_directly_issued_by(cacert)
-
+```

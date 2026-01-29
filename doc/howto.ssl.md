@@ -1,28 +1,28 @@
-:orphan:
+---
+orphan: true
+---
 
-.. _howto-ssl:
+(howto-ssl)=
 
-HOWTO: Programming SSL in Python with M2Crypto
-##############################################
+# HOWTO: Programming SSL in Python with M2Crypto
+
+```{eval-rst}
 
 :author: Pheng Siong Ng <ngps@netmemetic.com> and Heikki Toivonen (heikki@osafoundation.org)
 :copyright: © 2000, 2001 by Ng Pheng Siong,
             portions © 2006 by Open Source Applications Foundation
+```
 
-Introduction
-============
+## Introduction
 
-`M2Crypto <https://sr.ht/~mcepl/m2crypto/>`__ is a `Python
-<http://www.python.org>`__ interface to `OpenSSL
-<http://www.openssl.org>`__. It makes available to the Python
+[M2Crypto](https://sr.ht/~mcepl/m2crypto/) is a [Python](http://www.python.org) interface to [OpenSSL](http://www.openssl.org). It makes available to the Python
 programmer SSL functionality to implement clients and servers,
 S/MIME v2, RSA, DSA, DH, symmetric ciphers, message digests and
 HMACs.
 
 This document demonstrates programming HTTPS with M2Crypto.
 
-A bit of history
-================
+## A bit of history
 
 M2Crypto was created during the time of Python 1.5, which features a
 module httplib providing client-side HTTP functionality. M2Crypto sports
@@ -41,18 +41,17 @@ is that M2Crypto's version accepts an M2Crypto.SSL.Context instance as a
 parameter, whereas Python 2.x's SSL support does not permit Pythonic
 control of the SSL context.
 
-Within the implementations, Python's ``HTTPSConnection`` employs a
-``FakeSocket`` object, which collects all input from the SSL connection
-before returning it to the application as a ``StringIO`` buffer, whereas
-M2Crypto's ``HTTPSConnection`` uses a buffering
-``M2Crypto.BIO.IOBuffer`` object that works over the underlying
+Within the implementations, Python's `HTTPSConnection` employs a
+`FakeSocket` object, which collects all input from the SSL connection
+before returning it to the application as a `StringIO` buffer, whereas
+M2Crypto's `HTTPSConnection` uses a buffering
+`M2Crypto.BIO.IOBuffer` object that works over the underlying
 M2Crypto.SSL.Connection directly.
 
 Since then M2Crypto has gained a Twisted wrapper that allows securing
 Twisted SSL connections with M2Crypto.
 
-Secure SSL
-==========
+## Secure SSL
 
 It is recommended that you read the book Network Security with OpenSSL
 by John Viega, Matt Messier and Pravir Chandra, ISBN 059600270X.
@@ -60,14 +59,16 @@ by John Viega, Matt Messier and Pravir Chandra, ISBN 059600270X.
 Using M2Crypto does not automatically make an SSL connection secure.
 There are various steps that need to be made before we can make that
 claim. Let's see how a simple client can establish a secure
-connection::
+connection:
 
-    ctx = SSL.Context()
-    ctx.set_verify(SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, depth=9)
-    if ctx.load_verify_locations('ca.pem') != 1: raise Exception('No CA certs')
-    s = SSL.Connection(ctx)
-    s.connect(server_address)
-    # Normal protocol (for example HTTP) commands follow
+```
+ctx = SSL.Context()
+ctx.set_verify(SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, depth=9)
+if ctx.load_verify_locations('ca.pem') != 1: raise Exception('No CA certs')
+s = SSL.Connection(ctx)
+s.connect(server_address)
+# Normal protocol (for example HTTP) commands follow
+```
 
 The first line creates an SSL context. The defaults allow any SSL
 version (except SSL version 2 which has known weaknesses) and sets the
@@ -82,11 +83,11 @@ long in practice.
 The third line loads the allowed root (certificate authority or CA)
 certificates. Most Linux distributions come with CA certificates in
 suitable format. You could also download the
-`certdata.txt <http://mxr.mozilla.org/seamonkey/source//security/nss/lib/ckfw/builtins/certdata.txt?raw=1>`__
+[certdata.txt](http://mxr.mozilla.org/seamonkey/source//security/nss/lib/ckfw/builtins/certdata.txt?raw=1)
 file from the
-`NSS <http://www.mozilla.org/projects/security/pki/nss/>`__ project and
+[NSS](http://www.mozilla.org/projects/security/pki/nss/) project and
 convert it with the little M2Crypto utility script
-`demo/x509/certdata2pem.py <http://svn.osafoundation.org/m2crypto/trunk/demo/x509/certdata2pem.py>`__.
+[demo/x509/certdata2pem.py](http://svn.osafoundation.org/m2crypto/trunk/demo/x509/certdata2pem.py).
 
 The fourth line creates an SSL connection object with the secure
 context.
@@ -104,19 +105,17 @@ SSL servers are different in that they typically do not require the
 client to send a certificate, so there is usually no certificate
 checking. Also, it is typically useless to perform host name checking.
 
-Code Samples
-============
+## Code Samples
 
 The best samples of how to use the various SSL objects are in the tests
-directory, and the test\_ssl.py file specifically. There are additional
+directory, and the test_ssl.py file specifically. There are additional
 samples in the demo directory, but they are not quaranteed to be up to
 date.
 
 NOTE: The tests and demos may not be secure as is. Use the information
 above on how to make them secure.
 
-ssldump
-=======
+## ssldump
 
 ssldump "is an SSLv3/TLS network protocol analyser. It identifies TCP
 connections on the chosen network interface and attempts to interpret

@@ -99,7 +99,7 @@ python3-doctest:
     - apt-get update -q -y
     - apt-get install -y swig libssl-dev python3-dev python3-pip openssl python3-setuptools python3-twisted
     - python3 -mpip install $PIP_BREAK_SYSTEM_PACKAGES_OPTION --user -r dev-requirements.txt
-    - python3 -mpip install $PIP_BREAK_SYSTEM_PACKAGES_OPTION --user sphinx sphinx-rtd-theme cryptography irc
+    - python3 -mpip install $PIP_BREAK_SYSTEM_PACKAGES_OPTION --user sphinx sphinx-rtd-theme myst-parser cryptography irc
   script:
     - *common_setup_script
     - *common_python_build_script

@@ -95,6 +95,9 @@ doctest: install
 	fi
 	PYTHONPATH="$(BUILD_LIB_DIR)" make -C doc doctest
 
+doc: install
+	PYTHONPATH="$$(readlink -f $(BUILD_LIB_DIR))" make -C doc html
+
 mypy:
 	python3 -mmypy src/M2Crypto
 

@@ -14,7 +14,6 @@
 # opening files for reading, and listing directories, should
 # return a producer.
 
-from __future__ import print_function
 
 
 class abstract_filesystem:

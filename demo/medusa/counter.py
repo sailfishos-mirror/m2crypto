@@ -12,7 +12,6 @@
 # method, the use of long arithmetic is a reminder that the counter
 # will overflow.
 
-from __future__ import print_function
 
 
 class counter:

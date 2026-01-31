@@ -12,7 +12,6 @@
 #   ReadEvent
 #   WriteEvent
 #
-from __future__ import print_function
 
 import sys, re, time, thread, os
 import getopt

@@ -25,7 +25,6 @@
 # CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 # ======================================================================
 
-from __future__ import print_function
 
 """Basic infrastructure for asynchronous socket service clients and servers.
 

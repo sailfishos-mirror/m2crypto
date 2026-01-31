@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
 
 """Demo SSL client #1 for the HOWTO.
 

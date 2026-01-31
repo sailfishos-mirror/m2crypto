@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
 
 """Demonstration of M2Crypto.xmlrpclib2.
 

@@ -1,4 +1,3 @@
-from __future__ import print_function
 
 """Server demonstration of M2Crypto.xmlrpclib2.
 

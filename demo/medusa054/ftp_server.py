@@ -17,7 +17,6 @@
 # vestigial anyway.  I've attempted to include the most commonly-used
 # commands, using the feature set of wu-ftpd as a guide.
 
-from __future__ import print_function
 
 import asyncore
 import asynchat

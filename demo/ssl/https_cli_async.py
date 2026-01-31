@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
 
 """Demo for client-side ssl_dispatcher usage. Note that connect()
 is blocking. (Need fix?)

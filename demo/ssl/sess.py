@@ -1,4 +1,3 @@
-from __future__ import print_function
 
 """M2Crypto.SSL.Session client demo: This program requests a URL from
 a HTTPS server, saves the negotiated SSL session id, parses the HTML

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
 
 """An M2Crypto implementation of OpenSSL's s_client.
 

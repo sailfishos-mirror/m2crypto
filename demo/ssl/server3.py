@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
 
 """
 server3 from the book 'Network Security with OpenSSL', but modified to

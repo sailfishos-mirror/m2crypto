@@ -11,7 +11,6 @@
 #
 ##############################################################################
 
-from __future__ import print_function
 
 """Zope 2 ZServer start-up file
 

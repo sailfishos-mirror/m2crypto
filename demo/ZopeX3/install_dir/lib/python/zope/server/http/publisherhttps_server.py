@@ -7,7 +7,6 @@
 #
 ##############################################################################
 
-from __future__ import print_function
 
 """HTTPS Server that uses the Zope Publisher for executing a task.
 

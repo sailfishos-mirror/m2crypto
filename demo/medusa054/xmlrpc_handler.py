@@ -5,7 +5,6 @@
 
 # Based on "xmlrpcserver.py" by Fredrik Lundh (fredrik@pythonware.com)
 
-from __future__ import print_function
 
 VERSION = "$Id$"
 

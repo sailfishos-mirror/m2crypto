@@ -1,4 +1,3 @@
-from __future__ import print_function
 
 """Support routines for the various SSL 'echo' servers.
 

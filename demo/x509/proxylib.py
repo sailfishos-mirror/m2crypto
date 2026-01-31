@@ -6,7 +6,6 @@
 # All rights reserved.
 ############################################################################
 
-from __future__ import print_function
 
 """
 API to generated proxy certificates

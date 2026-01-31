@@ -1,4 +1,3 @@
-from __future__ import print_function
 
 """M2Crypto.SSL.Session client demo2: This program creates two sockets, each
 bound to a different local address. The first creates an SSL connection, the

@@ -1,6 +1,5 @@
 #!/usr/bin/env python2.0
 
-from __future__ import print_function
 
 """Demonstrates the use of m2.bio_set_mem_eof_return().
 Copyright (c) 1999-2003 Ng Pheng Siong. All rights reserved."""

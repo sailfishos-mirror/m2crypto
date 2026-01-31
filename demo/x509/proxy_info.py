@@ -3,7 +3,6 @@
 # Matt Rodriguez, LBNL MKRodriguez@lbl.gov
 ############################################################################
 
-from __future__ import print_function
 
 """
 script that displays information about a proxy certificate

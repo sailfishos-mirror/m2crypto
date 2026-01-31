@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
 
 """
 Small utility to convert the Mozilla-format certificates

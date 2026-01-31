@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
 
 """pgpstep - steps through a pgp2 packet stream.
 

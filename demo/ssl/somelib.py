@@ -1,4 +1,3 @@
-from __future__ import print_function
 
 """
 Sample 3rd party lib to use with socklib and myapp.

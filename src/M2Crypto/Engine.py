@@ -155,7 +155,7 @@ class Engine(object):
                 raise EngineError(Err.get_error())
             key = EVP.PKey(kptr, _pyfree=1)
         finally:
-        m2.engine_pkcs11_data_free(cbd)
+            m2.engine_pkcs11_data_free(cbd)
         return key
 
     def load_private_key(

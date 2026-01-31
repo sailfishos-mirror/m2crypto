@@ -81,6 +81,15 @@
     :show-inheritance:
 ```
 
+## {mod}`Engine` Module
+
+```{eval-rst}
+.. automodule:: M2Crypto.Engine
+    :members:
+    :undoc-members:
+    :show-inheritance:
+```
+
 ## {mod}`Err` Module
 
 ```{eval-rst}

@@ -97,6 +97,7 @@ static PyObject *x509_store_verify_cb_func;
 %include _util.i
 %include _ec.i
 %include _provider.i
+%include _engine.i
 %include _objects.i
 
 #ifdef SWIG_VERSION

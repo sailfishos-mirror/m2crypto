@@ -8,17 +8,19 @@ orphan: true
 
 ```{eval-rst}
 
-:author: Pheng Siong Ng <ngps@netmemetic.com> and Heikki Toivonen (heikki@osafoundation.org)
+:author: Pheng Siong Ng <ngps@netmemetic.com> and Heikki Toivonen
+    <heikki@osafoundation.org>
 :copyright: © 2000, 2001 by Ng Pheng Siong,
             portions © 2006 by Open Source Applications Foundation
 ```
 
 ## Introduction
 
-[M2Crypto](https://sr.ht/~mcepl/m2crypto/) is a [Python](http://www.python.org) interface to [OpenSSL](http://www.openssl.org). It makes available to the Python
-programmer SSL functionality to implement clients and servers,
-S/MIME v2, RSA, DSA, DH, symmetric ciphers, message digests and
-HMACs.
+[M2Crypto](https://sr.ht/~mcepl/m2crypto/) is
+a [Python](http://www.python.org) interface to
+[OpenSSL](http://www.openssl.org). It makes available to the Python
+programmer SSL functionality to implement clients and servers, S/MIME
+v2, RSA, DSA, DH, symmetric ciphers, message digests and HMACs.
 
 This document demonstrates programming HTTPS with M2Crypto.
 
@@ -84,9 +86,8 @@ The third line loads the allowed root (certificate authority or CA)
 certificates. Most Linux distributions come with CA certificates in
 suitable format. You could also download the
 [certdata.txt](http://mxr.mozilla.org/seamonkey/source//security/nss/lib/ckfw/builtins/certdata.txt?raw=1)
-file from the
-[NSS](http://www.mozilla.org/projects/security/pki/nss/) project and
-convert it with the little M2Crypto utility script
+file from the [NSS](http://www.mozilla.org/projects/security/pki/nss/)
+project and convert it with the little M2Crypto utility script
 [demo/x509/certdata2pem.py](http://svn.osafoundation.org/m2crypto/trunk/demo/x509/certdata2pem.py).
 
 The fourth line creates an SSL connection object with the secure

@@ -19,6 +19,7 @@ Others:
 - ThreadingSSLServer
 """
 import gc
+import http.client
 import logging
 import os
 import os.path
@@ -272,6 +273,78 @@ class HttpslibSSLClientTestCase(BaseSSLClientTestCase):
             httpslib.HTTPSConnection("example.org", badKeyword=True)
 
 
+class ProxyHTTPSConnectionTestCase(unittest.TestCase):
+    """Test case for ProxyHTTPSConnection with mocked connections.
+
+    This tests the fix for the bug where ProxyHTTPSConnection.connect()
+    would establish the proxy connection twice.
+    See: https://todo.sr.ht/~mcepl/m2crypto/229
+    """
+
+    def setUp(self):
+        self.ctx = SSL.Context()
+
+    def tearDown(self):
+        self.ctx.close()
+
+    def test_proxy_connect_not_called_twice(self):
+        """Test that connect() is not called twice on ProxyHTTPSConnection.
+
+        This tests the fix for issue #229 where using ProxyHTTPSConnection
+        would try to connect to the proxy twice.
+        """
+        from unittest.mock import patch, MagicMock
+
+        conn = httpslib.ProxyHTTPSConnection(
+            "proxy.example.com", 8080, ssl_context=self.ctx
+        )
+
+        # Set up the _real_host and _real_port that would normally
+        # be set by putrequest()
+        conn._real_host = "target.example.com"
+        conn._real_port = 443
+
+        # Create a mock for the SSL connection
+        mock_ssl_conn = MagicMock()
+        mock_ssl_conn.get_session.return_value = None
+
+        # Track how many times HTTPConnection.connect is called
+        http_connect_call_count = [0]
+
+        def mock_http_connect(self_inner):
+            http_connect_call_count[0] += 1
+            # Set up a mock socket with a proper file-like interface for HTTPResponse
+            mock_sock = MagicMock()
+            # HTTPResponse expects to read status line first, then headers, then empty line
+            mock_fp = MagicMock()
+            mock_fp.readline.side_effect = [
+                b"HTTP/1.1 200 Connection established\r\n",  # Status line
+                b"\r\n",  # Empty line to end headers
+            ]
+            mock_sock.makefile.return_value = mock_fp
+            self_inner.sock = mock_sock
+
+        with patch.object(http.client.HTTPConnection, "connect", mock_http_connect):
+            with patch.object(conn, "_ssl_conn_cls", return_value=mock_ssl_conn):
+                with patch.object(
+                    conn,
+                    "_get_connect_msg",
+                    return_value=b"CONNECT target.example.com:443 HTTP/1.1\r\n\r\n",
+                ):
+                    # Call connect() twice - this should only establish
+                    # the connection once
+                    conn.connect()
+                    conn.connect()
+
+        # Verify that HTTPConnection.connect was only called once
+        self.assertEqual(
+            http_connect_call_count[0],
+            1,
+            "HTTPConnection.connect() should be called exactly once, not %d times"
+            % http_connect_call_count[0],
+        )
+
+
 @unittest.skipIf(sys.platform == "win32", "Test doesn't work on Windows")
 class HttpslibSSLSNIClientTestCase(BaseSSLClientTestCase):
     def setUp(self):
@@ -492,7 +565,7 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
             s.close()
         finally:
             self.stop_server(pid)
-        log.debug('data:\n%s', data)
+        log.debug("data:\n%s", data)
         self.assertIn(self.test_output, data)
 
     def test_cipher_mismatch(self):
@@ -1373,6 +1446,9 @@ def suite():
         unittest.TestLoader().loadTestsFromTestCase(HttpslibSSLClientTestCase)
     )
     suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(ProxyHTTPSConnectionTestCase)
+    )
+    suite.addTest(
         unittest.TestLoader().loadTestsFromTestCase(HttpslibSSLSNIClientTestCase)
     )
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(Urllib2SSLClientTestCase))
@@ -1424,5 +1500,6 @@ if __name__ == "__main__":
 
     if report_leaks:
         from tests import dump_garbage
+
         dump_garbage()
         pass

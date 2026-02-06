@@ -179,6 +179,9 @@ class ProxyHTTPSConnection(HTTPSConnection):
         )
         self._proxy_auth: Optional[str] = None
         self._proxy_UA: Optional[str] = None
+        # Set _tunnel_host to prevent automatic connection in endheaders()
+        # The actual tunnel host will be set in putrequest()
+        self._tunnel_host: Optional[str] = None
 
     def putrequest(
         self,
@@ -215,6 +218,9 @@ class ProxyHTTPSConnection(HTTPSConnection):
 
         self._real_host = host
         self._real_port = port
+        # Set _tunnel_host to indicate we're using a proxy
+        # This prevents automatic connection in endheaders()
+        self._tunnel_host = host
         rest_tuple = ("", "", path, query, fragment)
         rest = urlunsplit(rest_tuple)
         method_str = method.decode("ascii") if isinstance(method, bytes) else method
@@ -251,7 +257,12 @@ class ProxyHTTPSConnection(HTTPSConnection):
         HTTPSConnection.endheaders(self, *args, **kwargs)
 
     def connect(self) -> None:
+        # Avoid double connection - check if already connected
+        if self.sock is not None:
+            return
+
         HTTPConnection.connect(self)
+        assert self.sock is not None
 
         # send proxy CONNECT request
         self.sock.sendall(self._get_connect_msg())

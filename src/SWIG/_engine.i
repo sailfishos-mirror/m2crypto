@@ -8,11 +8,25 @@
  * IMEC MSU
  */
 %{
+#include <openssl/opensslconf.h>
+#ifndef OPENSSL_NO_ENGINE
 #include <openssl/engine.h>
+#endif
 #include <openssl/ui.h>
 #include <stdio.h>
+#include <stdbool.h>
 %}
 
+%include <openssl/opensslconf.h>
+
+#if defined(OPENSSL_NO_ENGINE)
+    %constant bool is_engine_available = false;
+#else
+    %constant bool is_engine_available = true;
+    #define OPENSSL_ENGINE_H
+#endif
+
+#ifdef OPENSSL_ENGINE_H
 %apply Pointer NONNULL { ENGINE * };
 %apply Pointer NONNULL { const ENGINE * };
 %apply Pointer NONNULL { const char * };
@@ -205,3 +219,5 @@ X509 * engine_load_certificate(ENGINE *e, const char * slot) {
 
 %rename(engine_set_default) ENGINE_set_default;
 extern int ENGINE_set_default(ENGINE *e, unsigned int flags);
+
+#endif /* OPENSSL_ENGINE_H */

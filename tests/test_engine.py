@@ -2,9 +2,11 @@
 
 """Unit tests for M2Crypto.Engine."""
 
-from M2Crypto import Engine
+from M2Crypto import Engine, m2
 from tests import unittest
 
+if not m2.is_engine_available:
+    raise unittest.SkipTest("Engine module is not available.")
 
 class EngineTestCase(unittest.TestCase):
 

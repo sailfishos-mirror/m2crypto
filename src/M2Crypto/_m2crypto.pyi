@@ -904,6 +904,7 @@ ENGINE_METHOD_RAND: int
 ENGINE_METHOD_RSA: int
 ENGINE_METHOD_STORE: int
 ENGINE_METHOD_ALL: int
+is_engine_available: bool
 def engine_by_id(id: str) -> Optional[C.ENGINE]: ...
 def engine_cleanup() -> None: ...
 def engine_ctrl_cmd_string(e: C.ENGINE, cmd_name: str, arg: Optional[str],

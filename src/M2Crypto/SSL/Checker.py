@@ -122,7 +122,7 @@ class Checker:
                         + "fingerprint: {0}\nexpected = {1}\n"
                         + "observed = {2}"
                     ).format(
-                        self.fingerprint,
+                        self.fingerprint.decode(),
                         expected_len,
                         len(self.fingerprint),
                     )

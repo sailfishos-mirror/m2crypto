@@ -303,7 +303,7 @@ class PKey(object):
         """
 
         if not hasattr(m2, "digest_sign"):
-            raise NotImplemented(
+            raise NotImplementedError(
                 "This method requires OpenSSL version " + "1.1.1 or greater."
             )  # type: ignore[misc]
 
@@ -348,7 +348,7 @@ class PKey(object):
         """
 
         if not hasattr(m2, "digest_verify"):
-            raise NotImplemented(
+            raise NotImplementedError(
                 "This method requires OpenSSL version " + "1.1.1 or greater."
             )  # type: ignore[misc]
 

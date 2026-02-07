@@ -3,10 +3,10 @@
   # Install Python and Swig
   - $CHOCOLATEY_PYTHON_OPTIONS = ""
   - choco install --limitoutput --yes $CHOCOLATEY_PYTHON_OPTIONS python$PYTHON_VERSION
-  - choco install --limitoutput --yes swig
   # Reload the profile so that the binaries are available in the path
   - Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
   - refreshenv
+  - python -m pip install swig
   # Print information for debugging
   - echo "Python version and architecture:"
   - python --version
@@ -39,11 +39,9 @@ build-test-windows:
       - PYTHON_VERSION: "311"
       - PYTHON_VERSION: "312"
       - PYTHON_VERSION: "313"
-      # Requires Swig >= 4.4.0 (gh#swig/swig!3159), which is not available at Chocolatey yet
-      # https://community.chocolatey.org/packages/swig
-      # - PYTHON_VERSION: "314"
+      - PYTHON_VERSION: "314"
   variables:
-    OPENSSL_INSTALLER: "Win64OpenSSL-3_0_18.exe"
+    OPENSSL_INSTALLER: "Win64OpenSSL-3_0_19.exe"
     OPENSSL_PATH: "C:\\OpenSSL-3-0-Win64"
     BUNDLEDLLS: 1
   tags:
@@ -56,10 +54,10 @@ build-test-windows:
     # Install Python and Swig
     $CHOCOLATEY_PYTHON_OPTIONS = ""
     choco install --limitoutput --yes $CHOCOLATEY_PYTHON_OPTIONS python$PYTHON_VERSION
-    choco install --limitoutput --yes swig
     # Reload the profile so that the binaries are available in the path
     Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
     refreshenv
+    python -m pip install swig
     # Print information for debugging
     echo "Python version and architecture:"
     python --version

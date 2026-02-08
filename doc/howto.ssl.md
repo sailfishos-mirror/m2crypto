@@ -191,31 +191,51 @@ e.ctrl_cmd_string('ID', 'pkcs11')
 e.ctrl_cmd_string('LIST_ADD', '1')
 e.ctrl_cmd_string('LOAD', None)
 e.ctrl_cmd_string('MODULE_PATH', '/path/to/pkcs11/module.so')
-e.ctrl_cmd_string('PIN', '1234')
 e.init()
-e.set_default(m2.ENGINE_METHOD_ALL)
 
-# Load the client certificate and private key from the smartcard
-# Note: The exact method to load cert/key depends on the engine and key ID format
-cert = e.load_certificate('certificate_id')
-pkey = e.load_private_key('private_key_id', '1234')
+try:
+    # WARNING: this sets a *process-wide* OpenSSL default
+    e.set_default(m2.ENGINE_METHOD_RSA)
 
-# Create an SSL context and configure it to use the client certificate
-ctx = SSL.Context('tlsv1')
-ctx.load_cert_chain(cert, pkey)
+    # Load the client certificate and private key from the smartcard
+    # Certificate loading is engine-specific; many PKCS#11 engines
+    # only expose private keys.
+    cert = e.load_certificate('pkcs11:object=MyCert')
+    # Fallback if the engine does not support certificate loading:
+    # cert = X509.load_cert('client.pem')
 
-# Create a ProxyHTTPSConnection and use it to make a request
-# Ensure you do not call con.connect() manually if you use methods that trigger it (like request())
-con = httpslib.ProxyHTTPSConnection('proxy.example.com', 8080, ssl_context=ctx)
-con.putrequest('GET', 'https://target.example.com/path')
-con.endheaders()
+    # PIN will be collected via the external engine’s UI
+    # alternative is to use `pin=os.environ['PKCS11_PIN']`,
+    # but the whole thing is highly engine-specific
+    pkey = e.load_private_key('pkcs11:object=MyKey', pin=None)
 
-# con.connect() is called implicitly by endheaders/send,
-# or you can call it manually if you haven't sent headers yet.
-# Do NOT call it twice.
+    # Create an SSL context and configure it to use the client certificate
+    ctx = SSL.Context('tls')
+    ctx.load_verify_locations(capath='/etc/ssl/certs')
+    ctx.set_verify(SSL.verify_peer, depth=9)
+    ctx.load_cert_chain(cert, pkey)
 
-res = con.getresponse()
-print(res.read())
+    # Create a ProxyHTTPSConnection and use it to make a request
+    # Ensure you do not call con.connect() manually if you use methods that trigger it (like request())
+    con = httpslib.ProxyHTTPSConnection('proxy.example.com', 8080, ssl_context=ctx)
+    # Absolute URL is required for proxy requests
+    con.putrequest('GET', 'https://target.example.com/path')
+    con.endheaders()
+
+    # con.connect() is called implicitly by endheaders/send,
+    # or you can call it manually if you haven't sent headers yet.
+    # Do NOT call it twice.
+
+    res = con.getresponse()
+    print(res.read())
+except EngineError as e:
+    print("Engine failure:", e)
+    raise
+except SSL.SSLError as e:
+    print("TLS failure:", e)
+    raise
+finally:
+    e.finish()
 ```
 
 [059600270X]: https://meta.wikimedia.org/wiki/Special:BookSources/0321480910

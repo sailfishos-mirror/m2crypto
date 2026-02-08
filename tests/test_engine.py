@@ -38,10 +38,14 @@ class EngineTestCase(unittest.TestCase):
         e.ctrl_cmd_string('ID', 'TESTID')
 
     def test_load_private(self):
+        # Explicit use of `.init()` and `.finish()` can be avoided by
+        # using `Engine.Engine()` as a context manager
         Engine.load_openssl()
         e = Engine.Engine('openssl')
+        e.init()
         e.set_default()
         e.load_private_key(self.privkey)
+        e.finish()
 
     def test_load_certificate(self):
         Engine.load_openssl()

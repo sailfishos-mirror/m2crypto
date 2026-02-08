@@ -35,6 +35,7 @@ class Engine(object):
         :raises ValueError: If id is None or if the specified engine is not found.
         """
         self._ptr: C.ENGINE
+        self._initialized: bool = False
         if _ptr is None:
             if id is None:
                 raise ValueError("Trying to search engine by id of None.")
@@ -72,7 +73,9 @@ class Engine(object):
 
         :return: 0 on error, non-zero on success.
         """
-        return m2.engine_init(self._ptr)
+        ret = m2.engine_init(self._ptr)
+        self._initialized = bool(ret)
+        return ret
 
     def finish(self) -> int:
         """
@@ -80,7 +83,10 @@ class Engine(object):
 
         :return: 0 on error, non-zero on success.
         """
-        return m2.engine_finish(self._ptr)
+        ret = m2.engine_finish(self._ptr)
+        if ret:
+            self._initialized = False
+        return ret
 
     def ctrl_cmd_string(
         self,
@@ -125,6 +131,10 @@ class Engine(object):
         """
         Set this engine as the default for specified cryptographic methods.
 
+        WARNING: This sets a process-wide OpenSSL default. All subsequent
+        cryptographic operations in the current process may use this engine
+        for the selected methods.
+
         :param methods: Bitwise OR of method flags (e.g., m2.ENGINE_METHOD_RSA,
                        m2.ENGINE_METHOD_DSA, m2.ENGINE_METHOD_ALL).
         :return: 0 on error, non-zero on success.
@@ -137,12 +147,20 @@ class Engine(object):
         """
         Internal helper function for loading keys from engine.
 
+        NOTE: The callback_data layout used here matches engine-pkcs11.
+        Other engines may ignore or misinterpret this data.
+
+        If pin is None, UI_OpenSSL may prompt on stdin.
+
         :param func: The engine function to call for loading the key.
         :param name: Key identifier or name.
         :param pin: Optional PIN for accessing the key.
         :return: EVP.PKey object containing the loaded key.
         :raises EngineError: If key loading fails.
         """
+        if not self._initialized:
+            raise EngineError("ENGINE not initialized")
+
         if isinstance(name, bytes):
             name = name.decode()
         if pin is not None and isinstance(pin, bytes):
@@ -152,7 +170,7 @@ class Engine(object):
         try:
             kptr = func(self._ptr, name, ui, cbd)
             if not kptr:
-                raise EngineError(Err.get_error())
+                raise EngineError(Err.get_error() or "ENGINE key load failed")
             key = EVP.PKey(kptr, _pyfree=1)
         finally:
             m2.engine_pkcs11_data_free(cbd)
@@ -193,6 +211,9 @@ class Engine(object):
         """
         Load a certificate using engine methods.
 
+        NOTE: Certificate loading is engine-specific. Many PKCS#11 engines
+        only expose private keys and do not implement certificate loading.
+
         :param name: Certificate identifier or name.
         :return: X509.X509 object containing the loaded certificate.
         :raises EngineError: If the certificate cannot be loaded or the card is not found.
@@ -201,7 +222,7 @@ class Engine(object):
             name = name.decode()
         cptr = m2.engine_load_certificate(self._ptr, name)
         if not cptr:
-            raise EngineError("Certificate or card not found")
+            raise EngineError("ENGINE did not return a certificate")
         return X509.X509(cptr, _pyfree=1)
 
 

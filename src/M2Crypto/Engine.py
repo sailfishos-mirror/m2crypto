@@ -64,7 +64,7 @@ class Engine(object):
         Frees the underlying ENGINE pointer if the object is responsible
         for managing its lifecycle.
         """
-        if getattr(self, '_pyfree', 0) and self._ptr:
+        if getattr(self, "_pyfree", 0) and self._ptr:
             m2.engine_free(self._ptr)
 
     def init(self) -> int:
@@ -106,9 +106,7 @@ class Engine(object):
             cmd = cmd.decode()
         if arg is not None and isinstance(arg, bytes):
             arg = arg.decode()
-        if not m2.engine_ctrl_cmd_string(
-            self._ptr, cmd, arg, optional
-        ):
+        if not m2.engine_ctrl_cmd_string(self._ptr, cmd, arg, optional):
             raise EngineError(Err.get_error())
 
     def get_name(self) -> str:
@@ -142,7 +140,10 @@ class Engine(object):
         return m2.engine_set_default(self._ptr, methods)
 
     def _engine_load_key(
-        self, func: Callable, name: Union[str, bytes], pin: Union[str, bytes, None] = None
+        self,
+        func: Callable,
+        name: Union[str, bytes],
+        pin: Union[str, bytes, None] = None,
     ) -> EVP.PKey:
         """
         Internal helper function for loading keys from engine.
@@ -188,9 +189,7 @@ class Engine(object):
         :return: EVP.PKey object containing the loaded private key.
         :raises EngineError: If the private key cannot be loaded.
         """
-        return self._engine_load_key(
-            m2.engine_load_private_key, name, pin
-        )
+        return self._engine_load_key(m2.engine_load_private_key, name, pin)
 
     def load_public_key(
         self, name: Union[str, bytes], pin: Union[str, bytes, None] = None
@@ -203,9 +202,7 @@ class Engine(object):
         :return: EVP.PKey object containing the loaded public key.
         :raises EngineError: If the public key cannot be loaded.
         """
-        return self._engine_load_key(
-            m2.engine_load_public_key, name, pin
-        )
+        return self._engine_load_key(m2.engine_load_public_key, name, pin)
 
     def load_certificate(self, name: Union[str, bytes]) -> X509.X509:
         """
@@ -226,9 +223,7 @@ class Engine(object):
         return X509.X509(cptr, _pyfree=1)
 
 
-def load_dynamic_engine(
-    id: bytes, sopath: Union[str, bytes]
-) -> Engine:
+def load_dynamic_engine(id: bytes, sopath: Union[str, bytes]) -> Engine:
     """
     Load and return a dynamic engine from a shared object path.
 
@@ -237,13 +232,13 @@ def load_dynamic_engine(
     :return: Engine object representing the loaded dynamic engine.
     """
     if isinstance(sopath, str):
-        sopath = sopath.encode('utf8')
+        sopath = sopath.encode("utf8")
     m2.engine_load_dynamic()
-    e = Engine('dynamic')
-    e.ctrl_cmd_string('SO_PATH', sopath)
-    e.ctrl_cmd_string('ID', id)
-    e.ctrl_cmd_string('LIST_ADD', '1')
-    e.ctrl_cmd_string('LOAD', None)
+    e = Engine("dynamic")
+    e.ctrl_cmd_string("SO_PATH", sopath)
+    e.ctrl_cmd_string("ID", id)
+    e.ctrl_cmd_string("LIST_ADD", "1")
+    e.ctrl_cmd_string("LOAD", None)
     return e
 
 

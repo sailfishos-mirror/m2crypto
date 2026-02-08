@@ -139,36 +139,41 @@ engine, certificate, and private key, and associate them with an SSL
 Context.
 
 ```python
-from M2Crypto import SSL, httpslib, X509, RSA, m2, Engine
+from M2Crypto import SSL, httpslib, m2, Engine
 
 slot_id = "slot_00"
-pin = "1234"
 
 # 'loader' is the dynamic engine used to load the shared object
 loader = Engine.load_dynamic_engine("pkcs11", "c:/tests_python/pkcs11.dll")
 
 # 'pkcs11' is the actual engine instance we want to use
-pkcs11 = Engine.Engine("pkcs11")
-pkcs11.ctrl_cmd_string("MODULE_PATH", "C:/WINDOWS/system32/OcsCryptoki.dll")
+with Engine.Engine("pkcs11") as pkcs11:
+    # Note: some PKCS#11 engines require MODULE_PATH to be set
+    # before ENGINE_init(); engine behavior may vary.
+    pkcs11.ctrl_cmd_string("MODULE_PATH",
+                           "C:/WINDOWS/system32/OcsCryptoki.dll")
 
-# Initialize the PKCS#11 engine explicitly
-pkcs11.init()
+    # We do not call set_default(); the key and cert are bound
+    # explicitly to the SSL context instead.
 
-# Login (if required by the token/engine)
-pkcs11.ctrl_cmd_string("PIN", pin)
+    # Load from the PKCS#11 engine, NOT the loader
+    cert = pkcs11.load_certificate(slot_id)
 
-# Load from the PKCS#11 engine, NOT the loader
-cert = pkcs11.load_certificate(slot_id)
-key = pkcs11.load_private_key(slot_id)
+    # PIN will be collected via the external engine’s UI
+    # alternative is to use `pin=os.environ['PKCS11_PIN']`,
+    # but the whole thing is highly engine-specific
+    key = pkcs11.load_private_key(slot_id)
 
-ctx = SSL.Context('tlsv1')
+    ctx = SSL.Context('tls')
 
-# Use the loaded objects (fixed typo: certi -> cert)
-m2.ssl_ctx_use_x509(ctx.ctx, cert.x509)
-m2.ssl_ctx_use_pkey_privkey(ctx.ctx, key.pkey)
+    # Use the loaded objects
+    m2.ssl_ctx_use_x509(ctx.ctx, cert.x509)
+    m2.ssl_ctx_use_pkey_privkey(ctx.ctx, key.pkey)
 
-ctx.set_verify(SSL.verify_none, depth=1)
-con = httpslib.HTTPSConnection('url', 443, ssl_context=ctx)
+    ctx.set_verify(SSL.verify_none, depth=1)
+    con = httpslib.HTTPSConnection('url', 443, ssl_context=ctx)
+    con.request("GET", "/")
+    resp = con.getresponse()
 ```
 
 ## HTTPS via Proxy with Engine Support
@@ -185,15 +190,13 @@ from M2Crypto import Engine, SSL, httpslib, m2
 
 # Load the dynamic engine and configure it to use the PKCS#11 module
 Engine.load_dynamic()
-e = Engine.Engine('dynamic')
-e.ctrl_cmd_string('SO_PATH', '/path/to/engine.so')
-e.ctrl_cmd_string('ID', 'pkcs11')
-e.ctrl_cmd_string('LIST_ADD', '1')
-e.ctrl_cmd_string('LOAD', None)
-e.ctrl_cmd_string('MODULE_PATH', '/path/to/pkcs11/module.so')
-e.init()
+with Engine.Engine('dynamic') as e:
+    e.ctrl_cmd_string('SO_PATH', '/path/to/engine.so')
+    e.ctrl_cmd_string('ID', 'pkcs11')
+    e.ctrl_cmd_string('LIST_ADD', '1')
+    e.ctrl_cmd_string('LOAD', None)
+    e.ctrl_cmd_string('MODULE_PATH', '/path/to/pkcs11/module.so')
 
-try:
     # WARNING: this sets a *process-wide* OpenSSL default
     e.set_default(m2.ENGINE_METHOD_RSA)
 
@@ -234,8 +237,6 @@ except EngineError as e:
 except SSL.SSLError as e:
     print("TLS failure:", e)
     raise
-finally:
-    e.finish()
 ```
 
 [059600270X]: https://meta.wikimedia.org/wiki/Special:BookSources/0321480910

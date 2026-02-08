@@ -47,6 +47,36 @@ class Engine(object):
         self._ptr = _ptr
         self._pyfree = _pyfree
 
+    @classmethod
+    def is_available(cls) -> bool:
+        """
+        Return True if M2Crypto was built with OpenSSL ENGINE support.
+        """
+        return bool(m2.is_engine_available)
+
+    def __enter__(self) -> "Engine":
+        """
+        Context manager entry.
+
+        Initializes the engine and returns self.
+        """
+        self.init()
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        """
+        Context manager exit.
+
+        Ensures the engine is properly finished.
+        """
+        try:
+            if self._initialized:
+                self.finish()
+        except Exception:
+            # Never raise from __exit__
+            pass
+
+
     @staticmethod
     def m2_engine_free(obj: C.ENGINE) -> None:
         """
@@ -63,9 +93,19 @@ class Engine(object):
         Automatically called when the Engine object is garbage collected.
         Frees the underlying ENGINE pointer if the object is responsible
         for managing its lifecycle.
+
+        Best-effort cleanup only; errors are intentionally ignored.
         """
-        if getattr(self, "_pyfree", 0) and self._ptr:
-            m2.engine_free(self._ptr)
+        try:
+            if getattr(self, '_initialized', False):
+                m2.engine_finish(self._ptr)
+        except Exception:
+            pass
+        try:
+            if getattr(self, '_pyfree', 0) and self._ptr:
+                m2.engine_free(self._ptr)
+        except Exception:
+            pass
 
     def init(self) -> int:
         """
@@ -87,6 +127,15 @@ class Engine(object):
         if ret:
             self._initialized = False
         return ret
+
+    def is_initialized(self) -> bool:
+        """
+        Check whether the engine is currently initialized.
+
+        :return: True if ENGINE_init() has succeeded and ENGINE_finish()
+                 has not yet been called.
+        """
+        return self._initialized
 
     def ctrl_cmd_string(
         self,

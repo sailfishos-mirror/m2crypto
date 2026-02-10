@@ -5,6 +5,7 @@
 
 %{
 #include <stdio.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
@@ -16,32 +17,37 @@
 %apply Pointer NONNULL { const char * };
 
 %inline %{
-static void ossl_err_print(void)
+static PyObject *_provider_err;
+
+void provider_init_error(PyObject *provider_err) {
+    Py_INCREF(provider_err);
+    _provider_err = provider_err;
+}
+
+
+static void raise_ossl_error(PyObject *exc, const char *fmt, ...)
 {
-    bool first = true;
-    unsigned long err = 0;
-    while (true) {
-        const char *file, *func, *data;
-        int line;
-        err = ERR_get_error_all(&file, &line, &func, &data, NULL);
-        if (err == 0) {
-            break;
-        }
+    char msg[512];
+    va_list ap;
 
-        char buf[1024];
-        ERR_error_string_n(err, buf, sizeof(buf));
-
-        const char *fmt =
-            first ? ": %s (in function %s in %s:%d): %s\n"
-                  : "  caused by: %s (in function %s in %s:%d): %s\n";
-        fprintf(stderr, fmt, buf, func, file, line, data);
-
-        first = false;
+    if (!exc) {
+        exc = PyExc_RuntimeError;
     }
-    if (first) {
-        fprintf(stderr, "[No errors on the OpenSSL stack]\n");
+
+    /* Format the user-provided message */
+    va_start(ap, fmt);
+    vsnprintf(msg, sizeof(msg), fmt, ap);
+    va_end(ap);
+
+    /* Get the topmost OpenSSL error (if any) */
+    unsigned long err = ERR_get_error();
+    if (err) {
+        char errbuf[256];
+        ERR_error_string_n(err, errbuf, sizeof(errbuf));
+        PyErr_Format(exc, "%s: %s", msg, errbuf);
+    } else {
+        PyErr_SetString(exc, msg);
     }
-    fflush(stderr);
 }
 
 EVP_PKEY *provider_load_key(const char *uri)
@@ -51,16 +57,15 @@ EVP_PKEY *provider_load_key(const char *uri)
     EVP_PKEY *key = NULL;
 
     if (!uri) {
-        fprintf(stderr, "Invalid NULL uri");
-        ossl_err_print();
-        exit(EXIT_FAILURE);
+        raise_ossl_error(_provider_err, "Invalid NULL uri");
+        return NULL;
     }
 
+    ERR_clear_error();
     store = OSSL_STORE_open(uri, NULL, NULL, NULL, NULL);
     if (store == NULL) {
-        fprintf(stderr, "Failed to open store: %s\n", uri);
-        ossl_err_print();
-        exit(EXIT_FAILURE);
+        raise_ossl_error(_provider_err, "Failed to open store: %s", uri);
+        return NULL;
     }
 
     if ((strncmp(uri, "pkcs11:", 7) == 0)
@@ -69,8 +74,9 @@ EVP_PKEY *provider_load_key(const char *uri)
          * to correctly source public keys unless explicitly requested
          * via an expect hint */
         if (OSSL_STORE_expect(store, OSSL_STORE_INFO_PUBKEY) != 1) {
-            fprintf(stderr, "Failed to expect Public Key File\n");
-            exit(EXIT_FAILURE);
+            raise_ossl_error(_provider_err, "Failed to expect Public Key File");
+            OSSL_STORE_close(store);
+            return NULL;
         }
     }
 
@@ -79,8 +85,9 @@ EVP_PKEY *provider_load_key(const char *uri)
         int type = OSSL_STORE_INFO_get_type(info);
 
         if (key != NULL) {
-            fprintf(stderr, "Multiple keys matching URI: %s\n", uri);
-            exit(EXIT_FAILURE);
+            PyErr_Format(_provider_err, "Multiple keys matching URI: %s", uri);
+            OSSL_STORE_close(store);
+            return NULL;
         }
 
         switch (type) {
@@ -95,32 +102,30 @@ EVP_PKEY *provider_load_key(const char *uri)
     }
 
     if (key == NULL) {
-        fprintf(stderr, "Failed to load key from URI: %s\n", uri);
-        ossl_err_print();
-        exit(EXIT_FAILURE);
+        raise_ossl_error(_provider_err,
+                         "Failed to load key from URI: %s", uri);
     }
     OSSL_STORE_close(store);
 
     return key;
 }
 
-X509 * provider_load_certificate(const char *uri)
+X509 *provider_load_certificate(const char *uri)
 {
     OSSL_STORE_CTX *store;
     OSSL_STORE_INFO *info;
     X509 *cert = NULL;
 
     if (!uri) {
-        fprintf(stderr, "Invalid NULL uri");
-        ossl_err_print();
-        exit(EXIT_FAILURE);
+        raise_ossl_error(_provider_err, "Invalid NULL uri");
+        return NULL;
     }
 
+    ERR_clear_error();
     store = OSSL_STORE_open(uri, NULL, NULL, NULL, NULL);
     if (store == NULL) {
-        fprintf(stderr, "Failed to open store: %s\n", uri);
-        ossl_err_print();
-        exit(EXIT_FAILURE);
+        raise_ossl_error(_provider_err, "Failed to open store: %s", uri);
+        return NULL;
     }
 
     for (info = OSSL_STORE_load(store); info != NULL;
@@ -128,8 +133,9 @@ X509 * provider_load_certificate(const char *uri)
         int type = OSSL_STORE_INFO_get_type(info);
 
         if (cert != NULL) {
-            fprintf(stderr, "Multiple certs matching URI: %s\n", uri);
-            exit(EXIT_FAILURE);
+            raise_ossl_error(_provider_err, "Multiple certs matching URI: %s", uri);
+            OSSL_STORE_close(store);
+            return NULL;
         }
 
         switch (type) {
@@ -141,9 +147,7 @@ X509 * provider_load_certificate(const char *uri)
     }
 
     if (cert == NULL) {
-        fprintf(stderr, "Failed to load cert from URI: %s\n", uri);
-        ossl_err_print();
-        exit(EXIT_FAILURE);
+        raise_ossl_error(_provider_err, "Failed to load cert from URI: %s", uri);
     }
     OSSL_STORE_close(store);
 
@@ -158,6 +162,7 @@ OSSL_PROVIDER *provider_load(const char *name)
         OSSL_PARAM_construct_end()
     };
 
+    ERR_clear_error();
     /* Load providers */
 #if OPENSSL_VERSION_NUMBER >= 0x30500000L // OpenSSL 3.5.0
     provider = OSSL_PROVIDER_load_ex(NULL, name, params);
@@ -166,7 +171,8 @@ OSSL_PROVIDER *provider_load(const char *name)
     provider = OSSL_PROVIDER_load(NULL, name);
 #endif
     if (!provider) {
-        fprintf(stderr, "Failed to load pkcs11 provider\n");
+        raise_ossl_error(_provider_err, "Failed to load provider '%s'", name);
+        return NULL;
     }
 
     return provider;

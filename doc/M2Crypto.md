@@ -90,6 +90,15 @@
     :show-inheritance:
 ```
 
+## {mod}`Provider` Module
+
+```{eval-rst}
+.. automodule:: M2Crypto.Provider
+    :members:
+    :undoc-members:
+    :show-inheritance:
+```
+
 ## {mod}`Err` Module
 
 ```{eval-rst}

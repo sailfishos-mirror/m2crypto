@@ -3,6 +3,7 @@ M2Crypto wrapper for OpenSSL PROVIDER API.
 """
 
 import re
+from typing import Optional
 
 from M2Crypto import EVP, X509, m2
 
@@ -56,10 +57,10 @@ class Provider(object):
             raise ProviderError(f"Wrong type {type(uri)} != str for uri")
 
         uri_split_list = re.split(";|\\?", uri)
-        if "type=private" not in uri_split_list and \
-               "type=public" not in uri_split_list:
-            raise ProviderError("Key URI should indicate " +
-                                "'type=private' or 'type=public'")
+        if "type=private" not in uri_split_list and "type=public" not in uri_split_list:
+            raise ProviderError(
+                "Key URI should indicate " + "'type=private' or 'type=public'"
+            )
 
         cptr = m2.provider_load_key(uri)
         if not cptr:
@@ -84,3 +85,65 @@ class Provider(object):
             raise ProviderError("Certificate or card not found")
 
         return X509.X509(cptr, _pyfree=1)
+
+    def generate_rsa_key_pair(
+        self, bits: int = 2048, exponent: int = 65537
+    ) -> EVP.PKey:
+        """
+        Generate an RSA key pair using the provider.
+
+        :param bits: Key length in bits (default: 2048).
+        :param exponent: RSA public exponent (default: 65537).
+        :return: An EVP.PKey object representing the generated RSA key pair.
+        :raises ProviderError: If key generation fails.
+        """
+        if not isinstance(bits, int) or bits < 512:
+            raise ProviderError(f"Invalid bits value: {bits}")
+        if not isinstance(exponent, int) or exponent < 3:
+            raise ProviderError(f"Invalid exponent value: {exponent}")
+
+        cptr = m2.provider_generate_rsa_key_pair(bits, exponent, self._ptr)
+        if not cptr:
+            raise ProviderError("Failed to generate RSA key pair")
+
+        return EVP.PKey(cptr, _pyfree=1)
+
+    def generate_ec_key_pair(self, curve_name: str = "prime256v1") -> EVP.PKey:
+        """
+        Generate an EC key pair using the provider.
+
+        :param curve_name: Name of the elliptic curve (default: "prime256v1").
+                           Common values include "prime256v1", "secp384r1", "secp521r1".
+        :return: An EVP.PKey object representing the generated EC key pair.
+        :raises ProviderError: If key generation fails.
+        """
+        if not isinstance(curve_name, str) or not curve_name:
+            raise ProviderError(f"Invalid curve_name: {curve_name}")
+
+        cptr = m2.provider_generate_ec_key_pair(curve_name, self._ptr)
+        if not cptr:
+            raise ProviderError("Failed to generate EC key pair")
+
+        return EVP.PKey(cptr, _pyfree=1)
+
+    def destroy_key(self, uri: str, user_pin: Optional[str] = None) -> None:
+        """
+        Destroy a key stored in the provider.
+
+        :param uri: A string URI specifying the key location to destroy.
+        :param user_pin: Optional user PIN for authentication (default: None).
+        :raises ProviderError: If the URI is not a string or if key destruction fails.
+        """
+        if not isinstance(uri, str):
+            raise ProviderError(f"Wrong type {type(uri)} != str for uri")
+
+        # Note: The current implementation is a placeholder that demonstrates
+        # the general approach. A complete implementation would need to:
+        # 1. Use provider-specific key destruction APIs
+        # 2. Handle PIN authentication properly
+        # 3. Support different key types and storage mechanisms
+
+        pin_ptr = user_pin.encode("utf-8") if user_pin else None
+        ret = m2.provider_destroy_key(uri, pin_ptr)
+        if not ret:
+            raise ProviderError("Failed to destroy key")

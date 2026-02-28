@@ -53,6 +53,7 @@ python39:
     - apk update
     - apk upgrade
     - apk add --no-interactive swig gcc git musl-dev python3-dev python3 py3-pip openssl-dev openssl py3-setuptools py3-twisted py3-docutils py3-wheel
+    - python3 -mpip install irc
   script:
     - *common_setup_script
     - *common_python_build_script

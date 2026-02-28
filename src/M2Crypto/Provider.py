@@ -12,7 +12,7 @@ class ProviderError(ValueError):
     """Provider-related errors."""
 
 
-m2.provider_init_error(ProviderError)
+m2.provider_init_error(ProviderError)  # type: ignore[attr-defined]
 
 
 class Provider(object):
@@ -25,11 +25,15 @@ class Provider(object):
         Initialize a provider with the given provider ID.
 
         :param _id: A string identifying the OpenSSL provider to load.
-        :raises RuntimeError: If the provider fails to load.
+        :raises ProviderError: If the provider fails to load.
         """
-        self._ptr = m2.provider_load(_id)
-        if not self._ptr:
-            raise RuntimeError(f"Failed to load OpenSSL provider '{_id}'")
+        try:
+            self._ptr = m2.provider_load(_id)
+        except ProviderError:
+            raise
+
+        if self._ptr is None:
+            raise ProviderError(f"Failed to load OpenSSL provider '{_id}'")
 
     def __del__(self) -> None:
         """
@@ -39,8 +43,12 @@ class Provider(object):
         Ensures that the underlying OpenSSL provider is properly unloaded
         to free system resources.
         """
-        if self._ptr:
-            m2.provider_unload(self._ptr)
+        try:
+            if getattr(self, "_ptr", None) is not None:
+                m2.provider_unload(self._ptr)  # type: ignore[arg-type]
+        except Exception:
+            # Destructors must not raise.
+            pass
 
     def load_key(self, uri: str) -> EVP.PKey:
         """
@@ -102,7 +110,7 @@ class Provider(object):
         if not isinstance(exponent, int) or exponent < 3:
             raise ProviderError(f"Invalid exponent value: {exponent}")
 
-        cptr = m2.provider_generate_rsa_key_pair(bits, exponent, self._ptr)
+        cptr = m2.provider_generate_rsa_key_pair(bits, exponent, self._ptr)  # type: ignore[arg-type]
         if not cptr:
             raise ProviderError("Failed to generate RSA key pair")
 
@@ -120,7 +128,7 @@ class Provider(object):
         if not isinstance(curve_name, str) or not curve_name:
             raise ProviderError(f"Invalid curve_name: {curve_name}")
 
-        cptr = m2.provider_generate_ec_key_pair(curve_name, self._ptr)
+        cptr = m2.provider_generate_ec_key_pair(curve_name, self._ptr)  # type: ignore[arg-type]
         if not cptr:
             raise ProviderError("Failed to generate EC key pair")
 
@@ -132,18 +140,13 @@ class Provider(object):
 
         :param uri: A string URI specifying the key location to destroy.
         :param user_pin: Optional user PIN for authentication (default: None).
-        :raises ProviderError: If the URI is not a string or if key destruction fails.
+        :raises ProviderError: If the URI is not a string.
+        :raises NotImplementedError: Key destruction is provider-specific and is not
+                                     implemented by M2Crypto.
         """
         if not isinstance(uri, str):
             raise ProviderError(f"Wrong type {type(uri)} != str for uri")
 
-        # Note: The current implementation is a placeholder that demonstrates
-        # the general approach. A complete implementation would need to:
-        # 1. Use provider-specific key destruction APIs
-        # 2. Handle PIN authentication properly
-        # 3. Support different key types and storage mechanisms
-
-        pin_ptr = user_pin.encode("utf-8") if user_pin else None
-        ret = m2.provider_destroy_key(uri, pin_ptr)
-        if not ret:
-            raise ProviderError("Failed to destroy key")
+        raise NotImplementedError(
+            "Provider key destruction is provider-specific and is not implemented"
+        )

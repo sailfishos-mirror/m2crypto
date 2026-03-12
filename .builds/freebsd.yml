@@ -1,0 +1,77 @@
+image: freebsd/latest
+oauth: git.sr.ht/REPOSITORIES:RW git.sr.ht/PROFILE:RO
+packages:
+  - hut
+  - zip
+  - swig
+  - pkgconf
+  - python3
+  - py311-pip
+  - py311-build
+  - py311-setuptools
+  - py311-twisted
+  - py311-docutils
+  - py311-mypy
+  - py311-importlib-resources
+  - py311-irc
+  - openssl
+  - libp11
+  - softhsm2
+  - opensc
+  - p11-kit
+  - pkcs11-helper
+environment:
+  # Optimized for FreeBSD Clang:
+  # 1. Removed -grecord-gcc-switches (GCC only)
+  # 2. Replaced Fedora-specific SSP params with standard Clang hardening
+  # 3. Added explicit include/library paths for /usr/local
+  # M2Crypto's setup.py may try to run $CC (defaulting to gcc); on FreeBSD
+  # CI we use base Clang, so force the default compiler driver.
+  CC: cc
+  CFLAGS: >-
+    -pthread -O2 -g -pipe -Wall
+    -D_FORTIFY_SOURCE=2 -fstack-protector-strong
+    -fwrapv -I/usr/local/include -L/usr/local/lib
+sources:
+  - https://git.sr.ht/~mcepl/m2crypto
+secrets:
+  - nickserv_pass
+tasks:
+  - build: |
+     cd m2crypto
+     echo "BUILD_SUBMITTER = $BUILD_SUBMITTER"
+     export PATH=$PATH:$HOME/.local/bin
+     # Use the version-specific python/pip provided by pkg
+     python3 -m pip install --user -r dev-requirements.txt
+     python3 -m build --sdist --no-isolation .
+     python3 -m pip wheel --verbose --no-cache-dir --no-clean --no-build-isolation --wheel-dir dist/ .
+     find . -name \*.c
+     find . -name \*.whl -o -name \*.tar.gz
+     mkdir -p shadowing/sys && touch shadowing/sys/types.h
+     python3 -m pip install -v --upgrade --target $(readlink -f build/lib.*) --no-compile --ignore-installed --no-deps --no-index dist/[mM]2[cC]rypto*.whl
+  - mypy: |
+     cd m2crypto
+     PYTHONPATH=$(readlink -f build/lib.*) python3 -m mypy --no-color-output -p M2Crypto
+  - test: |
+     cd m2crypto
+     # FreeBSD paths for OpenSSL modules and SoftHSM are different from Fedora
+     export OPENSSL_MODULES=/usr/local/lib/ossl-modules
+     export M2CRYPTO_OPENSSL_MODULE_PKCS11=/usr/local/lib/ossl-modules/pkcs11prov.so
+     export M2CRYPTO_PKCS11_MODULE_PATH=/usr/local/lib/softhsm/libsofthsm2.so
+     export PYTHONPATH=$(readlink -f build/lib.*)
+     python3 -m unittest discover -b -v tests
+     python3 -m doctest -v src/M2Crypto/SSL/Checker.py
+     case $BUILD_SUBMITTER in
+        *git.sr.ht*)
+             [ -n "$GIT_REF" ] && REASON="$JOB_ID ($GIT_REF)"
+             [ -n "$PATCHSET_URL" ] && REASON="$JOB_ID ($PATCHSET_URL)"
+             echo "Sourcehut build $BUILD_REASON finished with the result $? ($JOB_URL)." \
+                 | .builds/irc-send irc.libera.chat m2bot mcepl "#m2crypto"
+        ;;
+     esac
+  - prepare_artifacts: |
+     cd m2crypto
+     zip -9rmT artifacts.zip dist/*
+artifacts:
+  - m2crypto/src/SWIG/_m2crypto_wrap.c
+  - m2crypto/artifacts.zip

@@ -73,6 +73,19 @@ class TestM2CryptoProvider(unittest.TestCase):
         openssl_conf = os.path.join(cls.tempdir, "openssl.conf")
         softhsm_conf = os.path.join(cls.tempdir, "softhsm2.conf")
 
+        # M2Crypto loads providers by provider name (e.g. "pkcs11"), which in
+        # many OpenSSL installations maps to a module file named "pkcs11.so".
+        # Some platforms/package layouts ship the PKCS#11 provider module under
+        # a different filename (e.g. "pkcs11prov.so"). Create a private module
+        # directory for this test and provide both filenames.
+        modules_dir = os.path.join(cls.tempdir, "ossl-modules")
+        os.mkdir(modules_dir)
+        local_pkcs11prov = os.path.join(modules_dir, "pkcs11prov.so")
+        local_pkcs11 = os.path.join(modules_dir, "pkcs11.so")
+        shutil.copy(openssl_module_pkcs11, local_pkcs11prov)
+        shutil.copy(openssl_module_pkcs11, local_pkcs11)
+        openssl_module_pkcs11 = local_pkcs11prov
+
         # Create necessary file and folder
         pin_file = os.path.join(cls.tempdir, "pin.txt")
         with open(pin_file, "w") as f:
@@ -86,9 +99,39 @@ class TestM2CryptoProvider(unittest.TestCase):
         )
         cls.writeSoftHsmCConf(softhsm_conf, tokens_dir)
 
+        # Basic debugging info to make CI failures actionable.
+        print("PKCS#11 integration test configuration:")
+        print(f"  OPENSSL_CONF={openssl_conf}")
+        print(f"  SOFTHSM2_CONF={softhsm_conf}")
+        print(f"  M2CRYPTO_OPENSSL_MODULE_PKCS11={openssl_module_pkcs11}")
+        print(f"  M2CRYPTO_PKCS11_MODULE_PATH={pkcs11_module_path}")
+        try:
+            with open(openssl_conf, "r") as f:
+                print("  --- openssl.conf ---")
+                print(f.read())
+                print("  --- end openssl.conf ---")
+        except OSError as e:
+            print(f"  Could not read openssl.conf: {e}")
+        try:
+            with open(softhsm_conf, "r") as f:
+                print("  --- softhsm2.conf ---")
+                print(f.read())
+                print("  --- end softhsm2.conf ---")
+        except OSError as e:
+            print(f"  Could not read softhsm2.conf: {e}")
+
         # Set environment variables, these must be set before loading the provider
         os.environ["OPENSSL_CONF"] = openssl_conf
         os.environ["SOFTHSM2_CONF"] = softhsm_conf
+        # pkcs11prov (libp11) also supports configuration via environment.
+        # Using env vars keeps the provider-openssl.conf template portable.
+        os.environ.setdefault("PKCS11_MODULE_PATH", pkcs11_module_path)
+        os.environ.setdefault("PKCS11_PIN", PIN)
+        # Ensure OpenSSL can discover the provider module.
+        os.environ["OPENSSL_MODULES"] = modules_dir
+
+        # Verify which OpenSSL providers are active (helps debug pkcs11 URI loading).
+        subprocess.run(["openssl", "list", "-providers"], check=True)
 
         # Init HSM
         subprocess.run(
@@ -125,9 +168,25 @@ class TestM2CryptoProvider(unittest.TestCase):
             check=True,
         )
 
+        # Show token contents after generating the key.
+        subprocess.run(
+            [
+                "pkcs11-tool",
+                "--module",
+                pkcs11_module_path,
+                "--login",
+                "--pin",
+                PIN,
+                "--list-objects",
+            ],
+            check=True,
+        )
+
         # Generate and import a certificate
         cert_der = os.path.join(cls.tempdir, "01_cert.der")
-        subprocess.run(
+        # Generate a self-signed certificate using the PKCS#11 private key.
+        # Capture output to provide useful diagnostics on failures.
+        res = subprocess.run(
             [
                 "openssl",
                 "req",
@@ -136,7 +195,7 @@ class TestM2CryptoProvider(unittest.TestCase):
                 "-days",
                 "365",
                 "-key",
-                "pkcs11:%01",
+                PRIVKEY_URI,
                 "-subj",
                 "/CN=01_cert/",
                 "-out",
@@ -144,8 +203,19 @@ class TestM2CryptoProvider(unittest.TestCase):
                 "-outform",
                 "der",
             ],
-            check=True,
+            text=True,
+            capture_output=True,
         )
+        if res.returncode != 0:
+            print("openssl req failed")
+            print(f"  returncode={res.returncode}")
+            if res.stdout:
+                print("  --- stdout ---")
+                print(res.stdout)
+            if res.stderr:
+                print("  --- stderr ---")
+                print(res.stderr)
+            res.check_returncode()
 
         subprocess.run(
             [

@@ -16,20 +16,27 @@ Copyright (C) 2004-2007 OSAF. All Rights Reserved.
 Copyright 2008-2011 Heikki Toivonen. All rights reserved.
 """
 
+from typing import Any, Callable, Optional
+
 __version__: str = "0.48.0"
 version: str = __version__
 
+VersionCtor: Optional[Callable[[str], Any]]
+
 try:
-    from packaging.version import Version
+    from packaging.version import Version as _PackagingVersion
+
+    VersionCtor = _PackagingVersion
 except ImportError:
     try:
-        from distutils.version import StrictVersion as Version  # type: ignore [no-redef, import-not-found]
-    except ImportError:
-        Version = None  # type: ignore[misc, assignment]
+        from distutils.version import StrictVersion as _StrictVersion  # type: ignore[import-not-found]
 
-if Version is not None:
-    version_info: tuple = (0, 0, 0)
-    __ver: Version = Version(__version__)
+        VersionCtor = _StrictVersion
+    except ImportError:
+        VersionCtor = None
+if VersionCtor is not None:
+    version_info: tuple[int, int, int] = (0, 0, 0)
+    __ver = VersionCtor(__version__)
     if hasattr(__ver, "_version"):
         version_info = tuple(__ver._version[1])
     elif hasattr(__ver, "version"):

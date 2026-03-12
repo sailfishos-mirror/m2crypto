@@ -3,6 +3,7 @@
 
 import hashlib
 import os
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -67,7 +68,8 @@ class TestM2CryptoProvider(unittest.TestCase):
         openssl_module_pkcs11 = cls.getenv("M2CRYPTO_OPENSSL_MODULE_PKCS11")
         pkcs11_module_path = cls.getenv("M2CRYPTO_PKCS11_MODULE_PATH")
 
-        cls.tempdir = tempfile.TemporaryDirectory(delete=False).name
+        # Use mkdtemp + explicit cleanup for Python 3.6+ compatibility.
+        cls.tempdir = tempfile.mkdtemp(prefix="m2crypto-provider-")
         openssl_conf = os.path.join(cls.tempdir, "openssl.conf")
         softhsm_conf = os.path.join(cls.tempdir, "softhsm2.conf")
 
@@ -173,6 +175,12 @@ class TestM2CryptoProvider(unittest.TestCase):
             raise unittest.SkipTest(
                 f"Could not initialize PKCS#11 provider or load objects: {e}"
             )
+
+    @classmethod
+    def tearDownClass(cls):
+        # Best-effort cleanup; tests may create extra files under tempdir.
+        if getattr(cls, "tempdir", None):
+            shutil.rmtree(cls.tempdir, ignore_errors=True)
 
     def test_public_key_der_comparison(self):
         """

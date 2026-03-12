@@ -43,14 +43,17 @@ typedef unsigned __int64 uint64_t;
 %}
 
 %{
-#if defined __GNUC__ && __GNUC__ < 5
-PRAGMA_IGNORE_UNUSED_LABEL
-PRAGMA_WARN_STRICT_PROTOTYPES
-#endif
-
 #include <openssl/err.h>
 #include <openssl/rand.h>
 #include <_lib.h>
+
+/* _lib.h defines PRAGMA_* helpers; only needed for old GCC (clang defines
+ * __GNUC__ too, but doesn't need this workaround).
+ */
+#if defined(__GNUC__) && !defined(__clang__) && (__GNUC__ < 5)
+PRAGMA_IGNORE_UNUSED_LABEL
+PRAGMA_WARN_STRICT_PROTOTYPES
+#endif
 
 #include "compile.h"
 

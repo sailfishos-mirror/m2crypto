@@ -43,12 +43,6 @@ class UtilError(Exception):
 m2.util_init(UtilError)
 
 
-def is_32bit() -> bool:
-    # or alternatively (slightly slower)
-    # (struct.calcsize("P") * 8) == 32
-    return not (sys.maxsize > 2**32)
-
-
 def expectedFailureIf(condition: bool) -> Callable:
     """The test is marked as an expectedFailure if the condition is satisfied."""
 

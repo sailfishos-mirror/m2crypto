@@ -42,7 +42,6 @@ from M2Crypto import (
     m2,
     m2urllib2,
     m2xmlrpclib,
-    util,
 )
 from M2Crypto.SSL.timeout import DEFAULT_TIMEOUT
 from tests import unittest
@@ -483,11 +482,6 @@ class MiscSSLClientTestCase(BaseSSLClientTestCase):
         finally:
             self.stop_server(pid)
 
-    # the test for musl libc based on the unresolved bug in CPython gh#python/cpython#87414
-    @unittest.skipIf(
-        (util.is_32bit() and platform.libc_ver() == ("", "")),
-        "socket.setsockopt() on musl libc fails (srht#mcepl/m2crypto#341)",
-    )
     def test_server_simple_timeouts(self):
         pid = self.start_server(self.args)
         # Arbitrary value:

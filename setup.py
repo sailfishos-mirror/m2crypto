@@ -22,6 +22,7 @@ import platform
 import re
 import shlex
 import shutil
+import struct
 import subprocess
 import sys
 import setuptools
@@ -357,7 +358,7 @@ class _M2CryptoBuildExt(build_ext.build_ext):
                     ver_part += "-1_1"
                 # Add more conditions for other specific versions if needed
 
-            if sys.maxsize > 2**32:
+            if struct.calcsize("P") * 8 == 64:
                 ver_part += "-x64"  # This adds '-x64' for 64-bit systems
 
             search = list(self.library_dirs)

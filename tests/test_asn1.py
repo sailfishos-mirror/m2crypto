@@ -10,7 +10,6 @@ import platform
 import time
 
 from M2Crypto import ASN1, m2
-from M2Crypto.util import is_32bit, expectedFailureIf
 from tests import unittest
 
 

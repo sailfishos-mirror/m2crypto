@@ -162,7 +162,13 @@ leap:
     - zypper install -y swig python3-devel python3-pip libopenssl-devel openssl python3-docutils python3-setuptools python3-service_identity python3-Twisted python3-twine python3-wheel python3-flake8
   script:
     - *common_setup_script
-    - *common_python_build_script
+    - |
+      python3 setup.py bdist_wheel
+      mkdir -p build/lib
+      BUILD_LIB_DIR="build/lib"
+      python3 -mpip install -v --upgrade --target "$BUILD_LIB_DIR" --no-compile --ignore-installed --no-deps --no-index dist/[mM]2[cC]rypto*.whl
+      echo "export BUILD_LIB_DIR=$BUILD_LIB_DIR" >> $CI_PROJECT_DIR/.env_setup
+      echo "export PYTHONPATH=$BUILD_LIB_DIR" >> $CI_PROJECT_DIR/.env_setup
     - *common_tests_script
 opensuse:
   image: opensuse/tumbleweed

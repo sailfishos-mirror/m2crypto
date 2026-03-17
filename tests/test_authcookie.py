@@ -36,13 +36,27 @@ class AuthCookieTestCase(unittest.TestCase):
     def tearDown(self):
         pass
 
+    @staticmethod
+    def _corrupt_char(c: str) -> str:
+        """Shift character within printable ASCII range (0x21-0x7e).
+
+        Unlike the naive ``chr(ord(c) + 13)`` this avoids producing
+        control characters which are rejected by ``http.cookies`` since
+        the fix for CVE-2026-0672.
+        """
+        return chr(0x21 + (ord(c) - 0x21 + 13) % (0x7e - 0x21 + 1))
+
     def _corrupt_part_str(self, s: str, fr: int, to: int) -> str:
-        out = s[:fr] + "".join([chr(ord(x) + 13) for x in s[fr:to]]) + s[to:]
+        out = s[:fr] + "".join([self._corrupt_char(x) for x in s[fr:to]]) + s[to:]
         self.assertNotEqual(s, out)
         return out
 
     def test_encode_part_str(self):
         a_str = "a1b2c3d4e5f6h7i8j9"
+        # Characters at positions 3-5 are "2c", shifted +13 within
+        # printable ASCII range (0x21-0x7e):
+        # '2' = 0x32, corrupted = chr(0x21 + (0x32 - 0x21 + 13) % 94) = chr(0x21 + 30) = chr(0x3f) = '?'
+        # 'c' = 0x63, corrupted = chr(0x21 + (0x63 - 0x21 + 13) % 94) = chr(0x21 + 79) = chr(0x70) = 'p'
         self.assertEqual(self._corrupt_part_str(a_str, 3, 5), "a1b?p3d4e5f6h7i8j9")
 
     def test_mix_unmix(self):
@@ -167,6 +181,23 @@ class AuthCookieTestCase(unittest.TestCase):
         s = SimpleCookie()
         s.load(cout_str)
         self.assertFalse(self.jar.isGoodCookieString(s.output(header="")))
+
+    def test_cookie_str_control_chars(self):
+        """Cookie strings with control characters must be rejected.
+
+        Python 3.13.12+ raises CookieError for control characters in
+        cookie values (CVE-2026-0672).  isGoodCookieString() must
+        return False instead of propagating the exception.
+        """
+        c = self.jar.makeCookie(self.exp, self.data)
+        cout = c.output(header="")
+        # Inject a DEL (0x7f) control character into the cookie value
+        # to simulate the scenario that triggered CVE-2026-0672.
+        cout_with_ctrl = cout[:40] + "\x7f" + cout[41:]
+        self.assertFalse(self.jar.isGoodCookieString(cout_with_ctrl))
+        # Also test with low control characters (e.g. BEL 0x07).
+        cout_with_bel = cout[:40] + "\x07" + cout[41:]
+        self.assertFalse(self.jar.isGoodCookieString(cout_with_bel))
 
 
 def suite():

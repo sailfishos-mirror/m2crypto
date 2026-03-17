@@ -6,7 +6,7 @@ import logging
 import re
 import time
 
-from http.cookies import SimpleCookie
+from http.cookies import CookieError, SimpleCookie
 
 from M2Crypto import Rand, m2, util
 
@@ -136,7 +136,12 @@ class AuthCookieJar:
         self, cookie_str: Union[dict, str], _debug: bool = False
     ) -> bool:
         c = SimpleCookie()
-        c.load(cookie_str)
+        try:
+            c.load(cookie_str)
+        except CookieError:
+            log.warning(
+                "Illegal characters in cookie string (CVE-2026-0672)")
+            return False
         if _TOKEN not in c:
             log.debug("_TOKEN not in c (keys = %s)", dir(c))
             return False

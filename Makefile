@@ -33,7 +33,7 @@ BUILD_LIB_DIR = $(shell find build -maxdepth 1 -type d -name "lib.*")
 
 # Phony targets are actions, not files. Declaring them prevents conflicts
 # with files of the same name and improves performance.
-.PHONY: all wheel install check clean help certs
+.PHONY: all wheel install check clean help certs release-pypi
 
 # The default 'all' target now runs the full build and test cycle.
 all: check ## Build the wheel (if needed), install it locally, and run tests.
@@ -100,6 +100,18 @@ doc: install
 
 mypy:
 	python3 -mmypy src/M2Crypto
+
+release-pypi: ## Trigger the GitLab CI release-pypi pipeline job for the current tag (requires glab and a tag commit).
+	@TAG=$$(git tag --points-at HEAD | head -n1); \
+	if [ -z "$$TAG" ]; then \
+		echo "Error: HEAD is not tagged. Tag the release commit first (e.g. git tag 0.42.0)."; \
+		exit 1; \
+	fi; \
+	if ! git ls-remote --tags gitlab "refs/tags/$$TAG" | grep -q "refs/tags/$$TAG"; then \
+		echo "Error: Tag $$TAG has not been pushed to gitlab."; \
+		exit 1; \
+	fi; \
+	glab ci run --branch "$$TAG"
 
 # 'clean' is a manual operation to remove all generated files.
 clean: ## Remove all generated files and build artifacts.

@@ -16,7 +16,7 @@ Copyright (C) 2004-2007 OSAF. All Rights Reserved.
 Copyright 2008-2011 Heikki Toivonen. All rights reserved.
 """
 
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Tuple
 
 __version__: str = "0.48.0"
 version: str = __version__
@@ -35,7 +35,7 @@ except ImportError:
     except ImportError:
         VersionCtor = None
 if VersionCtor is not None:
-    version_info: tuple[int, int, int] = (0, 0, 0)
+    version_info: Tuple[int, int, int] = (0, 0, 0)
     __ver = VersionCtor(__version__)
     if hasattr(__ver, "_version"):
         version_info = tuple(__ver._version[1])

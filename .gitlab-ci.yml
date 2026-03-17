@@ -120,9 +120,9 @@ fedora:
     - .irc_notification
   before_script:
     - dnf makecache
-    - dnf upgrade --allowerasing --skip-unavailable --allow-downgrade
-    - dnf install -y @development-tools fedora-packager rpmdevtools
-    - dnf install -y swig python3-devel python3-pip openssl-devel openssl python3-setuptools python3-twisted openssl-devel-engine python3-irc twine python3-wheel python3-flake8
+    - dnf upgrade --allowerasing --skip-unavailable --allow-downgrade --assumeyes
+    - dnf install --assumeyes @development-tools fedora-packager rpmdevtools
+    - dnf install --assumeyes swig python3-devel python3-pip openssl-devel openssl python3-setuptools python3-twisted openssl-devel-engine python3-irc twine python3-wheel python3-flake8
   script:
     - *common_setup_script
     - *common_python_build_script
@@ -136,9 +136,9 @@ fedora-rawhide:
     - .irc_notification
   before_script:
     - dnf makecache
-    - dnf upgrade --allowerasing --skip-unavailable --allow-downgrade
-    - dnf install -y @development-tools fedora-packager rpmdevtools
-    - dnf install -y swig python3-devel python3-pip openssl-devel openssl python3-setuptools python3-twisted openssl-devel-engine python3-irc twine python3-wheel python3-flake8
+    - dnf upgrade --allowerasing --skip-unavailable --allow-downgrade --assumeyes
+    - dnf install --assumeyes @development-tools fedora-packager rpmdevtools
+    - dnf install --assumeyes swig python3-devel python3-pip openssl-devel openssl python3-setuptools python3-twisted openssl-devel-engine python3-irc twine python3-wheel python3-flake8
   allow_failure: true
   script:
     - *common_setup_script

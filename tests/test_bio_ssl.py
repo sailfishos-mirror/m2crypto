@@ -5,7 +5,6 @@
 Copyright (c) 1999-2002 Ng Pheng Siong. All rights reserved."""
 
 import socket
-import sys
 import threading
 
 from M2Crypto import BIO
@@ -24,6 +23,7 @@ class HandshakeClient(threading.Thread):
         threading.Thread.__init__(self)
         self.host = host
         self.port = port
+        self.error = None
 
     def run(self):
         ctx = SSL.Context()
@@ -46,7 +46,9 @@ class HandshakeClient(threading.Thread):
                 if not sslbio.should_retry() or not sslbio.should_read():
                     err_string = Err.get_error()
                     print(err_string)
-                    sys.exit("unrecoverable error in handshake - client")
+                    self.error = "unrecoverable error in handshake - client"
+                    sock.close()
+                    return
                 else:
                     output_token = writebio.read()
                     if output_token is not None:
@@ -135,7 +137,7 @@ class SSLTestCase(unittest.TestCase):
             ret = self.sslbio.do_handshake()
             if ret <= 0:
                 if not self.sslbio.should_retry() or not self.sslbio.should_read():
-                    sys.exit("unrecoverable error in handshake - server")
+                    self.fail("unrecoverable error in handshake - server")
             else:
                 handshake_complete = True
 
@@ -144,6 +146,8 @@ class SSLTestCase(unittest.TestCase):
                 new_sock.sendall(output_token)
 
         handshake_client.join()
+        if handshake_client.error is not None:
+            self.fail(handshake_client.error)
         sock.close()
         new_sock.close()
 

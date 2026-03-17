@@ -1,3 +1,29 @@
+0.48.0 - 2026-03-17
+-------------------
+
+- fix(test_bio_ssl): fix TLS 1.3 deadlock and add socket timeouts
+- fix(test_bio_ssl): replace sys.exit() with self.fail() to prevent test
+  process crash
+- ci: publish to PyPI with Sigstore attestations via Trusted Publishing
+- fix(authcookie): handle CookieError from Python 3.13.12+
+  (CVE-2026-0672)
+- ci(leap): use setup.py bdist_wheel to bypass old pip PEP 517 wrapper
+- fix: use typing.Tuple instead of tuple[] for Python 3.6 compatibility
+- ci: add --assumeyes for dnf commands
+- fix(util): replace is_32bit with struct.calcsize and update tests
+- ci: add FreeBSD SourceHut CI build script
+- fix(swig): avoid clang GNUC pragma block before _lib.h
+- fix(provider): don't abuse TemporaryDirectory to be mkdtemp, use that
+  directly.
+- fix(provider): gate provider APIs for OpenSSL 1.1.1
+- feat(provider): add key generation and destruction methods
+- docs(provider): add comprehensive documentation to Provider module
+- fix(provider): better exception handling
+- doc: add a simple AGENTS.md
+- feat(engine): add availability check, lifecycle helpers, and safer
+  cleanup
+- doc(engine): Improve documentation and example of using Engine module
+
 0.47.0 - 2026-02-08
 -------------------
 

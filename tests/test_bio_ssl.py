@@ -16,6 +16,10 @@ from M2Crypto import threading as m2threading
 from tests import unittest
 from tests.test_ssl import srv_host, allocate_srv_port
 
+# Timeout (seconds) for blocking socket operations in the handshake test.
+# Prevents the test from hanging indefinitely if the handshake deadlocks.
+_HANDSHAKE_TIMEOUT = 10
+
 
 class HandshakeClient(threading.Thread):
 
@@ -37,25 +41,30 @@ class HandshakeClient(threading.Thread):
         conn.set_bio(readbio, writebio)
         conn.set_connect_state()
         sock = socket.socket()
+        sock.settimeout(_HANDSHAKE_TIMEOUT)
         sock.connect((self.host, self.port))
 
         handshake_complete = False
         while not handshake_complete:
             ret = sslbio.do_handshake()
             if ret <= 0:
-                if not sslbio.should_retry() or not sslbio.should_read():
+                if not sslbio.should_retry():
                     err_string = Err.get_error()
                     print(err_string)
                     self.error = "unrecoverable error in handshake - client"
                     sock.close()
                     return
-                else:
-                    output_token = writebio.read()
-                    if output_token is not None:
-                        sock.sendall(output_token)
-                    else:
-                        input_token = sock.recv(1024)
-                        readbio.write(input_token)
+                # Always flush any pending output before deciding to read.
+                output_token = writebio.read()
+                if output_token is not None:
+                    sock.sendall(output_token)
+                elif sslbio.should_read():
+                    input_token = sock.recv(1024)
+                    if not input_token:
+                        self.error = "connection closed during handshake - client"
+                        sock.close()
+                        return
+                    readbio.write(input_token)
             else:
                 handshake_complete = True
 
@@ -130,8 +139,11 @@ class SSLTestCase(unittest.TestCase):
         handshake_client = HandshakeClient(srv_host, srv_port)
         handshake_client.start()
         new_sock, _ = sock.accept()
+        new_sock.settimeout(_HANDSHAKE_TIMEOUT)
         while not handshake_complete:
             input_token = new_sock.recv(1024)
+            if not input_token:
+                self.fail("connection closed during handshake - server")
             readbio.write(input_token)
 
             ret = self.sslbio.do_handshake()

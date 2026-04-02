@@ -49,9 +49,7 @@ from tests.fips import fips_mode
 
 log = logging.getLogger("test_SSL")
 
-IS_DEBIAN=os.path.exists('/etc/debian_version')
-
-IS_DEBIAN=os.path.exists('/etc/debian_version')
+IS_DEBIAN = os.path.exists("/etc/debian_version")
 
 # FIXME
 # It would be probably better if the port was randomly selected.
@@ -64,7 +62,7 @@ def allocate_srv_port():
     try:
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.bind((srv_host, 0))
-        (host, port) = s.getsockname()
+        host, port = s.getsockname()
     finally:
         s.close()
     return port
@@ -75,7 +73,7 @@ def verify_cb_new_function(ok, store):
     # If err is X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE, then instead of
     # aborting, this callback is called to retrieve additional error
     # information.  In this case, ok might not be False.
-    # See https://github.com/openssl/openssl/commit/2e06150e3928daa06d5ff70c32bffad8088ebe58
+    # See https://github.com/openssl/openssl/commit/2e06150e3928
     if err != m2.X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE:
         assert not ok
     assert err in [
@@ -1207,12 +1205,12 @@ class ChunkedHTTPSServer(threading.Thread):
                     b"Content-Type: text/plain\r\n"
                     b"Transfer-Encoding: chunked\r\n"
                     b"\r\n"
-                    b"4\r\n"      # Chunk size: 4 bytes
+                    b"4\r\n"  # Chunk size: 4 bytes
                     b"foo\n\r\n"  # Data: "foo\n"
-                    b"7\r\n"      # Chunk size: 7 bytes
+                    b"7\r\n"  # Chunk size: 7 bytes
                     b"foobar\n\r\n"  # Data: "foobar\n"
-                    b"0\r\n"      # Last chunk (size 0)
-                    b"\r\n"       # Final CRLF
+                    b"0\r\n"  # Last chunk (size 0)
+                    b"\r\n"  # Final CRLF
                 )
                 ssl_conn.sendall(response)
                 ssl_conn.close()
@@ -1267,6 +1265,7 @@ class Urllib2TEChunkedSSLClientTestCase(BaseSSLClientTestCase):
         u.close()
 
         self.assertEqual(b"foo\nfoobar\n", data)
+
 
 @unittest.skip("Twisted integration has been temporarily switched off.")
 class TwistedSSLClientTestCase(BaseSSLClientTestCase):

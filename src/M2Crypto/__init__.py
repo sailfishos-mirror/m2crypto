@@ -16,7 +16,7 @@ Copyright (C) 2004-2007 OSAF. All Rights Reserved.
 Copyright 2008-2011 Heikki Toivonen. All rights reserved.
 """
 
-from typing import Any, Callable, Optional, Tuple
+from typing import Any, Callable, Optional, Tuple, cast
 
 __version__: str = "0.48.0"
 version: str = __version__
@@ -37,10 +37,14 @@ except ImportError:
 if VersionCtor is not None:
     version_info: Tuple[int, int, int] = (0, 0, 0)
     __ver = VersionCtor(__version__)
-    if hasattr(__ver, "_version"):
-        version_info = tuple(__ver._version[1])
-    elif hasattr(__ver, "version"):
-        version_info = __ver.version
+    release = getattr(__ver, "release", None)
+    if release is not None:
+        release_tuple = tuple(release)
+        version_info = cast(Tuple[int, int, int], (release_tuple + (0, 0, 0))[:3])
+    else:
+        strict_version = getattr(__ver, "version", None)
+        if strict_version is not None:
+            version_info = cast(Tuple[int, int, int], strict_version)
 
 from M2Crypto import m2
 

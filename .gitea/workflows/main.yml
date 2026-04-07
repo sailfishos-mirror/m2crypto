@@ -17,21 +17,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Clone m2crypto source
-        run: git clone https://git.sr.ht/~mcepl/m2crypto
-
       # Install dependencies using Ubuntu's 'apt-get' instead of Fedora's 'dnf'.
       # Package names have been translated (e.g., python3-devel -> python3-dev).
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y swig python3 python3-dev python3-pip libssl-dev openssl python3-setuptools python3-twisted python3-pexpect python3-docutils python3-mypy
+          sudo apt-get install -y swig python3 python3-dev python3-pip libssl-dev openssl python3-setuptools python3-twisted python3-pexpect python3-docutils python3-mypy dpkg-dev pkcs11-provider softhsm2 opensc
 
       - name: Build wheel
-        working-directory: ./m2crypto
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          python3 -mpip install --user -r dev-requirements.txt
+          python3 -mpip install --user --break-system-packages -r dev-requirements.txt
           python3 -mpip wheel --verbose --no-cache-dir --no-clean --no-build-isolation --wheel-dir dist/ --editable .
           find . -name \*.c
           find . -name \*.whl -o -name \*.tar.gz
@@ -39,36 +35,37 @@ jobs:
           # Dynamically determine the build path for PYTHONPATH
           export PYTHONPATH_DYNAMIC=$(readlink -f build/lib.*)
           # We no longer export this to GITEA_ENV to improve compatibility.
-          python3 -mpip install -v --upgrade --target ${PYTHONPATH_DYNAMIC} --no-compile --ignore-installed --no-deps --no-index dist/[mM]2[cC]rypto*.whl
+          python3 -mpip install -v --upgrade --break-system-packages --target ${PYTHONPATH_DYNAMIC} --no-compile --ignore-installed --no-deps --no-index dist/[mM]2[cC]rypto*.whl
 
       - name: Run mypy check
-        working-directory: ./m2crypto
         run: |
           # Recalculate PYTHONPATH directly in this step.
           PYTHONPATH=$(readlink -f build/lib.*) python3 -mmypy --no-color-output src/M2Crypto
 
       - name: Run unittests
-        working-directory: ./m2crypto
         run: |
           # Recalculate PYTHONPATH directly in this step.
-          PYTHONPATH=$(readlink -f build/lib.*) python3 -munittest -b -v tests.alltests.suite
+          export DEB_HOST_MULTIARCH=$(dpkg-architecture -qDEB_HOST_MULTIARCH)
+          export M2CRYPTO_OPENSSL_MODULE_PKCS11=/usr/lib/${DEB_HOST_MULTIARCH}/ossl-modules/pkcs11.so
+          export M2CRYPTO_PKCS11_MODULE_PATH=/usr/lib/${DEB_HOST_MULTIARCH}/softhsm/libsofthsm2.so
+          export PYTHONPATH=$(readlink -f build/lib.*)
+          python3 -munittest discover -b -v tests
+          python3 -mdoctest -v src/M2Crypto/SSL/Checker.py
+          # case $BUILD_SUBMITTER in
+          #    *git.sr.ht*)
+          #         [ -n "$GIT_REF" ] && REASON="$JOB_ID ($GIT_REF)"
+          #         [ -n "$PATCHSET_URL" ] && REASON="$JOB_ID ($PATCHSET_URL)"
+          #         echo "Sourcehut build $BUILD_REASON finished with the result $? ($JOB_URL)." \
+          #             | .builds/irc-send irc.libera.chat m2bot mcepl "#m2crypto"
+          #    ;;
+          # esac
           echo "Test task finished."
 
-      - name: Validate README
-        working-directory: ./m2crypto
-        run: |
-          echo "Current ref: ${{ gitea.ref_name }}"
-          python3 -mdocutils --strict README.rst >/dev/null
-          # The README update logic remains commented out as it is platform-specific.
-          if [[ "${{ gitea.ref_name }}" == "master" ]]; then
-            echo "On master branch. Skipping Sourcehut-specific 'hut' command."
-          fi
-
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: build-artifacts
           path: |
-            m2crypto/src/SWIG/_m2crypto_wrap.c
-            m2crypto/dist/*.whl
-            m2crypto/dist/*.tar.gz
+            src/SWIG/_m2crypto_wrap.c
+            dist/*.whl
+            dist/*.tar.gz

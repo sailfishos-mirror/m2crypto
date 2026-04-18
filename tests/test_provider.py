@@ -205,6 +205,7 @@ class TestM2CryptoProvider(unittest.TestCase):
             ],
             text=True,
             capture_output=True,
+            env=os.environ,
         )
         if res.returncode != 0:
             print("openssl req failed")
@@ -215,6 +216,22 @@ class TestM2CryptoProvider(unittest.TestCase):
             if res.stderr:
                 print("  --- stderr ---")
                 print(res.stderr)
+            stderr_lower = res.stderr.lower()
+            if (
+                "unregistered scheme" in stderr_lower
+                or "scheme=pkcs11" in stderr_lower
+                or "module initialization failed" in stderr_lower
+            ):
+                openssl_version = subprocess.run(
+                    ["openssl", "version"],
+                    text=True,
+                    capture_output=True,
+                    env=os.environ,
+                )
+                raise unittest.SkipTest(
+                    "OpenSSL CLI in this environment cannot use pkcs11: URIs "
+                    f"for certificate generation ({openssl_version.stdout.strip()})"
+                )
             res.check_returncode()
 
         subprocess.run(

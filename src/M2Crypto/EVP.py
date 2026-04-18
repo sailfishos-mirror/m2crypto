@@ -39,15 +39,17 @@ class MessageDigest(object):
     """
 
     def __init__(self, algo: str) -> None:
-        md: Optional[Callable] = getattr(m2, algo, None)
-        if md is None:
+        md_func: Optional[Callable[[], C.EVP_MD]] = getattr(m2, algo, None)
+        digest: Optional[C.EVP_MD]
+        if md_func is None:
             # if the digest algorithm isn't found as an attribute of the m2
             # module, try to look up the digest using get_digestbyname()
-            self.md = m2.get_digestbyname(algo)
-            if self.md is None:
+            digest = m2.get_digestbyname(algo)
+            if digest is None:
                 raise EVPError("unknown algorithm %s" % (algo,))
         else:
-            self.md = md()
+            digest = md_func()
+        self.md: C.EVP_MD = digest
         self.ctx = m2.md_ctx_new()
         m2.digest_init(self.ctx, self.md)
 
@@ -461,13 +463,16 @@ class PKey(object):
                          the key. The default is
                          util.passphrase_callback.
         """
+        bio_ptr = bio._ptr()
+        if bio_ptr is None:
+            raise BIO.BIOError("Uninitialized bio")
         if cipher is None:
-            return m2.pkey_write_pem_no_cipher(self.pkey, bio._ptr(), callback)
+            return m2.pkey_write_pem_no_cipher(self.pkey, bio_ptr, callback)
         else:
             proto = getattr(m2, cipher, None)
             if proto is None:
                 raise ValueError("no such cipher %s" % cipher)
-            return m2.pkey_write_pem(self.pkey, bio._ptr(), proto(), callback)
+            return m2.pkey_write_pem(self.pkey, bio_ptr, proto(), callback)
 
     def as_pem(
         self,
@@ -536,7 +541,10 @@ def load_key(
     :return: M2Crypto.EVP.PKey object.
     """
     with BIO.openfile(file, "r") as bio:
-        cptr = m2.pkey_read_pem(bio.bio, callback)
+        bio_ptr = bio._ptr()
+        if bio_ptr is None:
+            raise BIO.BIOError("Uninitialized bio")
+        cptr = m2.pkey_read_pem(bio_ptr, callback)
 
     return PKey(cptr, 1)
 
@@ -558,7 +566,10 @@ def load_key_pubkey(
     """
 
     with BIO.openfile(file, "r") as bio:
-        cptr = m2.pkey_read_pem_pubkey(bio._ptr(), callback)
+        bio_ptr = bio._ptr()
+        if bio_ptr is None:
+            raise BIO.BIOError("Uninitialized bio")
+        cptr = m2.pkey_read_pem_pubkey(bio_ptr, callback)
         if cptr is None:
             raise EVPError(Err.get_error())
     return PKey(cptr, 1)
@@ -576,7 +587,10 @@ def load_key_bio(bio: BIO.BIO, callback: Callable = util.passphrase_callback) ->
 
     :return: M2Crypto.EVP.PKey object.
     """
-    cptr = m2.pkey_read_pem(bio._ptr(), callback)
+    bio_ptr = bio._ptr()
+    if bio_ptr is None:
+        raise BIO.BIOError("Uninitialized bio")
+    cptr = m2.pkey_read_pem(bio_ptr, callback)
     return PKey(cptr, 1)
 
 
@@ -594,7 +608,10 @@ def load_key_bio_pubkey(
 
     :return: M2Crypto.EVP.PKey object.
     """
-    cptr = m2.pkey_read_pem_pubkey(bio._ptr(), callback)
+    bio_ptr = bio._ptr()
+    if bio_ptr is None:
+        raise BIO.BIOError("Uninitialized bio")
+    cptr = m2.pkey_read_pem_pubkey(bio_ptr, callback)
     if cptr is None:
         raise EVPError(Err.get_error())
     return PKey(cptr, 1)

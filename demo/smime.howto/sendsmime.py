@@ -5,7 +5,7 @@
 Copyright (c) 1999-2001 Ng Pheng Siong. All rights reserved."""
 
 from M2Crypto import BIO, Rand, SMIME, X509
-import smtplib, string, sys
+import smtplib
 
 
 def sendsmime(
@@ -46,9 +46,9 @@ def sendsmime(
         p7 = s.encrypt(tmp_bio)
 
     out = BIO.MemoryBuffer()
-    out.write("From: %s\r\n" % from_addr)
-    out.write("To: %s\r\n" % string.join(to_addrs, ", "))
-    out.write("Subject: %s\r\n" % subject)
+    out.write(f"From: {from_addr}\r\n")
+    out.write(f"To: {', '.join(to_addrs)}\r\n")
+    out.write(f"Subject: {subject}\r\n")
     if encrypt:
         s.write(out, p7)
     else:
@@ -59,10 +59,8 @@ def sendsmime(
             out.write(msg)
     out.close()
 
-    smtp = smtplib.SMTP()
-    smtp.connect(smtpd)
-    smtp.sendmail(from_addr, to_addrs, out.read())
-    smtp.quit()
+    with smtplib.SMTP(smtpd) as smtp:
+        smtp.sendmail(from_addr, to_addrs, out.read())
 
     # XXX Cleanup the stack and store.
 

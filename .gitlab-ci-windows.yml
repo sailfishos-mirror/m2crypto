@@ -41,7 +41,7 @@ build-test-windows:
       - PYTHON_VERSION: "313"
       - PYTHON_VERSION: "314"
   variables:
-    OPENSSL_INSTALLER: "Win64OpenSSL-3_0_19.exe"
+    OPENSSL_INSTALLER: "Win64OpenSSL-3_0_20.exe"
     OPENSSL_PATH: "C:\\OpenSSL-3-0-Win64"
     BUNDLEDLLS: 1
   tags:

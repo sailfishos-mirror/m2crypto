@@ -687,9 +687,9 @@ def sendsmime(from_addr, to_addrs, subject, msg, from_key, from_cert=None, to_ce
         p7 = s.encrypt(tmp_bio)
 
     out = BIO.MemoryBuffer()
-    out.write(b'From: %s\r\n' % from_addr)
-    out.write(b'To: %s\r\n' % string.join(to_addrs, ", "))
-    out.write(b'Subject: %s\r\n' % subject)
+    out.write(f'From: {from_addr}\r\n'.encode())
+    out.write(f'To: {", ".join(to_addrs)}\r\n'.encode())
+    out.write(f'Subject: {subject}\r\n'.encode())
     if encrypt:
         s.write(out, p7)
     else:
@@ -700,10 +700,8 @@ def sendsmime(from_addr, to_addrs, subject, msg, from_key, from_cert=None, to_ce
             out.write(msg)
     out.close()
 
-    smtp = smtplib.SMTP()
-    smtp.connect(smtpd)
-    smtp.sendmail(from_addr, to_addrs, out.read())
-    smtp.quit()
+    with smtplib.SMTP(smtpd) as smtp:
+        smtp.sendmail(from_addr, to_addrs, out.read())
 ```
 
 This function sends plain, S/MIME-signed, S/MIME-encrypted, and

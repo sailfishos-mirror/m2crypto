@@ -83,12 +83,12 @@ class SMIMETestCase(unittest.TestCase):
 
         self.assertTrue(
             buf.startswith(b"-----BEGIN PKCS7-----"),
-            b"-----BEGIN PKCS7-----",
+            "Expected PEM PKCS7 header",
         )
         buf = buf.strip()
         self.assertTrue(
             buf.endswith(b"-----END PKCS7-----"),
-            buf[-len(b"-----END PKCS7-----") :],
+            "Expected PEM PKCS7 footer",
         )
         self.assertGreater(
             len(buf),
@@ -105,13 +105,8 @@ class SMIMETestCase(unittest.TestCase):
         buf = BIO.MemoryBuffer(self.cleartext)
         s = SMIME.SMIME()
         s.load_key("tests/signer_key.pem", "tests/signer.pem")
-        self.assertRaises(
-            SMIME.SMIME_Error,
-            s.sign,
-            buf,
-            SMIME.PKCS7_DETACHED,
-            "invalid digest name",
-        )
+        with self.assertRaises(SMIME.SMIME_Error):
+            s.sign(buf, SMIME.PKCS7_DETACHED, "invalid digest name")
 
     def test_sign_nondefault_digest(self):
         buf = BIO.MemoryBuffer(self.cleartext)
@@ -211,7 +206,7 @@ class SMIMETestCase(unittest.TestCase):
         v = s.verify(p7, data)
         self.assertEqual(v, self.cleartext)
 
-    def test_verifyBad(self):
+    def test_verify_bad(self):
         s = SMIME.SMIME()
 
         x509 = X509.load_cert("tests/recipient.pem")
@@ -358,8 +353,12 @@ class WriteLoadTestCase(unittest.TestCase):
             self.assertEqual(s.write(f, p7, BIO.MemoryBuffer(b"some text")), 1)
 
     def tearDown(self):
+        if os.path.exists(self.filename):
+            os.unlink(self.filename)
         if os.path.exists(self.filename_der):
             os.unlink(self.filename_der)
+        if os.path.exists(self.filenameSmime):
+            os.unlink(self.filenameSmime)
 
     def test_load_pkcs7(self):
         self.assertEqual(SMIME.load_pkcs7(self.filename).type(), SMIME.PKCS7_SIGNED)
@@ -410,7 +409,6 @@ class DegenerateTestCase(unittest.TestCase):
 
     def tearDown(self):
         # Clean up test files
-        import os
         if os.path.exists(self.test_filename):
             os.unlink(self.test_filename)
 

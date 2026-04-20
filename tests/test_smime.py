@@ -101,6 +101,35 @@ class SMIMETestCase(unittest.TestCase):
     def test_sign(self):
         self.do_test_sign()
 
+    def test_sign_detached_text_smime_roundtrip(self):
+        msg = b"line1\nline2\n"
+        s = SMIME.SMIME()
+        s.load_key("tests/signer_key.pem", "tests/signer.pem")
+
+        p7 = s.sign(BIO.MemoryBuffer(msg), SMIME.PKCS7_DETACHED | SMIME.PKCS7_TEXT)
+
+        out = BIO.MemoryBuffer()
+        s.write(out, p7, BIO.MemoryBuffer(msg), SMIME.PKCS7_TEXT)
+        smime = out.read()
+
+        self.assertIn(b"Content-Type: multipart/signed", smime)
+        self.assertIn(b"Content-Type: text/plain", smime)
+        self.assertIn(b'protocol="application/x-pkcs7-signature"', smime)
+        self.assertIn(b"Content-Type: application/x-pkcs7-signature", smime)
+
+        p7_loaded, data = SMIME.smime_load_pkcs7_bio(BIO.MemoryBuffer(smime))
+
+        sk = X509.X509_Stack()
+        sk.push(X509.load_cert("tests/signer.pem"))
+        s.set_x509_stack(sk)
+
+        st = X509.X509_Store()
+        st.load_info("tests/ca.pem")
+        s.set_x509_store(st)
+
+        verified = s.verify(p7_loaded, data)
+        self.assertEqual(verified, b"Content-Type: text/plain\r\n\r\nline1\r\nline2\r\n")
+
     def test_sign_unknown_digest(self):
         buf = BIO.MemoryBuffer(self.cleartext)
         s = SMIME.SMIME()

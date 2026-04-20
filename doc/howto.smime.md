@@ -229,7 +229,7 @@ Rand.load_file('randpool.dat', -1)
 # Instantiate an SMIME object; set it up; sign the buffer.
 s = SMIME.SMIME()
 s.load_key('signer_key.pem', 'signer.pem')
-p7 = s.sign(buf, SMIME.PKCS7_DETACHED)
+p7 = s.sign(buf, SMIME.PKCS7_DETACHED | SMIME.PKCS7_TEXT)
 ```
 
 `p7` now contains a *PKCS #7 signature blob* wrapped in an
@@ -265,14 +265,14 @@ From: sender@example.dom
 To: recipient@example.dom
 Subject: M2Crypto S/MIME testing
 MIME-Version: 1.0
-Content-Type: multipart/signed ; protocol="application/x-pkcs7-signature" ; micalg=sha1 ; boundary="----3C93156FC7B4EBF49FE9C7DB7F503087"
+Content-Type: multipart/signed ; protocol="application/pkcs7-signature" ; micalg=sha1 ; boundary="----3C93156FC7B4EBF49FE9C7DB7F503087"
 
 This is an S/MIME signed message
 
 ------3C93156FC7B4EBF49FE9C7DB7F503087
 a sign of our times
 ------3C93156FC7B4EBF49FE9C7DB7F503087
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Type: application/pkcs7-signature; name="smime.p7s"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
 
@@ -417,7 +417,7 @@ To: recipient@example.dom
 Subject: M2Crypto S/MIME testing
 MIME-Version: 1.0
 Content-Disposition: attachment; filename="smime.p7m"
-Content-Type: application/x-pkcs7-mime; name="smime.p7m"
+Content-Type: application/pkcs7-mime; name="smime.p7m"
 Content-Transfer-Encoding: base64
 
 MIIBVwYJKoZIhvcNAQcDoIIBSDCCAUQCAQAxggEAMIH9AgEAMGYwYTELMAkGA1UE
@@ -473,7 +473,7 @@ s.load_key('private_key.pkcs7.pem', 'public_key.pkcs7.pem')
 # The Encrypted data
 data_raw = "MIIBeQYJKoZIhvcNAQcDoIIBajCCAWYCAQAxggEhMIIBHQIBADAFMAACAQEwDQYJKoZIhvcNAQEBBQAEggEAL3r2KUEnR+Ds7lunkNUAEYWqiyppvZipjoCobD1FFF+WdFoaHcxJ/p18EaHfgXVgQ9tIPmEVfbVnxB406rrVEN9dZIrHyHBszl8G5xGcwQpbiYmQgS9cJc7P9Ya/qSwc7fzKAi4eoUfr7BALl3qWI1X+R2KNShDaUoa21c0XehHu0Qb6d2hScEdTulpGhGUaTkwMN4ZJmA60enG7xhSW8RIyZLTx7glRaaI/hEP0LsfkfI+kpKNQ8u52s816/tih5hiVtvpipWOyBU+L3OHVbGy4uzb9vMGO22KDm7Dev9wYs2EzHQry/u33ygdHzZwYwAM5Dm1js3cnJ5vsJdME5zA8BgkqhkiG9w0BBwEwHQYJYIZIAWUDBAEqBBC21FrAYYgygBf8j3Qxflb1gBASekTx2RHk+wRH3Gc0KA09"
 # Add relevant headers, newlines that separate header and data, and trailing newline.
-data = f"Content-Type: application/x-pkcs7-mime; name=\"smime.p7m\"\n\n{data_raw}\n".encode()
+data = f"Content-Type: application/pkcs7-mime; name=\"smime.p7m\"\n\n{data_raw}\n".encode()
 
 # Load data into a BIO.
 bio = BIO.MemoryBuffer(data)
@@ -547,7 +547,7 @@ To: recipient@example.dom
 Subject: M2Crypto S/MIME testing
 MIME-Version: 1.0
 Content-Disposition: attachment; filename="smime.p7m"
-Content-Type: application/x-pkcs7-mime; name="smime.p7m"
+Content-Type: application/pkcs7-mime; name="smime.p7m"
 Content-Transfer-Encoding: base64
 
 MIIIwwYJKoZIhvcNAQcDoIIItDCCCLACAQAxggEAMIH9AgEAMGYwYTELMAkGA1UE

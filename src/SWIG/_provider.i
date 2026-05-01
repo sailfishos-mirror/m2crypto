@@ -94,7 +94,12 @@ EVP_PKEY *provider_load_key(const char *uri)
             return NULL;
         }
     } else if (want_public) {
+#if OPENSSL_VERSION_NUMBER >= 0x30200000L
         if (OSSL_STORE_expect(store, OSSL_STORE_INFO_PUBKEY) != 1) {
+#else
+        /* Fallback for OpenSSL < 3.2.0 where only PKEY hint exists */
+        if (OSSL_STORE_expect(store, OSSL_STORE_INFO_PKEY) != 1) {
+#endif
             raise_ossl_error(_provider_err, "Failed to expect Public Key");
             OSSL_STORE_close(store);
             return NULL;
@@ -103,10 +108,15 @@ EVP_PKEY *provider_load_key(const char *uri)
 
     if ((strncmp(uri, "pkcs11:", 7) == 0)
         && !want_private && !want_public) {
-        /* This is a workaround for OpenSSL < 3.2.0 where the code fails
-         * to correctly source public keys unless explicitly requested
-         * via an expect hint */
+        /* This is a workaround for some providers (like pkcs11-provider)
+         * which may fail to correctly source keys unless an explicit
+         * expect hint is provided. OSSL_STORE_INFO_PUBKEY is only
+         * available in OpenSSL >= 3.2.0. */
+#if OPENSSL_VERSION_NUMBER >= 0x30200000L
         if (OSSL_STORE_expect(store, OSSL_STORE_INFO_PUBKEY) != 1) {
+#else
+        if (OSSL_STORE_expect(store, OSSL_STORE_INFO_PKEY) != 1) {
+#endif
             raise_ossl_error(_provider_err, "Failed to expect Public Key File");
             OSSL_STORE_close(store);
             return NULL;
@@ -125,6 +135,7 @@ EVP_PKEY *provider_load_key(const char *uri)
         }
 
         switch (type) {
+#if OPENSSL_VERSION_NUMBER >= 0x30200000L
         case OSSL_STORE_INFO_PUBKEY:
             if (want_private) {
                 /* Some stores may also yield the public key for a private-key URI. */
@@ -138,11 +149,15 @@ EVP_PKEY *provider_load_key(const char *uri)
             }
             key = OSSL_STORE_INFO_get1_PUBKEY(info);
             break;
+#endif
         case OSSL_STORE_INFO_PKEY:
+#if OPENSSL_VERSION_NUMBER >= 0x30200000L
             if (want_public) {
-                /* Ignore private keys when the URI explicitly asks for public key. */
+                /* In 3.2+, PKEY specifically means a Private Key.
+                 * Ignore it when the URI explicitly asks for a public key. */
                 break;
             }
+#endif
             if (key != NULL) {
                 PyErr_Format(provider_exc(), "Multiple keys matching URI: %s", uri);
                 OSSL_STORE_INFO_free(info);

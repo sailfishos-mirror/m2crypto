@@ -295,7 +295,7 @@ STACK_OF(X509) *pkcs7_get_certs_sk(PKCS7 *p7) {
     if (certs == NULL) {
         return NULL;
     }
-    return sk_X509_deep_copy(certs, X509_dup, X509_free);
+    return sk_X509_deep_copy(certs, (X509 *(*)(const X509 *))X509_dup, X509_free);
 }
 
 %}

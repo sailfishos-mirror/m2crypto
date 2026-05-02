@@ -16,10 +16,11 @@
 :target: https://builds.sr.ht/~mcepl?
 ~~~
 
-**NOTE: This library is currently in maintenance mode. We
-recommend using a more modern alternative such as**
-[PyCA/cryptography]. **Examples of how to migrate can be found
-in** [the documentation].
+**NOTE: This library is currently in maintenance mode (and it has been
+in it since 2014 and I don’t plan to stop maintaining it anytime soon).
+For new applications we recommend using a more modern alternative such
+as** [PyCA/cryptography]. **Examples of how to migrate can be found in**
+[the documentation].
 
 M2Crypto is a crypto and SSL toolkit for Python.
 

@@ -231,8 +231,8 @@ The documentation for the relevant `PyCA/cryptography` APIs can be found
 .. testoutput::
    :hide:
 
-   <Name(C=US,ST=California,O=M2Crypto,CN=Heikki Toivonen)>
-   <Name(C=US,ST=California,O=M2Crypto,CN=X509)>
+   <Name(CN=Heikki Toivonen,O=M2Crypto,ST=California,C=US)>
+   <Name(CN=X509,O=M2Crypto,ST=California,C=US)>
    2025-04-22 14:50:27+00:00
    2035-04-20 14:50:27+00:00
 

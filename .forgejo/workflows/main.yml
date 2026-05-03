@@ -5,29 +5,37 @@ on: [push, pull_request]
 jobs:
   build:
     # Use the standard gitea.com shared runner environment.
-    runs-on: ubuntu-latest
+    # TODO extend to multi-run with fedora as well
+    runs-on: opensuse-leap
+    container:
+      image: opensuse/leap:latest
 
     # Environment variables remain the same.
     env:
       CFLAGS: -pthread -Wno-unused-result -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -mtune=generic -D_GNU_SOURCE -fwrapv
 
     steps:
+      - name: Prepare container
+        run: |
+          zypper refresh
+          zypper dist-upgrade -y
+          zypper install --no-confirm nodejs20 git-core
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # Install dependencies using Ubuntu's 'apt-get' instead of Fedora's 'dnf'.
-      # Package names have been translated (e.g., python3-devel -> python3-dev).
+      # Install dependencies using OpenSUSE's 'zypper'.
       - name: Install system dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y swig python3 python3-dev python3-pip libssl-dev openssl python3-setuptools python3-twisted python3-pexpect python3-docutils python3-mypy dpkg-dev pkcs11-provider softhsm2 opensc
+          zypper install --no-confirm --force-resolution pattern:devel_rpm_build pattern:devel_C_C++ osc
+          zypper install --no-confirm --force-resolution swig python3-devel python3-pip libopenssl-devel openssl python3-docutils python3-setuptools python3-service_identity python3-Twisted python3-twine python3-wheel python3-flake8
 
       - name: Build wheel
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          python3 -mpip install --user --break-system-packages -r dev-requirements.txt
+          python3 -mpip install --user -r dev-requirements.txt
           python3 -mpip wheel --verbose --no-cache-dir --no-clean --no-build-isolation --wheel-dir dist/ --editable .
           find . -name \*.c
           find . -name \*.whl -o -name \*.tar.gz
@@ -35,19 +43,17 @@ jobs:
           # Dynamically determine the build path for PYTHONPATH
           export PYTHONPATH_DYNAMIC=$(readlink -f build/lib.*)
           # We no longer export this to GITEA_ENV to improve compatibility.
-          python3 -mpip install -v --upgrade --break-system-packages --target ${PYTHONPATH_DYNAMIC} --no-compile --ignore-installed --no-deps --no-index dist/[mM]2[cC]rypto*.whl
+          python3 -mpip install -v --upgrade --target ${PYTHONPATH_DYNAMIC} --no-compile --ignore-installed --no-deps --no-index dist/[mM]2[cC]rypto*.whl
 
-      - name: Run mypy check
-        run: |
-          # Recalculate PYTHONPATH directly in this step.
-          PYTHONPATH=$(readlink -f build/lib.*) python3 -mmypy --no-color-output src/M2Crypto
+#      There is no mypy for Python 3.6 and certainly not in openSUSE/Leap packages
+#      - name: Run mypy check
+#        run: |
+#          # Recalculate PYTHONPATH directly in this step.
+#          PYTHONPATH=$(readlink -f build/lib.*) python3 -mmypy --no-color-output src/M2Crypto
 
       - name: Run unittests
         run: |
           # Recalculate PYTHONPATH directly in this step.
-          export DEB_HOST_MULTIARCH=$(dpkg-architecture -qDEB_HOST_MULTIARCH)
-          export M2CRYPTO_OPENSSL_MODULE_PKCS11=/usr/lib/${DEB_HOST_MULTIARCH}/ossl-modules/pkcs11.so
-          export M2CRYPTO_PKCS11_MODULE_PATH=/usr/lib/${DEB_HOST_MULTIARCH}/softhsm/libsofthsm2.so
           export PYTHONPATH=$(readlink -f build/lib.*)
           python3 -munittest discover -b -v tests
           python3 -mdoctest -v src/M2Crypto/SSL/Checker.py

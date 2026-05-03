@@ -1,4 +1,3 @@
-
 For a project like **M2Crypto**, a very effective CI setup is a **matrix build** that tests multiple Python versions and produces wheels. With one VPS runner you can still run these sequentially (or a few in parallel if the machine has enough RAM). See https://www.hetzner.com/cloud/ for prices.
 
 Below is a **practical workflow structure** commonly used for Python libraries.

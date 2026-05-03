@@ -1,11 +1,9 @@
 name: Build and Test
 
-on: [push, pull_request]
+on: [pull_request]
 
 jobs:
-  build:
-    # Use the standard gitea.com shared runner environment.
-    # TODO extend to multi-run with fedora as well
+  build-opensuse:
     runs-on: opensuse-leap
     container:
       image: opensuse/leap:latest
@@ -37,8 +35,6 @@ jobs:
           export PATH=$PATH:$HOME/.local/bin
           python3 -mpip install --user -r dev-requirements.txt
           python3 -mpip wheel --verbose --no-cache-dir --no-clean --no-build-isolation --wheel-dir dist/ --editable .
-          find . -name \*.c
-          find . -name \*.whl -o -name \*.tar.gz
           mkdir -p shadowing/sys && touch shadowing/sys/types.h
           # Dynamically determine the build path for PYTHONPATH
           export PYTHONPATH_DYNAMIC=$(readlink -f build/lib.*)
@@ -57,20 +53,63 @@ jobs:
           export PYTHONPATH=$(readlink -f build/lib.*)
           python3 -munittest discover -b -v tests
           python3 -mdoctest -v src/M2Crypto/SSL/Checker.py
-          # case $BUILD_SUBMITTER in
-          #    *git.sr.ht*)
-          #         [ -n "$GIT_REF" ] && REASON="$JOB_ID ($GIT_REF)"
-          #         [ -n "$PATCHSET_URL" ] && REASON="$JOB_ID ($PATCHSET_URL)"
-          #         echo "Sourcehut build $BUILD_REASON finished with the result $? ($JOB_URL)." \
-          #             | .builds/irc-send irc.libera.chat m2bot mcepl "#m2crypto"
-          #    ;;
-          # esac
           echo "Test task finished."
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
           name: build-artifacts
+          path: |
+            src/SWIG/_m2crypto_wrap.c
+            dist/*.whl
+            dist/*.tar.gz
+
+  build-fedora:
+    runs-on: fedora
+    container:
+      image: fedora:latest
+    env:
+      CFLAGS: -pthread -Wno-unused-result -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -mtune=generic -D_GNU_SOURCE -fwrapv
+
+    steps:
+      - name: Prepare container
+        run: |
+          dnf install -y nodejs git-core
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies (Fedora)
+        run: |
+          dnf makecache
+          dnf upgrade --allowerasing --skip-unavailable --allow-downgrade --assumeyes
+          dnf install --assumeyes @development-tools fedora-packager rpmdevtools
+          dnf install --assumeyes swig python3 python3-devel python3-pip openssl-devel openssl python3-setuptools python3-twisted openssl-devel-engine python3-irc twine python3-wheel python3-flake8 python3-pexpect python3-docutils python3-mypy rpm-devel softhsm opensc
+
+      - name: Build wheel
+        run: |
+          export PATH=$PATH:$HOME/.local/bin
+          python3 -mpip install --user --break-system-packages -r dev-requirements.txt
+          python3 -mpip wheel --verbose --no-cache-dir --no-clean --no-build-isolation --wheel-dir dist/ --editable .
+          mkdir -p shadowing/sys && touch shadowing/sys/types.h
+          export PYTHONPATH_DYNAMIC=$(readlink -f build/lib.*)
+          python3 -mpip install -v --upgrade --break-system-packages --target ${PYTHONPATH_DYNAMIC} --no-compile --ignore-installed --no-deps --no-index dist/[mM]2[cC]rypto*.whl
+
+      - name: Run mypy check
+        run: |
+          PYTHONPATH=$(readlink -f build/lib.*) python3 -mmypy --no-color-output src/M2Crypto
+
+      - name: Run unittests
+        run: |
+          export PYTHONPATH=$(readlink -f build/lib.*)
+          python3 -munittest discover -b -v tests
+          python3 -mdoctest -v src/M2Crypto/SSL/Checker.py
+          echo "Test task finished."
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts-fedora
           path: |
             src/SWIG/_m2crypto_wrap.c
             dist/*.whl

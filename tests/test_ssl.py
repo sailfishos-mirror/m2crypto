@@ -265,6 +265,30 @@ class HttpslibSSLClientTestCase(BaseSSLClientTestCase):
         finally:
             self.stop_server(pid)
 
+    def test_idn_hostname(self):
+        idn_hostname = "xn--bcher-kva.example"
+        args = [
+            "s_server",
+            "-www",
+            "-cert",
+            "idn_server.pem",
+            "-accept",
+            str(self.srv_port),
+        ]
+        pid = self.start_server(args)
+        try:
+            self.ctx.set_verify(SSL.verify_peer | SSL.verify_fail_if_no_peer_cert, 9)
+            self.ctx.load_verify_locations("tests/ca.pem")
+            s = SSL.Connection(self.ctx)
+            s.set_tlsext_host_name(idn_hostname)
+            s.set1_host(idn_hostname.encode("ascii"))
+            s.connect(self.srv_addr)
+            data = self.http_get(s)
+            s.close()
+        finally:
+            self.stop_server(pid)
+        self.assertIn(self.test_output, data)
+
     def test_HTTPSConnection_illegalkeywordarg(self):
         with self.assertRaises(ValueError):
             httpslib.HTTPSConnection("example.org", badKeyword=True)

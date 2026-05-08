@@ -90,7 +90,7 @@ def passphrase_callback(
     v: bool,
     prompt1: str = "Enter passphrase:",
     prompt2: str = "Verify passphrase:",
-) -> Optional[str]:
+) -> Optional[bytes]:
     from getpass import getpass
 
     while 1:
@@ -104,8 +104,8 @@ def passphrase_callback(
                 break
         except KeyboardInterrupt:
             return None
-    return p1
+    return bytes(p1, 'utf-8')
 
 
-def no_passphrase_callback(*args) -> str:
-    return ""
+def no_passphrase_callback(*args) -> bytes:
+    return b""

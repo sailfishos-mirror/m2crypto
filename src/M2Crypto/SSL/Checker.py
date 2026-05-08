@@ -223,6 +223,15 @@ class Checker:
         >>> check._splitSubjectAltName(host='my.example.com',
         ...     subjectAltName='DNS:my.example.com, DNS:my.example.org')
         True
+        >>> check._splitSubjectAltName(host='xn--bcher-kva.example',
+        ...     subjectAltName='DNS:xn--bcher-kva.example')
+        True
+        >>> check._splitSubjectAltName(host='xn--bcher-kva.example',
+        ...     subjectAltName='DNS:*.example')
+        True
+        >>> check._splitSubjectAltName(host='xn--bcher-kva.example',
+        ...     subjectAltName='DNS:xn--caf-dma.example')
+        False
         >>> check.useSubjectAltNameOnly
         True
         >>> check._splitSubjectAltName(host='my.example.com',
@@ -275,6 +284,14 @@ class Checker:
         False
         >>> check._match(host='1234', certHost='1234')
         True
+        >>> check._match(host='xn--bcher-kva.example',
+        ...     certHost='xn--bcher-kva.example')
+        True
+        >>> check._match(host='xn--bcher-kva.example', certHost='*.example')
+        True
+        >>> check._match(host='xn--bcher-kva.example',
+        ...     certHost='xn--caf-dma.example')
+        False
         """
         # XXX See RFC 2818 and 3280 for matching rules, this is may not
         # XXX yet be complete.

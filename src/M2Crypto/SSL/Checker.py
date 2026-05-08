@@ -232,6 +232,9 @@ class Checker:
         >>> check._splitSubjectAltName(host='xn--bcher-kva.example',
         ...     subjectAltName='DNS:xn--caf-dma.example')
         False
+        >>> check._splitSubjectAltName(host='xn--c1yn36f.example',
+        ...     subjectAltName='DNS:xn--c1yn36f.example')
+        True
         >>> check.useSubjectAltNameOnly
         True
         >>> check._splitSubjectAltName(host='my.example.com',

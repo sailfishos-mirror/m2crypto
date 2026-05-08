@@ -9,11 +9,18 @@ Copyright (c) 2024 Matěj Cepl. All rights reserved.
 import os
 import platform
 import sys
+from unittest.mock import patch
+
 from M2Crypto import m2, util, Rand
 from tests import unittest
 
 
 class UtilTestCase(unittest.TestCase):
+
+    @patch("getpass.getpass", return_value="qwerty")
+    def test_passphrase_callback_returns_bytes(self, mocked_getpass):
+        self.assertEqual(util.passphrase_callback(False), b"qwerty")
+        mocked_getpass.assert_called_once_with("Enter passphrase:")
 
     def test_time_t_bits(self):
         # Test m2.time_t_bits() returns valid values (32 or 64) and handles edge cases

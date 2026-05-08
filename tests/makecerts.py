@@ -4,6 +4,7 @@
 #
 #  ca.pem
 #  server.pem
+#  idn_server.pem
 #  recipient.pem
 #  signer.pem
 #  x509.pem
@@ -24,6 +25,8 @@ after = ASN1.ASN1_TIME()
 after.set_time(t + 60 * 60 * 24 * 365 * 10)  # 10 years
 
 serial = 1
+IDN_SERVER_HOST = "xn--bcher-kva.example"
+IDN_SERVER_SERIAL = 5
 
 
 def callback(self, *args):
@@ -66,8 +69,8 @@ def req(name):
 
 def save_text_pem_key(cert, name, with_key=True):
     with open(name + ".pem", "wb") as f:
-        for line in cert.as_text():
-            f.write(line.encode("ascii"))
+        for line in cert.as_text().splitlines():
+            f.write((line.rstrip() + "\n").encode("ascii"))
         f.write(cert.as_pem())
         if with_key:
             with open(name + "_key.pem", "rb") as key_f:
@@ -75,7 +78,7 @@ def save_text_pem_key(cert, name, with_key=True):
                     f.write(line)
 
 
-def issue(request, ca, capk):
+def issue(request, ca, capk, extensions=None, serial_number=None):
     global serial
 
     pkey = request.get_pubkey()
@@ -84,8 +87,10 @@ def issue(request, ca, capk):
     cert = X509.X509()
     cert.set_version(2)
     cert.set_subject(sub)
-    cert.set_serial_number(serial)
-    serial += 1
+    if serial_number is None:
+        serial_number = serial
+        serial += 1
+    cert.set_serial_number(serial_number)
 
     issuer = ca.get_subject()
     cert.set_issuer(issuer)
@@ -100,6 +105,10 @@ def issue(request, ca, capk):
 
     ext = X509.new_extension("subjectKeyIdentifier", gen_identifier(cert))
     cert.add_ext(ext)
+
+    if extensions is not None:
+        for ext in extensions:
+            cert.add_ext(ext)
 
     # auth = X509.load_cert('ca.pem')
     # auth_id = auth.get_ext('subjectKeyIdentifier').get_value()
@@ -152,11 +161,46 @@ def mk_ca():
     return cert, pk
 
 
-def mk_server(ca, capk):
-    r, _ = req("server")
-    r.set_subject(make_subject(cn="localhost"))
-    cert = issue(r, ca, capk)
-    save_text_pem_key(cert, "server")
+def mk_server(
+    ca,
+    capk,
+    name="server",
+    cn="localhost",
+    subject_alt_name=None,
+    serial_number=None,
+):
+    r, _ = req(name)
+    r.set_subject(make_subject(cn=cn))
+    extensions = []
+    if subject_alt_name is not None:
+        extensions.append(X509.new_extension("subjectAltName", subject_alt_name))
+    cert = issue(r, ca, capk, extensions=extensions, serial_number=serial_number)
+    save_text_pem_key(cert, name)
+
+
+def load_ca():
+    rsa = RSA.load_key("ca_key.pem")
+    pk = EVP.PKey()
+    pk.assign_rsa(rsa)
+    return X509.load_cert("ca.pem"), pk
+
+
+def mk_idn_server(ca, capk):
+    mk_server(
+        ca,
+        capk,
+        name="idn_server",
+        cn=IDN_SERVER_HOST,
+        subject_alt_name="DNS:%s" % IDN_SERVER_HOST,
+        serial_number=IDN_SERVER_SERIAL,
+    )
+
+
+def mk_idn_server_fixture():
+    genned_key = RSA.gen_key(2048, m2.RSA_F4)
+    genned_key.save_key("idn_server_key.pem", None)
+    ca_bits, pk_bits = load_ca()
+    mk_idn_server(ca_bits, pk_bits)
 
 
 def mk_x509(ca, capk):
@@ -227,9 +271,13 @@ def mk_rsa_key_pair():
 
 
 if __name__ == "__main__":
-    names = ["ca", "server", "recipient", "signer", "x509"]
-
     os.chdir(os.path.dirname(sys.argv[0]))
+
+    if sys.argv[1:] == ["--idn-server"]:
+        mk_idn_server_fixture()
+        sys.exit(0)
+
+    names = ["ca", "server", "idn_server", "recipient", "signer", "x509"]
 
     for key_name in names:
         genned_key = RSA.gen_key(2048, m2.RSA_F4)
@@ -237,6 +285,7 @@ if __name__ == "__main__":
 
     ca_bits, pk_bits = mk_ca()
     mk_server(ca_bits, pk_bits)
+    mk_idn_server(ca_bits, pk_bits)
     mk_x509(ca_bits, pk_bits)
     mk_signer(ca_bits, pk_bits)
     mk_recipient(ca_bits, pk_bits)

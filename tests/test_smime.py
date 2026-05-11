@@ -410,6 +410,26 @@ class WriteLoadTestCase(unittest.TestCase):
 
         self.assertEqual(SMIME.load_pkcs7_bio_der(buf).type(), SMIME.PKCS7_SIGNED)
 
+    def test_write_load_der_multi_algo(self):
+        s = SMIME.SMIME()
+        s.load_key("tests/signer_key.pem", "tests/signer.pem")
+        for algo in ["sha1", "sha256", "sha512"]:
+            with self.subTest(algo=algo):
+                # Sign with specific algorithm
+                try:
+                    p7 = s.sign(BIO.MemoryBuffer(b"some text"), algo=algo)
+                except SMIME.SMIME_Error as e:
+                    if "invalid digest" in str(e):
+                        self.skipTest(f"Algorithm {algo} forbidden by system policy")
+                    raise
+
+                # Verify DER round-trip
+                buf = BIO.MemoryBuffer()
+                self.assertEqual(p7.write_der(buf), 1)
+
+                p7_loaded = SMIME.load_pkcs7_bio_der(buf)
+                self.assertEqual(p7_loaded.type(), SMIME.PKCS7_SIGNED)
+
     def test_load_smime(self):
         a, b = SMIME.smime_load_pkcs7(self.filenameSmime)
         self.assertIsInstance(a, SMIME.PKCS7, a)

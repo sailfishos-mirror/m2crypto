@@ -1,11 +1,11 @@
 **documentation**: <https://m2crypto.readthedocs.io/>\
 **email list**: <https://lists.sr.ht/~mcepl/m2crypto> ([subscribe via email])\
-**IRC channel**: <irc://irc.libera.chat/#m2crypto>\
+**discussion channel**: <matrix:r/m2crypto:ceplovi.cz>\
 **issue tracker**: |-\
   <https://todo.sr.ht/~mcepl/m2crypto> (R/O, please\
   report issues via the email list).\
 **maintainer**: "Matěj Cepl"\
-**web-Site**: <https://sr.ht/~mcepl/m2crypto/>
+**web-Site**: <https://codeberg.org/mcepl/m2crypto/>
 
 # M2Crypto
 

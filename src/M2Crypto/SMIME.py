@@ -279,7 +279,7 @@ class SMIME(object):
     def sign(
         self,
         data_bio: BIO.BIO,
-        flags: int = 0,
+        flags: int = PKCS7_DETACHED,
         algo: str = "sha256",
     ) -> PKCS7:
         if not hasattr(self, "pkey"):
@@ -344,7 +344,7 @@ class SMIME(object):
         out_bio: BIO.BIO,
         pkcs7: PKCS7,
         data_bio: Optional[BIO.BIO] = None,
-        flags: int = 0,
+        flags: int = PKCS7_DETACHED,
     ) -> int:
         if data_bio is None:
             return m2.smime_write_pkcs7(out_bio._ptr(), pkcs7._ptr(), flags)

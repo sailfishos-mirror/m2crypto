@@ -332,7 +332,7 @@ class SMIMETestCase(unittest.TestCase):
         s.set_cipher(SMIME.Cipher("des_ede3_cbc"))
 
         tmp = BIO.MemoryBuffer()
-        s.write(tmp, p7)
+        s.write(tmp, p7, BIO.MemoryBuffer(self.cleartext))
 
         p7 = s.encrypt(tmp)
 
@@ -360,7 +360,7 @@ class SMIMETestCase(unittest.TestCase):
 
         p7_bio = BIO.MemoryBuffer(out)
         p7, data = SMIME.smime_load_pkcs7_bio(p7_bio)
-        v = s.verify(p7)
+        v = s.verify(p7, data)
         self.assertEqual(v, self.cleartext)
 
 

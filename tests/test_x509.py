@@ -17,7 +17,7 @@ import textwrap
 import time
 import warnings
 
-from M2Crypto import ASN1, BIO, EVP, RSA, Rand, X509, m2  # noqa
+from M2Crypto import ASN1, BIO, EVP, RSA, X509, Rand, m2  # noqa
 from M2Crypto.util import expectedFailureIf
 from tests import unittest
 
@@ -25,7 +25,6 @@ log = logging.getLogger(__name__)
 
 
 class X509TestCase(unittest.TestCase):
-
     def callback(self, *args):
         pass
 
@@ -223,7 +222,7 @@ class X509TestCase(unittest.TestCase):
         self.assertEqual(
             l,
             2,
-            "X509_Name has %d commonName entries instead " "of expected 2" % l,
+            "X509_Name has %d commonName entries instead of expected 2" % l,
         )
 
         # The target list is not deleted when the loop is finished
@@ -246,7 +245,7 @@ class X509TestCase(unittest.TestCase):
         self.assertIsNotNone(n[10])
 
     def test_mkreq(self):
-        (req, _) = self.mkreq(1024)
+        req, _ = self.mkreq(1024)
         req.save_pem("tests/tmp_request.pem")
         req2 = X509.load_request("tests/tmp_request.pem")
         os.remove("tests/tmp_request.pem")
@@ -571,7 +570,7 @@ class X509TestCase(unittest.TestCase):
         self.assertEqual(x509.as_der(), x5092.as_der())
 
     def test_load_request_bio(self):
-        (req, _) = self.mkreq(1024)
+        req, _ = self.mkreq(1024)
 
         r1 = X509.load_request_der_string(req.as_der())
         r2 = X509.load_request_string(req.as_der(), X509.FORMAT_DER)
@@ -881,7 +880,9 @@ class X509ExtTestCase(unittest.TestCase):
         self.assertIsNotNone(ext4)
 
         # Test with colons in the hex string (should also work)
-        sub_key_id_with_colons = "1C:E6:F0:58:58:32:BC:7B:BA:8E:E0:23:1B:FF:17:99:B0:4D:CF:64"
+        sub_key_id_with_colons = (
+            "1C:E6:F0:58:58:32:BC:7B:BA:8E:E0:23:1B:FF:17:99:B0:4D:CF:64"
+        )
         ext5 = X509.new_extension("subjectKeyIdentifier", sub_key_id_with_colons)
         self.assertIsNotNone(ext5)
 
@@ -892,15 +893,12 @@ class X509ExtTestCase(unittest.TestCase):
         self.assertEqual(ext4.get_name(), "subjectKeyIdentifier")
         self.assertEqual(ext5.get_name(), "subjectKeyIdentifier")
 
-
-    @unittest.skip("requires functionality we don't support yet")
     def test_multiple_extensions_older_version(self):
         # Testing for https://todo.sr.ht/~mcepl/m2crypto/9
         sub_key_id = "1C:E6:F0:58:58:32:BC:7B:BA:8E:E0:23:1B:FF:17:99:B0:4D:CF:64"
         auth_id = "1C:E6:F0:58:58:32:BC:7B:BA:8E:E0:23:1B:FF:17:99:B0:4D:CF:64"
 
-        cert_pem_string = textwrap.dedent(
-            """\
+        cert_pem_string = textwrap.dedent("""\
         -----BEGIN CERTIFICATE-----
         MIIGFjCCA/6gAwIBAgIJAO7rHaO9YDQDMA0GCSqGSIb3DQEBCwUAMHsxCzAJBgNV
         BAYTAlVTMQswCQYDVQQIDAJDQTESMBAGA1UEBwwJTG9zIEdhdG9zMRMwEQYDVQQK
@@ -935,19 +933,24 @@ class X509ExtTestCase(unittest.TestCase):
         rWjDY8k9VrEJG0G3n9FVv9hKvob9ngUMkmyxE5E4VWyab5gVt2m0XXJjz5Sc3530
         dQ9SXhFS7s3060/yl0BBWnTtfu9zGdKaz4lWo25Q0r7HD5y/MwUCbqpRVqXJxGHY
         d3PEYaXkdwhAi3EbarF7R8r3hKzYCpXxfI4=
-        -----END CERTIFICATE-----"""
-        )
+        -----END CERTIFICATE-----""")
         m2_x509_cert = X509.load_cert_string(cert_pem_string)
 
         local_ski = m2_x509_cert.get_ext("subjectKeyIdentifier")
         local_aki = m2_x509_cert.get_ext("authorityKeyIdentifier")
 
         X509.new_extension("subjectKeyIdentifier", sub_key_id)
-        X509.new_extension("authorityKeyIdentifier", "keyid:" + auth_id)
+        ext = X509.new_extension("authorityKeyIdentifier", "keyid:" + auth_id)
+        self.assertEqual(ext.get_name(), "authorityKeyIdentifier")
+        expected_value = "1C:E6:F0:58:58:32:BC:7B:BA:8E:E0:23:1B:FF:17:99:B0:4D:CF:64"
+        self.assertEqual(ext.get_value(), expected_value)
+
+        structured_ext = X509.AuthorityKeyIdentifier(auth_id).as_extension()
+        self.assertEqual(structured_ext.get_name(), "authorityKeyIdentifier")
+        self.assertEqual(structured_ext.get_value(), expected_value)
 
 
 class X509_StoreContextTestCase(unittest.TestCase):
-
     def test_verify_cert(self):
         # Test with the CA that signed tests/x509.pem
         ca = X509.load_cert("tests/ca.pem")
@@ -1096,7 +1099,9 @@ class CRLTestCase(unittest.TestCase):
         last_update_dt = crl.get_lastUpdate().get_datetime()
         # Format the datetime object to the expected string format "Nov 26 10:50:25 2025 GMT"
         # The %Z directive does not output "GMT" directly for UTC, so we append it.
-        expected_lastUpdate = last_update_dt.strftime("%b %d %H:%M:%S %Y UTC").replace("UTC", "GMT")
+        expected_lastUpdate = last_update_dt.strftime("%b %d %H:%M:%S %Y UTC").replace(
+            "UTC", "GMT"
+        )
         self.assertEqual(str(crl.get_lastUpdate()), expected_lastUpdate)
 
     def test_get_next_update(self):
@@ -1104,7 +1109,9 @@ class CRLTestCase(unittest.TestCase):
         next_update_dt = crl.get_nextUpdate().get_datetime()
         # Format the datetime object to the expected string format "Nov 26 10:50:25 2025 GMT"
         # The %Z directive does not output "GMT" directly for UTC, so we append it.
-        expected_nextUpdate = next_update_dt.strftime("%b %d %H:%M:%S %Y UTC").replace("UTC", "GMT")
+        expected_nextUpdate = next_update_dt.strftime("%b %d %H:%M:%S %Y UTC").replace(
+            "UTC", "GMT"
+        )
         self.assertEqual(str(crl.get_nextUpdate()), expected_nextUpdate)
 
 

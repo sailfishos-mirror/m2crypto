@@ -767,6 +767,58 @@ PyObject *x509_extension_get_name(X509_EXTENSION *ext) {
     return ext_name;
 }
 
+X509_EXTENSION *
+x509v3_authority_key_identifier(PyObject *py_keyid) {
+    char *keyid = NULL;
+    int keyid_len = 0;
+    AUTHORITY_KEYID *akid = NULL;
+    ASN1_OCTET_STRING *keyid_string = NULL;
+    X509_EXTENSION *ext = NULL;
+
+    if (m2_PyString_AsStringAndSizeInt(py_keyid, &keyid, &keyid_len) == -1) {
+        return NULL;
+    }
+
+    if (keyid_len <= 0) {
+        PyErr_SetString(PyExc_ValueError, "keyid must not be empty");
+        return NULL;
+    }
+
+    akid = AUTHORITY_KEYID_new();
+    if (akid == NULL) {
+        m2_PyErr_Msg(_x509_err);
+        return NULL;
+    }
+
+    keyid_string = ASN1_OCTET_STRING_new();
+    if (keyid_string == NULL) {
+        AUTHORITY_KEYID_free(akid);
+        m2_PyErr_Msg(_x509_err);
+        return NULL;
+    }
+
+    if (!ASN1_OCTET_STRING_set(keyid_string, (unsigned char *)keyid, keyid_len)) {
+        ASN1_OCTET_STRING_free(keyid_string);
+        AUTHORITY_KEYID_free(akid);
+        m2_PyErr_Msg(_x509_err);
+        return NULL;
+    }
+
+    /* AUTHORITY_KEYID owns keyid after assignment. */
+    akid->keyid = keyid_string;
+    keyid_string = NULL;
+
+    ext = X509V3_EXT_i2d(NID_authority_key_identifier, 0, akid);
+    AUTHORITY_KEYID_free(akid);
+
+    if (ext == NULL) {
+        m2_PyErr_Msg(_x509_err);
+        return NULL;
+    }
+
+    return ext;
+}
+
 /* sk_X509_EXTENSION_new_null is a macro. */
 STACK_OF(X509_EXTENSION) *sk_x509_extension_new_null(void) {
     return sk_X509_EXTENSION_new_null();

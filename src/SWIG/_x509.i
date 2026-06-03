@@ -707,14 +707,12 @@ X509_NAME_ENTRY *x509_name_entry_create_by_txt(X509_NAME_ENTRY **ne, char *field
 X509V3_CTX *
 x509v3_set_nconf(void) {
       X509V3_CTX * ctx;
-      CONF *conf = NCONF_new(NULL);
 
       if (!(ctx=(X509V3_CTX *)PyMem_Malloc(sizeof(X509V3_CTX)))) {
           PyErr_SetString(PyExc_MemoryError, "x509v3_set_nconf");
           return NULL;
       }
-      /* X509V3_set_nconf does not generate any error signs at all. */
-      X509V3_set_nconf(ctx, conf);
+      X509V3_set_ctx_test(ctx);
       return ctx;
 }
 %}

@@ -1,0 +1,61 @@
+name: Valgrind Test
+
+on:
+  push:
+    branches:
+      - 'valgrind-*'
+      - master
+
+jobs:
+  test-valgrind:
+    runs-on: fedora
+    container:
+      image: fedora:latest
+    env:
+      CFLAGS: -pthread -Wno-unused-result -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -mtune=generic -D_GNU_SOURCE -fwrapv
+      PYTHONMALLOC: malloc
+
+    steps:
+      - name: Prepare container
+        run: |
+          dnf install -y nodejs git-core valgrind python3-packaging
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies (Fedora)
+        run: |
+          dnf makecache
+          dnf upgrade --allowerasing --skip-unavailable --allow-downgrade --assumeyes
+          dnf install --assumeyes @development-tools fedora-packager rpmdevtools
+          dnf install --assumeyes swig python3 python3-devel python3-pip openssl-devel openssl python3-setuptools python3-twisted openssl-devel-engine python3-irc twine python3-wheel python3-flake8 python3-pexpect python3-docutils python3-mypy rpm-devel softhsm opensc
+
+      - name: Install Python build requirements
+        run: |
+          set -x
+          export PATH=$PATH:$HOME/.local/bin
+          python3 -mpip install --user --break-system-packages -r dev-requirements.txt
+
+      - name: Build in place
+        run: |
+          set -x
+          export PATH=$PATH:$HOME/.local/bin
+          mkdir -p shadowing/sys && touch shadowing/sys/types.h
+          python3 setup.py build_ext --inplace
+
+      - name: Run unittests with Valgrind
+        run: |
+          export PYTHONPATH=src
+          valgrind --leak-check=full --log-file=valgrind-unittest.log --suppressions=.forgejo/valgrind-python.supp \
+            python3 -munittest discover -b -v tests
+          valgrind --leak-check=full --log-file=valgrind-doctest.log --suppressions=.forgejo/valgrind-python.supp \
+            python3 -mdoctest -v src/M2Crypto/SSL/Checker.py
+          echo "Valgrind test task finished."
+
+      - name: Upload Valgrind logs
+        uses: actions/upload-artifact@v3
+        with:
+          name: valgrind-logs
+          path: |
+            valgrind-unittest.log
+            valgrind-doctest.log

@@ -179,7 +179,7 @@ def load_certificates(filename: Union[str, bytes]) -> X509.X509_Stack:
         return X509.X509_Stack()
 
     # The returned stack is a deep copy, so Python should own it and free it.
-    return X509.X509_Stack(certs_ptr, 1)
+    return X509.X509_Stack(certs_ptr, 1, _pyfree_x509=1)
 
 
 class Cipher(object):

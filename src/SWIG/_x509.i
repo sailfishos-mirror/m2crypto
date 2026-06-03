@@ -707,12 +707,19 @@ X509_NAME_ENTRY *x509_name_entry_create_by_txt(X509_NAME_ENTRY **ne, char *field
 X509V3_CTX *
 x509v3_set_nconf(void) {
       X509V3_CTX * ctx;
+      CONF *conf = NCONF_new(NULL);
 
-      if (!(ctx=(X509V3_CTX *)PyMem_Malloc(sizeof(X509V3_CTX)))) {
+      if (conf == NULL) {
           PyErr_SetString(PyExc_MemoryError, "x509v3_set_nconf");
           return NULL;
       }
-      X509V3_set_ctx_test(ctx);
+
+      if (!(ctx=(X509V3_CTX *)PyMem_Malloc(sizeof(X509V3_CTX)))) {
+          NCONF_free(conf);
+          PyErr_SetString(PyExc_MemoryError, "x509v3_set_nconf");
+          return NULL;
+      }
+      X509V3_set_nconf(ctx, conf);
       return ctx;
 }
 %}
@@ -733,11 +740,17 @@ X509_EXTENSION *
 x509v3_ext_conf(void *conf, X509V3_CTX *ctx, char *name, char *value) {
       X509_EXTENSION * ext = NULL;
       ext = X509V3_EXT_conf(conf, ctx, name, value);
+      if (ctx->db_meth != NULL && ctx->db != NULL) {
+          NCONF_free((CONF *)ctx->db);
+      }
       PyMem_Free(ctx);
       return ext;
 }
 
 void x509v3_ctx_free(X509V3_CTX *ctx) {
+    if (ctx->db_meth != NULL && ctx->db != NULL) {
+        NCONF_free((CONF *)ctx->db);
+    }
     PyMem_Free(ctx);
 }
 %}

@@ -746,14 +746,17 @@ class CipherTestCase(unittest.TestCase):
 
     def test_cipher_init_reinit(self):
         ctx = m2.cipher_ctx_new()
-        m2.cipher_init(
-            ctx,
-            m2.aes_128_cbc(),
-            b"\x01" * (128 // 8),
-            b"\x02" * (128 // 8),
-            1,
-        )
-        m2.cipher_init(ctx, m2.aes_128_cbc(), None, None, 1)
+        try:
+            m2.cipher_init(
+                ctx,
+                m2.aes_128_cbc(),
+                b"\x01" * (128 // 8),
+                b"\x02" * (128 // 8),
+                1,
+            )
+            m2.cipher_init(ctx, m2.aes_128_cbc(), None, None, 1)
+        finally:
+            m2.cipher_ctx_free(ctx)
 
 
 class PBKDF2TestCase(unittest.TestCase):

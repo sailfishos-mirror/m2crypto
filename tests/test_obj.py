@@ -115,7 +115,7 @@ class ObjectsTestCase(unittest.TestCase):
         for o in [tuple2x509_name_entry(x) for x in tl]:
             m2.x509_name_add_entry(x509_n, o._ptr(), -1, 0)
             o._pyfree = 0  # Take care of underlying object
-        n1 = X509.X509_Name(x509_n)
+        n1 = X509.X509_Name(x509_n, _pyfree=1)
 
         self.assertEqual(n.as_text(), n1.as_text(), n1.as_text())
 

@@ -327,7 +327,7 @@ class IOBuffer(BIO):
             self.io = None
 
     def close(self) -> None:
-        BIO.close(self)
+        self.closed = 1
 
 
 class CipherStream(BIO):

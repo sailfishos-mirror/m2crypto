@@ -174,8 +174,11 @@ PyObject *rsa_set_n(RSA *rsa, PyObject *nval) {
 PyObject *rsa_set_en(RSA *rsa, PyObject *eval, PyObject* nval) {
     BIGNUM* e, *n;
 
-    if (!(e = m2_PyObject_AsBIGNUM(eval, _rsa_err)) ||
-        !(n = m2_PyObject_AsBIGNUM(nval, _rsa_err))) {
+    if (!(e = m2_PyObject_AsBIGNUM(eval, _rsa_err))) {
+        return NULL;
+    }
+    if (!(n = m2_PyObject_AsBIGNUM(nval, _rsa_err))) {
+        BN_free(e);
         return NULL;
     }
 

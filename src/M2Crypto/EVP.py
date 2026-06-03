@@ -200,6 +200,8 @@ class PKey(object):
         return self.pkey
 
     def _set_context(self, md: str) -> None:
+        if getattr(self, "ctx", None):
+            self._m2_md_ctx_free(self.ctx)
         if not md:
             self.md = None
         else:

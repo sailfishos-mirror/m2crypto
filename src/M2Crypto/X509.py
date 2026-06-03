@@ -368,7 +368,7 @@ class X509_Name_Entry(object):
 
     def create_by_txt(
         self, field: str, type: int, entry: bytes, length: int
-    ) -> C.X509_NAME_ENTRY:
+    ) -> "X509_Name_Entry":
         """
         Creates and returns a new X509_NAME_ENTRY object.
         Note: This is a factory method that uses an existing instance's
@@ -376,9 +376,10 @@ class X509_Name_Entry(object):
         class method for clarity. The corrected implementation below makes it work
         as written.
         """
-        return m2.x509_name_entry_create_by_txt(
+        x509_name_entry = m2.x509_name_entry_create_by_txt(
             self.x509_name_entry, field, type, entry, length
         )
+        return X509_Name_Entry(x509_name_entry, _pyfree=1)
 
 
 class X509_Name(object):

@@ -37,8 +37,13 @@ class BIO(object):
         self.write_closed = 0
 
     def __del__(self):
-        if self._pyfree and self.bio:
-            m2.bio_free(self.bio)
+        self._free()
+
+    def _free(self) -> None:
+        bio = getattr(self, "bio", None)
+        if getattr(self, "_pyfree", 0) and bio:
+            m2.bio_free(bio)
+            self.bio = None
 
     def _ptr(self):
         return self.bio
@@ -139,6 +144,7 @@ class BIO(object):
         self.closed = 1
         if self._close_cb:
             self._close_cb()
+        self._free()
 
     def should_retry(self) -> int:
         """
@@ -301,7 +307,8 @@ class IOBuffer(BIO):
 
     def __init__(self, under_bio: BIO, mode: str = "rwb", _pyfree: int = 1) -> None:
         super().__init__(_pyfree=_pyfree)
-        self.io = m2.bio_new(m2.bio_f_buffer())
+        self.io: Optional[C.BIO] = m2.bio_new(m2.bio_f_buffer())
+        assert self.io is not None
         self.bio = m2.bio_push(self.io, under_bio._ptr())
         # This reference keeps the underlying BIO alive while we're not closed.
         self._under_bio = under_bio
@@ -314,8 +321,10 @@ class IOBuffer(BIO):
         if getattr(self, "_pyfree", 0):
             if self.bio:
                 m2.bio_pop(self.bio)
+                self.bio = None
         if self.io:
             m2.bio_free(self.io)
+            self.io = None
 
     def close(self) -> None:
         BIO.close(self)
@@ -340,6 +349,7 @@ class CipherStream(BIO):
         if self.bio:
             m2.bio_pop(self.bio)
             m2.bio_free(self.bio)
+            self.bio = None
         self.closed = 1
 
     def write_close(self) -> None:

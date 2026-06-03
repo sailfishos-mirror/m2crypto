@@ -24,9 +24,10 @@ class ASN1_Integer:
         if isinstance(asn1int, int):
             self.asn1int: C.ASN1_Integer = m2.asn1_integer_new()
             m2.asn1_integer_set(self.asn1int, asn1int)
+            self._pyfree = 1
         else:
             self.asn1int = asn1int
-        self._pyfree = _pyfree
+            self._pyfree = _pyfree
 
     def __cmp__(self, other: "ASN1_Integer") -> int:
         if not isinstance(other, ASN1_Integer):
@@ -56,15 +57,18 @@ class ASN1_String:
         asn1str: Union[C.ASN1_String, str, bytes],
         _pyfree: int = 0,
     ):
-        self.asn1str: C.ASN1_String = m2.asn1_string_new()
         if isinstance(asn1str, str):
+            self.asn1str: C.ASN1_String = m2.asn1_string_new()
             encoded_str = asn1str.encode()
             m2.asn1_string_set(self.asn1str, encoded_str)
+            self._pyfree = 1
         elif isinstance(asn1str, bytes):
+            self.asn1str = m2.asn1_string_new()
             m2.asn1_string_set(self.asn1str, asn1str)
+            self._pyfree = 1
         else:
             self.asn1str = asn1str
-        self._pyfree = _pyfree
+            self._pyfree = _pyfree
 
     def __bytes__(self) -> bytes:
         buf = BIO.MemoryBuffer()

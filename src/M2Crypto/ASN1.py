@@ -104,7 +104,6 @@ class ASN1_String:
 
 class ASN1_Object:
 
-
     def __init__(self, asn1obj: C.ASN1_Object, _pyfree: int = 0) -> None:
         self.asn1obj = asn1obj
         self._pyfree = _pyfree
@@ -304,8 +303,7 @@ class ASN1_UTCTIME:
         _pyfree: int = 0,
     ):
         if asn1_utctime is not None:
-            assert m2.asn1_time_type_check(asn1_utctime), \
-                "'asn1_utctime' type error'"
+            assert m2.asn1_time_type_check(asn1_utctime), "'asn1_utctime' type error'"
             self.asn1_utctime: C.ASN1_UTCTime = asn1_utctime
             self._pyfree = _pyfree
         else:

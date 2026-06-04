@@ -304,9 +304,7 @@ class RSATestCase(unittest.TestCase):
                 continue
             for salt_length in range(0, salt_max):
                 signature = rsa.sign_rsassa_pss(digest, algo, salt_length)
-                verify = rsa2.verify_rsassa_pss(
-                    digest, signature, algo, salt_length
-                )
+                verify = rsa2.verify_rsassa_pss(digest, signature, algo, salt_length)
                 self.assertEqual(
                     verify,
                     1,
@@ -353,11 +351,8 @@ class RSATestCase(unittest.TestCase):
         it has to be longer than a certain length.
         """
         rsa = RSA.load_key(self.privkey)
-        digest = (
-            b"""This string should be long enough to warrant an error in
-        RSA_sign"""
-            * 2
-        )
+        digest = b"""This string should be long enough to warrant an error in
+        RSA_sign""" * 2
 
         # with self.assertRaises(RSA.RSAError):
         #     rsa.sign(digest)

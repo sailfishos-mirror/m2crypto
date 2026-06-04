@@ -19,9 +19,8 @@ jobs:
     steps:
       - name: Prepare container
         run: |
-          zypper refresh
-          zypper dist-upgrade -y
-          zypper install --no-confirm nodejs20 git-core
+          zypper --non-interactive refresh
+          zypper --non-interactive install nodejs20 git-core
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -60,7 +59,7 @@ jobs:
           echo "Test task finished."
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: https://code.forgejo.org/forgejo/upload-artifact@v4
         with:
           name: build-artifacts
           path: |
@@ -85,10 +84,8 @@ jobs:
 
       - name: Install system dependencies (Fedora)
         run: |
-          dnf makecache
-          dnf upgrade --allowerasing --skip-unavailable --allow-downgrade --assumeyes
           dnf install --assumeyes @development-tools fedora-packager rpmdevtools
-          dnf install --assumeyes swig python3 python3-devel python3-pip openssl-devel openssl python3-setuptools python3-twisted openssl-devel-engine python3-irc twine python3-wheel python3-flake8 python3-pexpect python3-docutils python3-mypy rpm-devel softhsm opensc
+          dnf install --assumeyes swig python3 python3-devel python3-pip openssl-devel openssl openssl-devel-engine python3-setuptools python3-twisted python3-irc twine python3-wheel python3-flake8 python3-pexpect python3-docutils python3-mypy rpm-devel softhsm opensc
 
       - name: Build wheel
         run: |
@@ -111,7 +108,7 @@ jobs:
           echo "Test task finished."
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: https://code.forgejo.org/forgejo/upload-artifact@v4
         with:
           name: build-artifacts-fedora
           path: |

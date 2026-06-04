@@ -54,9 +54,9 @@ def struct_to_timeout(binstr: bytes) -> timeout:
     else:
         bits = m2.time_t_bits()
         if bits == 32:
-            (sec, microsec) = struct.unpack("ii", binstr)
+            sec, microsec = struct.unpack("ii", binstr)
         elif bits == 64:
-            (sec, microsec) = struct.unpack("qq", binstr)
+            sec, microsec = struct.unpack("qq", binstr)
         else:
             raise ValueError(f"Unsupported time_t_bits: {bits}")
     return timeout(sec, microsec)

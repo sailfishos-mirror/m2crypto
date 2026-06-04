@@ -13,7 +13,6 @@ from typing import Callable, Optional, Union, Any, Dict, Tuple  # noqa
 from xmlrpc.client import ProtocolError, Transport
 from xmlrpc.client import *  # noqa
 
-
 __version__ = __M2Version
 
 HostType = Union[str, Tuple[str, Dict[str, str]]]

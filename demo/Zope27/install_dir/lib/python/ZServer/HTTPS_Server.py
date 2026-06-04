@@ -58,7 +58,6 @@ from M2Crypto import SSL
 from medusa.https_server import https_server, https_channel
 from asyncore import dispatcher
 
-
 ZSERVER_SSL_VERSION = "0.12"
 
 register_subsystem("ZServer HTTPS_Server")

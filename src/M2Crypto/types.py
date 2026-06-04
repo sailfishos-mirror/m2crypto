@@ -2,6 +2,7 @@
 """
 Type aliases for opaque C structures used in M2Crypto's C-bindings.
 """
+
 from typing import Any, List, NewType
 
 # The base type 'object' is used because these are opaque pointers

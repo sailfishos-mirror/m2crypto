@@ -6,6 +6,7 @@ Copyright (c) 2000 Ng Pheng Siong. All rights reserved.
 Portions copyright (c) 2005-2006 Vrije Universiteit Amsterdam. All
 rights reserved.
 """
+
 import hashlib
 import logging
 import os

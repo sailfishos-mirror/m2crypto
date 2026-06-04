@@ -490,7 +490,7 @@ def new_pub_key(e_n: Tuple[bytes, bytes]) -> RSA_pub:
 
     :return: M2Crypto.RSA.RSA_pub object.
     """
-    (e, n) = e_n
+    e, n = e_n
     rsa = m2.rsa_new()
     m2.rsa_set_en(rsa, e, n)
     return RSA_pub(rsa, 1)

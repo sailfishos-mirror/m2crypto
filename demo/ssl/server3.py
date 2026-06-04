@@ -8,6 +8,7 @@ Python/M2Crypto from the original C implementation.
 Copyright (c) 2004-2005 Open Source Applications Foundation.
 Author: Heikki Toivonen
 """
+
 from M2Crypto import SSL, Rand, threading, DH
 import thread
 from socket import *

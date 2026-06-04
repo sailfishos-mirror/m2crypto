@@ -2,21 +2,21 @@
 
 
 """
-    ECDSA demo and benchmark.
+ECDSA demo and benchmark.
 
-      Usage:  python -O ecdsa_bench.py [option option option ...]
-        where options may include:
-          makenewkey  showpubkey  showdigest  showprofile
-          md5  sha1  sha256  sha512
-          secp160r1  secp224r1  secp192k1  sect283r1
-          sect283k1  secp256k1  secp384r1  secp521r1
-        (other curves and hashes are supported, see below)
+  Usage:  python -O ecdsa_bench.py [option option option ...]
+    where options may include:
+      makenewkey  showpubkey  showdigest  showprofile
+      md5  sha1  sha256  sha512
+      secp160r1  secp224r1  secp192k1  sect283r1
+      sect283k1  secp256k1  secp384r1  secp521r1
+    (other curves and hashes are supported, see below)
 
-    Larry Bugbee, June 2006
+Larry Bugbee, June 2006
 
-    Portions:
-      Copyright (c) 1999-2003 Ng Pheng Siong. All rights reserved.
-      Copyright (c) 2005 Vrije Universiteit Amsterdam. All rights reserved.
+Portions:
+  Copyright (c) 1999-2003 Ng Pheng Siong. All rights reserved.
+  Copyright (c) 2005 Vrije Universiteit Amsterdam. All rights reserved.
 
 """
 
@@ -262,7 +262,7 @@ def main(curve, hashalg):
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-
+# fmt: off
 def print_usage():
     print(
         """
@@ -277,6 +277,7 @@ def print_usage():
         % sys.argv[0]
     )
     sys.exit()
+# fmt: on
 
 
 # --------------------------------------------------------------

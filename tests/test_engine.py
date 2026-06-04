@@ -8,10 +8,11 @@ from tests import unittest
 if not m2.is_engine_available:
     raise unittest.SkipTest("Engine module is not available.")
 
+
 class EngineTestCase(unittest.TestCase):
 
-    privkey = 'tests/rsa.priv.pem'
-    bad_id = '1bea1edfeb97'
+    privkey = "tests/rsa.priv.pem"
+    bad_id = "1bea1edfeb97"
 
     def tearDown(self):
         Engine.cleanup()
@@ -24,24 +25,24 @@ class EngineTestCase(unittest.TestCase):
 
     def test_by_id_openssl(self):
         Engine.load_openssl()
-        e = Engine.Engine('openssl')
-        self.assertEqual(e.get_name(), 'Software engine support')
-        self.assertEqual(e.get_id(), 'openssl')
+        e = Engine.Engine("openssl")
+        self.assertEqual(e.get_name(), "Software engine support")
+        self.assertEqual(e.get_id(), "openssl")
 
     def test_by_id_dynamic(self):
         Engine.load_dynamic()
-        Engine.Engine('dynamic')
+        Engine.Engine("dynamic")
 
     def test_engine_ctrl_cmd_string(self):
         Engine.load_dynamic()
-        e = Engine.Engine('dynamic')
-        e.ctrl_cmd_string('ID', 'TESTID')
+        e = Engine.Engine("dynamic")
+        e.ctrl_cmd_string("ID", "TESTID")
 
     def test_load_private(self):
         # Explicit use of `.init()` and `.finish()` can be avoided by
         # using `Engine.Engine()` as a context manager
         Engine.load_openssl()
-        e = Engine.Engine('openssl')
+        e = Engine.Engine("openssl")
         e.init()
         e.set_default()
         e.load_private_key(self.privkey)
@@ -49,11 +50,11 @@ class EngineTestCase(unittest.TestCase):
 
     def test_load_certificate(self):
         Engine.load_openssl()
-        e = Engine.Engine('openssl')
+        e = Engine.Engine("openssl")
         e.set_default()
         try:
             with self.assertRaises(Engine.EngineError):
-                e.load_certificate('/dev/null')
+                e.load_certificate("/dev/null")
         except SystemError:
             pass
 
@@ -62,5 +63,5 @@ def suite():
     return unittest.TestLoader().loadTestsFromTestCase(EngineTestCase)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.TextTestRunner().run(suite())

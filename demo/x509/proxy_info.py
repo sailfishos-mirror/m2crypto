@@ -46,7 +46,7 @@ def print_info(proxy_cert):
 def main():
     parser = optparse.OptionParser()
     parser.add_option("-f", "--file", dest="filename", help=FILEHELP)
-    (opts, args) = parser.parse_args()
+    opts, args = parser.parse_args()
     filename = opts.filename
     if filename is None:
         proxyfile = proxylib.get_proxy_filename()

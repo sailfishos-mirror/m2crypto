@@ -340,7 +340,7 @@ class CertHandler:
         SubjectTxtList = re.split("[\n\r]", SubjectTxt)
         SubjectMap = {}
         for Entry in SubjectTxtList:
-            (Key, Value) = re.split("=", Entry)
+            Key, Value = re.split("=", Entry)
             if Key in self.ObjNames:
                 SubjectMap[self.ObjNames[Key]] = Value
             else:
@@ -513,7 +513,7 @@ class CertHandler:
         SubjectTxtList = re.split("[\n\r]", SubjectTxt)
         SubjectMap = {}
         for Entry in SubjectTxtList:
-            (Key, Value) = re.split("=", Entry)
+            Key, Value = re.split("=", Entry)
             if Key in self.ObjNames:
                 SubjectMap[self.ObjNames[Key]] = Value
             else:
@@ -675,7 +675,7 @@ class CertHandler:
         except base64.binascii.Error as msg:
             raise base64.binascii.Error(msg)
         try:
-            (Base64Nonce, Base64Cert) = re.split(":", PemBaseString)
+            Base64Nonce, Base64Cert = re.split(":", PemBaseString)
         except:
             raise AuthError("cannot split PemBaseString into parts - abort!")
         try:
@@ -771,7 +771,7 @@ class CertHandler:
         except:
             return False
 
-        (NonceServer, NonceBounce, ServerCert) = re.split(":", PemBaseString)
+        NonceServer, NonceBounce, ServerCert = re.split(":", PemBaseString)
         NoncePubServer = base64.decodestring(NonceServer)  # NonceServer
         NoncePubBounce = base64.decodestring(NonceBounce)  # NonceBounce
         PemServerCert = base64.decodestring(ServerCert)  # PemServerCert
@@ -840,7 +840,7 @@ class CertHandler:
             PemBaseString = base64.decodestring(ReplyString)
         except base64.binascii.Error as msg:
             raise base64.binascii.Error(msg)
-        (NoncePubInit, NoncePubBounce) = re.split(":", PemBaseString)
+        NoncePubInit, NoncePubBounce = re.split(":", PemBaseString)
 
         try:
             NoncePubInit = base64.decodestring(
@@ -892,14 +892,14 @@ class CertHandler:
         # self.ExtractPublicKeyFromCert ()
         # self.VerifyCert ()
 
-        (ClientInitNonce, ClientInitString) = self.ClientInit()
-        (ClientSendNonce, ClientObjName) = self.ClientInitVerify(
+        ClientInitNonce, ClientInitString = self.ClientInit()
+        ClientSendNonce, ClientObjName = self.ClientInitVerify(
             InitString=ClientInitString
         )
-        (ServerInitNonce, ServerInitString) = self.ServerInit(
+        ServerInitNonce, ServerInitString = self.ServerInit(
             ClientObjName=ClientObjName, ClientNonce=ClientSendNonce
         )
-        (ServerSendNonce, ClientBounceNonce, ServerObjName) = self.ServerInitVerify(
+        ServerSendNonce, ClientBounceNonce, ServerObjName = self.ServerInitVerify(
             InitString=ServerInitString
         )
         if ClientInitNonce == ClientBounceNonce:
@@ -907,21 +907,19 @@ class CertHandler:
         else:
             print("100 Test  Nonce bounced False - abort!")
 
-        (ReplyInitNonce, ReplyInitString) = self.ReplyInit(
+        ReplyInitNonce, ReplyInitString = self.ReplyInit(
             ReplyObjName=ClientObjName, ReplyBounce=ServerSendNonce
         )
-        (ReplySendNonce, NonceBounced) = self.ReplyVerify(ReplyString=ReplyInitString)
+        ReplySendNonce, NonceBounced = self.ReplyVerify(ReplyString=ReplyInitString)
         if ServerInitNonce == NonceBounced:
             print("100 Test  Nonce bounced True")
         else:
             print("100 Test  Nonce bounced False - abort!")
 
-        (Reply2InitNonce, Reply2InitString) = self.ReplyInit(
+        Reply2InitNonce, Reply2InitString = self.ReplyInit(
             ReplyObjName=ClientObjName, ReplyBounce=ServerSendNonce
         )
-        (Reply2SendNonce, Nonce2Bounced) = self.ReplyVerify(
-            ReplyString=Reply2InitString
-        )
+        Reply2SendNonce, Nonce2Bounced = self.ReplyVerify(ReplyString=Reply2InitString)
         if ServerInitNonce == Nonce2Bounced:
             print("100 Test  Nonce bounced True")
         else:

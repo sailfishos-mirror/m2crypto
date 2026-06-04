@@ -351,8 +351,7 @@ class RSATestCase(unittest.TestCase):
         it has to be longer than a certain length.
         """
         rsa = RSA.load_key(self.privkey)
-        digest = b"""This string should be long enough to warrant an error in
-        RSA_sign""" * 2
+        digest = b"This string should be long enough to warrant an error in RSA_sign" * 2 # fmt:skip
 
         # with self.assertRaises(RSA.RSAError):
         #     rsa.sign(digest)

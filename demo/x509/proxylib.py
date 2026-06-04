@@ -10,6 +10,7 @@
 """
 API to generated proxy certificates
 """
+
 import os, sys
 import struct
 import re
@@ -295,8 +296,8 @@ def get_proxy_filename():
         username = os.getenv("USERNAME")
         if username is None:
             raise RuntimeError(
-                """USERNAME is not set in environment. Can't
-            determine proxy file location"""
+                "USERNAME is not set in environment. "
+                + "Can't determine proxy file location"
             )
 
         proxy_filename = "x509up_u" + username

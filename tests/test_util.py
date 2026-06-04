@@ -29,14 +29,14 @@ class UtilTestCase(unittest.TestCase):
         self.assertIn(bit32, (32, 64))
 
         # Musl libc may return 64-bit time_t on 32-bit systems; skip comparison if musl
-        if platform.libc_ver() != ('', ''):
+        if platform.libc_ver() != ("", ""):
             self.skipTest("Skipping musl-specific test for now")
 
         # Ensure m2.time_t_bits() aligns with Python's architecture (sys.maxsize)
         if sys.maxsize > 2**32:
-            self.assertIn(bit32, (64, ))
+            self.assertIn(bit32, (64,))
         else:
-            self.assertIn(bit32, (32, ))
+            self.assertIn(bit32, (32,))
 
 
 def suite():

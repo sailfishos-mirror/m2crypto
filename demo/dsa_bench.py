@@ -2,31 +2,31 @@
 
 
 """
-    DSA demo and benchmark.
+DSA demo and benchmark.
 
-      Usage:  python -O dsa_bench.py [option option option ...]
-        where options may include:
-          makenewkey  showpubkey  showdigest  showprofile
-          md5  sha1  sha256  sha512
-          <key length>
+  Usage:  python -O dsa_bench.py [option option option ...]
+    where options may include:
+      makenewkey  showpubkey  showdigest  showprofile
+      md5  sha1  sha256  sha512
+      <key length>
 
-    NB:
-      DSA is formally defined with SHA-1 and key length 1024.
-      The OpenSSL implementation actually supports most any
-      hashing algorithm and key length, as long as the key
-      length is longer than the digest length.  If not SHA-1
-      and 1024, you should be very clear.  The use of "DSA"
-      without any qualifiers implies SHA-1 and 1024.
+NB:
+  DSA is formally defined with SHA-1 and key length 1024.
+  The OpenSSL implementation actually supports most any
+  hashing algorithm and key length, as long as the key
+  length is longer than the digest length.  If not SHA-1
+  and 1024, you should be very clear.  The use of "DSA"
+  without any qualifiers implies SHA-1 and 1024.
 
-    Larry Bugbee
-    November 2006
+Larry Bugbee
+November 2006
 
 
-    Some portions are Copyright (c) 1999-2003 Ng Pheng Siong.
-    All rights reserved.
+Some portions are Copyright (c) 1999-2003 Ng Pheng Siong.
+All rights reserved.
 
-    Portions created by Open Source Applications Foundation
-    (OSAF) are Copyright (C) 2004 OSAF. All Rights Reserved.
+Portions created by Open Source Applications Foundation
+(OSAF) are Copyright (C) 2004 OSAF. All Rights Reserved.
 
 """
 
@@ -151,7 +151,7 @@ def main(keylen, hashalg):
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-
+# fmt: off
 def print_usage():
     print(
         """
@@ -164,6 +164,7 @@ def print_usage():
         % sys.argv[0]
     )
     sys.exit()
+# fmt: on
 
 
 # --------------------------------------------------------------

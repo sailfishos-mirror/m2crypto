@@ -33,7 +33,7 @@ def main():
         dest="limited",
         help=VALIDHELP,
     )
-    (opts, args) = parser.parse_args()
+    opts, args = parser.parse_args()
     kw = {}
     kw["cert"] = opts.cert
     kw["key"] = opts.key

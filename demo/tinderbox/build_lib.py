@@ -25,7 +25,6 @@ import subprocess
 import killableprocess
 import tempfile
 
-
 _logFilename = "tbox.log"
 _logPrefix = ""
 _logFile = None

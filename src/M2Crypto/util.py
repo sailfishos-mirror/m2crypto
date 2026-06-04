@@ -104,7 +104,7 @@ def passphrase_callback(
                 break
         except KeyboardInterrupt:
             return None
-    return bytes(p1, 'utf-8')
+    return bytes(p1, "utf-8")
 
 
 def no_passphrase_callback(*args) -> bytes:

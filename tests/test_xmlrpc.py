@@ -15,7 +15,6 @@ from xmlrpc.client import ProtocolError, Transport
 
 from tests import unittest
 
-
 # A valid minimal XML-RPC success response for mock
 VALID_XML_RESPONSE = b"<methodResponse><params><param><value><string>OK</string></value></param></params></methodResponse>"
 

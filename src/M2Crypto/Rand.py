@@ -9,7 +9,6 @@ See LICENCE for the license information.
 from M2Crypto import m2
 from typing import Tuple, Union  # noqa
 
-
 __all__ = [
     "rand_seed",
     "rand_add",

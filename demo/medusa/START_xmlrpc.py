@@ -21,7 +21,6 @@ from M2Crypto import Rand, SSL
 # XMLrpc
 import xmlrpc_handler
 
-
 HTTP_PORT = 9080
 HTTPS_PORT = 9443
 

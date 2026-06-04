@@ -1,4 +1,3 @@
-
 """M2Crypto.SSL.Session client demo2: This program creates two sockets, each
 bound to a different local address. The first creates an SSL connection, the
 second then creates another SSL connection using the first's SSL session id.

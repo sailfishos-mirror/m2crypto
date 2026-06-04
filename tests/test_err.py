@@ -5,6 +5,7 @@ Copyright (C) 2019 Matěj Cepl
 Released under the terms of MIT/X11 License,
 see the file LICENCE for more.
 """
+
 from M2Crypto import Err
 from tests import unittest
 

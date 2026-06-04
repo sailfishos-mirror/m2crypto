@@ -76,7 +76,6 @@ class Engine(object):
             # Never raise from __exit__
             pass
 
-
     @staticmethod
     def m2_engine_free(obj: C.ENGINE) -> None:
         """
@@ -97,12 +96,12 @@ class Engine(object):
         Best-effort cleanup only; errors are intentionally ignored.
         """
         try:
-            if getattr(self, '_initialized', False):
+            if getattr(self, "_initialized", False):
                 m2.engine_finish(self._ptr)
         except Exception:
             pass
         try:
-            if getattr(self, '_pyfree', 0) and self._ptr:
+            if getattr(self, "_pyfree", 0) and self._ptr:
                 m2.engine_free(self._ptr)
         except Exception:
             pass

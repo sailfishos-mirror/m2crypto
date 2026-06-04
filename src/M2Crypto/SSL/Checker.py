@@ -353,9 +353,7 @@ class Checker:
         host_str = host.decode() if isinstance(host, bytes) else host
         certHost_str = certHost.decode() if isinstance(certHost, bytes) else certHost
         try:
-            return ipaddress.ip_address(host_str) == ipaddress.ip_address(
-                certHost_str
-            )
+            return ipaddress.ip_address(host_str) == ipaddress.ip_address(certHost_str)
         except ValueError:
             return False
 

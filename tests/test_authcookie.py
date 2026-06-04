@@ -44,7 +44,7 @@ class AuthCookieTestCase(unittest.TestCase):
         control characters which are rejected by ``http.cookies`` since
         the fix for CVE-2026-0672.
         """
-        return chr(0x21 + (ord(c) - 0x21 + 13) % (0x7e - 0x21 + 1))
+        return chr(0x21 + (ord(c) - 0x21 + 13) % (0x7E - 0x21 + 1))
 
     def _corrupt_part_str(self, s: str, fr: int, to: int) -> str:
         out = s[:fr] + "".join([self._corrupt_char(x) for x in s[fr:to]]) + s[to:]

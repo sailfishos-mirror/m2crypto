@@ -1,10 +1,10 @@
-
 """
 Sample 3rd party lib to use with socklib and myapp.
 
 Copyright (c) 2007 Open Source Applications Foundation.
 All rights reserved.
 """
+
 # This represents some 3rd party library we don't want to modify
 
 import socket

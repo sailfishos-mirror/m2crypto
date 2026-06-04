@@ -898,7 +898,9 @@ class X509ExtTestCase(unittest.TestCase):
         sub_key_id = "1C:E6:F0:58:58:32:BC:7B:BA:8E:E0:23:1B:FF:17:99:B0:4D:CF:64"
         auth_id = "1C:E6:F0:58:58:32:BC:7B:BA:8E:E0:23:1B:FF:17:99:B0:4D:CF:64"
 
-        cert_pem_string = textwrap.dedent("""\
+        # fmt: off
+        cert_pem_string = textwrap.dedent(
+            """\
         -----BEGIN CERTIFICATE-----
         MIIGFjCCA/6gAwIBAgIJAO7rHaO9YDQDMA0GCSqGSIb3DQEBCwUAMHsxCzAJBgNV
         BAYTAlVTMQswCQYDVQQIDAJDQTESMBAGA1UEBwwJTG9zIEdhdG9zMRMwEQYDVQQK
@@ -933,7 +935,9 @@ class X509ExtTestCase(unittest.TestCase):
         rWjDY8k9VrEJG0G3n9FVv9hKvob9ngUMkmyxE5E4VWyab5gVt2m0XXJjz5Sc3530
         dQ9SXhFS7s3060/yl0BBWnTtfu9zGdKaz4lWo25Q0r7HD5y/MwUCbqpRVqXJxGHY
         d3PEYaXkdwhAi3EbarF7R8r3hKzYCpXxfI4=
-        -----END CERTIFICATE-----""")
+        -----END CERTIFICATE-----"""
+        )
+        # fmt: on
         m2_x509_cert = X509.load_cert_string(cert_pem_string)
 
         local_ski = m2_x509_cert.get_ext("subjectKeyIdentifier")

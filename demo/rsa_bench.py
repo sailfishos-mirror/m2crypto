@@ -2,25 +2,26 @@
 
 
 """
-    RSA signing demo and benchmark.
+RSA signing demo and benchmark.
 
-      Usage:  python -O rsa_bench.py [option option option ...]
-        where options may include:
-          makenewkey  showdigest  showprofile
-          md5  sha1  sha256  sha512
-          <key length>
+  Usage:  python -O rsa_bench.py [option option option ...]
+    where options may include:
+      makenewkey  showdigest  showprofile
+      md5  sha1  sha256  sha512
+      <key length>
 
-    Larry Bugbee
-    November 2006
+Larry Bugbee
+November 2006
 
 
-    Some portions are Copyright (c) 1999-2003 Ng Pheng Siong.
-    All rights reserved.
+Some portions are Copyright (c) 1999-2003 Ng Pheng Siong.
+All rights reserved.
 
-    Portions created by Open Source Applications Foundation
-    (OSAF) are Copyright (C) 2004 OSAF. All Rights Reserved.
+Portions created by Open Source Applications Foundation
+(OSAF) are Copyright (C) 2004 OSAF. All Rights Reserved.
 
 """
+
 from M2Crypto import RSA, EVP, Rand
 from M2Crypto.EVP import MessageDigest
 import sys, base64
@@ -158,18 +159,17 @@ def main(keylen, hashalg):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
+# fmt: off
 def print_usage():
-    print(
-        """
+    print("""
   Usage:  python -O %s [option option option ...]
     where options may include:
       makenewkey  showdigest  showprofile
       md5  sha1  sha256  sha512
       <key length>
-"""
-        % sys.argv[0]
-    )
+""" % sys.argv[0])
     sys.exit()
+# fmt: on
 
 
 # --------------------------------------------------------------

@@ -128,7 +128,9 @@ class SMIMETestCase(unittest.TestCase):
         s.set_x509_store(st)
 
         verified = s.verify(p7_loaded, data)
-        self.assertEqual(verified, b"Content-Type: text/plain\r\n\r\nline1\r\nline2\r\n")
+        self.assertEqual(
+            verified, b"Content-Type: text/plain\r\n\r\nline1\r\nline2\r\n"
+        )
 
     def test_sign_unknown_digest(self):
         buf = BIO.MemoryBuffer(self.cleartext)
@@ -502,7 +504,7 @@ class DegenerateTestCase(unittest.TestCase):
         # Verify file contents
         # with open(self.test_filename, "rb") as f:
         #     content = f.read()
-            # self.assertIn(b"-----BEGIN PKCS7-----", content)
+        # self.assertIn(b"-----BEGIN PKCS7-----", content)
 
     def test_load_certificates_roundtrip(self):
         """Test save/load cycle for degenerate PKCS7."""

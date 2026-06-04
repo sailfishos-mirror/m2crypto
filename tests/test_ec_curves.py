@@ -18,6 +18,7 @@ ability to access the curve, not ECDSA itself.
 Copyright (c) 2006 Larry Bugbee. All rights reserved.
 
 """
+
 import logging
 
 from M2Crypto import EC, Rand, m2  # noqa

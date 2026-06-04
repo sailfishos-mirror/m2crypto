@@ -58,7 +58,7 @@ def config(args):
             raise ValueError("mutually exclusive: %s and %s" % x)
 
     if hasattr(cfg, "connect"):
-        (host, port) = string.split(cfg.connect, ":")
+        host, port = string.split(cfg.connect, ":")
         cfg.connect = (host, int(port))
     else:
         cfg.connect = (HOST, PORT)

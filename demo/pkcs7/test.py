@@ -1,4 +1,3 @@
-
 from M2Crypto import BIO, SMIME
 
 pf = BIO.openfile("pkcs7-thawte.pem")

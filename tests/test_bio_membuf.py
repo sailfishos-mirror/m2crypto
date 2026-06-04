@@ -15,7 +15,7 @@ from M2Crypto.BIO import MemoryBuffer
 from M2Crypto.Err import get_error_message
 from tests import unittest
 
-log = logging.getLogger('test_bio_membuf')
+log = logging.getLogger("test_bio_membuf")
 
 
 class TimeLimitExpired(Exception):
@@ -57,7 +57,7 @@ class MemoryBufferTestCase(unittest.TestCase):
         try:
             out = mb.read()
         except:
-            log.debug('Error was: %s', get_error_message())
+            log.debug("Error was: %s", get_error_message())
         self.assertIsNone(out)
 
     def test_init_empty_cm(self):

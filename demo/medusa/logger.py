@@ -105,7 +105,7 @@ class rotating_file_logger(file_logger):
 
     # We back up at midnight every 1) day, 2) monday, or 3) 1st of month
     def next_backup(self, freq):
-        (yr, mo, day, hr, min, sec, wd, jday, dst) = time.localtime(time.time())
+        yr, mo, day, hr, min, sec, wd, jday, dst = time.localtime(time.time())
         if freq == "daily":
             return time.mktime(yr, mo, day + 1, 0, 0, 0, 0, 0, -1)
         elif freq == "weekly":
@@ -132,7 +132,7 @@ class rotating_file_logger(file_logger):
                 self.rotate()  # will create a new file
 
     def rotate(self):
-        (yr, mo, day, hr, min, sec, wd, jday, dst) = time.localtime(time.time())
+        yr, mo, day, hr, min, sec, wd, jday, dst = time.localtime(time.time())
         try:
             self.file.close()
             newname = "%s.ends%04d%02d%02d" % (self.filename, yr, mo, day)

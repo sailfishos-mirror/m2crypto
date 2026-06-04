@@ -1,4 +1,3 @@
-
 """M2Crypto.SSL.Session client demo: This program requests a URL from
 a HTTPS server, saves the negotiated SSL session id, parses the HTML
 returned by the server, then requests each HREF in a separate thread

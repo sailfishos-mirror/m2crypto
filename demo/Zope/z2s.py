@@ -752,7 +752,7 @@ try:
             lg = logger.syslog_logger(os.environ["ZSYSLOG_ACCESS"])
         zLOG.LOG("z2", zLOG.BLATHER, "Using local syslog access log")
     elif "ZSYSLOG_ACCESS_SERVER" in os.environ:
-        (addr, port) = os.environ["ZSYSLOG_ACCESS_SERVER"].split(":")
+        addr, port = os.environ["ZSYSLOG_ACCESS_SERVER"].split(":")
         lg = logger.syslog_logger((addr, int(port)))
         zLOG.LOG("z2", zLOG.BLATHER, "Using remote syslog access log")
     else:

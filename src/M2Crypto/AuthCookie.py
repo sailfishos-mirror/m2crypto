@@ -139,8 +139,7 @@ class AuthCookieJar:
         try:
             c.load(cookie_str)
         except CookieError:
-            log.warning(
-                "Illegal characters in cookie string (CVE-2026-0672)")
+            log.warning("Illegal characters in cookie string (CVE-2026-0672)")
             return False
         if _TOKEN not in c:
             log.debug("_TOKEN not in c (keys = %s)", dir(c))

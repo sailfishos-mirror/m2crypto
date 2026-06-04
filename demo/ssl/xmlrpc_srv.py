@@ -1,4 +1,3 @@
-
 """Server demonstration of M2Crypto.xmlrpclib2.
 
 Copyright (c) 1999-2003 Ng Pheng Siong. All rights reserved."""

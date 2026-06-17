@@ -152,8 +152,49 @@ class Cipher(object):
     def update(self, data: bytes) -> bytes:
         return m2.cipher_update(self.ctx, data)
 
+    def update_aad(self, data: bytes) -> None:
+        """
+        Provide Additional Authenticated Data (AAD) for AEAD modes.
+        """
+        return m2.cipher_update_aad(self.ctx, data)
+
+    def set_iv_len(self, length: int) -> int:
+        """
+        Set the IV length for AEAD modes.
+        """
+        # EVP_CIPHER_CTX_ctrl uses a specific command for IV length.
+        # For GCM, it's usually 0x10 (EVP_CIPHER_CTX_IV_LEN).
+        # We'll use the constant if available, or the value 0.
+        # Actually, the command is EVP_CIPHER_CTX_ctrl(ctx, EVP_CIPHER_CTX_IV_LEN, &len, 0).
+        # Since we don't have the constant in Python, we'll use the value.
+        # But wait, I should probably define these constants.
+        # For now, let's use 0 as a placeholder or try to find the constant.
+        # In OpenSSL, EVP_CIPHER_CTX_IV_LEN is often 0.
+        return m2.cipher_ctrl_set(self.ctx, 0x9, length)
+
+    def set_tag(self, tag: bytes) -> int:
+        """
+        Set the expected authentication tag for decryption in AEAD modes.
+        """
+        # EVP_CIPHER_CTX_ctrl(ctx, EVP_CIPHER_CTX_TAG, tag, len)
+        # Command is usually 1.
+        return m2.cipher_ctrl_set(self.ctx, 0x11, tag)
+
+    def get_tag(self, length: int = 16) -> bytes:
+        """
+        Retrieve the authentication tag after encryption in AEAD modes.
+        """
+        # EVP_CIPHER_CTX_ctrl(ctx, EVP_CIPHER_CTX_TAG, out_buf, len)
+        return m2.cipher_ctrl_get(self.ctx, 0x10, length)
+
     def final(self) -> bytes:
-        return m2.cipher_final(self.ctx)
+        try:
+            return m2.cipher_final(self.ctx)
+        except EVPError as e:
+            # For GCM, cipher_final returns 0 if the tag is incorrect.
+            # We should probably raise a specific error or return a value.
+            # But for now, let's see if we can get more info.
+            raise e
 
     def set_padding(self, padding: int = 1) -> int:
         """

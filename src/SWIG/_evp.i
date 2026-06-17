@@ -127,6 +127,8 @@ extern const EVP_CIPHER *EVP_aes_128_cfb(void);
 extern const EVP_CIPHER *EVP_aes_128_ofb(void);
 %rename(aes_128_ctr) EVP_aes_128_ctr;
 extern const EVP_CIPHER *EVP_aes_128_ctr(void);
+%rename(aes_128_gcm) EVP_aes_128_gcm;
+extern const EVP_CIPHER *EVP_aes_128_gcm(void);
 %rename(aes_192_ecb) EVP_aes_192_ecb;
 extern const EVP_CIPHER *EVP_aes_192_ecb(void);
 %rename(aes_192_cbc) EVP_aes_192_cbc;
@@ -137,6 +139,8 @@ extern const EVP_CIPHER *EVP_aes_192_cfb(void);
 extern const EVP_CIPHER *EVP_aes_192_ofb(void);
 %rename(aes_192_ctr) EVP_aes_192_ctr;
 extern const EVP_CIPHER *EVP_aes_192_ctr(void);
+%rename(aes_192_gcm) EVP_aes_192_gcm;
+extern const EVP_CIPHER *EVP_aes_192_gcm(void);
 %rename(aes_256_ecb) EVP_aes_256_ecb;
 extern const EVP_CIPHER *EVP_aes_256_ecb(void);
 %rename(aes_256_cbc) EVP_aes_256_cbc;
@@ -147,9 +151,62 @@ extern const EVP_CIPHER *EVP_aes_256_cfb(void);
 extern const EVP_CIPHER *EVP_aes_256_ofb(void);
 %rename(aes_256_ctr) EVP_aes_256_ctr;
 extern EVP_CIPHER const *EVP_aes_256_ctr(void);
+%rename(aes_256_gcm) EVP_aes_256_gcm;
+extern const EVP_CIPHER *EVP_aes_256_gcm(void);
 
 %rename(cipher_set_padding) EVP_CIPHER_CTX_set_padding;
 extern int EVP_CIPHER_CTX_set_padding(EVP_CIPHER_CTX *, int);
+%inline %{
+PyObject *cipher_update_aad(EVP_CIPHER_CTX *ctx, PyObject *blob) {
+    Py_buffer buf;
+    int outlen = 0;
+    if (m2_PyObject_GetBuffer(blob, &buf, PyBUF_SIMPLE) == -1)
+        return NULL;
+
+    if (!EVP_CipherUpdate(ctx, NULL, &outlen, buf.buf, buf.len)) {
+        PyErr_SetString(PyExc_RuntimeError, "EVP_CipherUpdate (AAD) failed");
+        m2_PyBuffer_Release(blob, &buf);
+        return NULL;
+    }
+    m2_PyBuffer_Release(blob, &buf);
+    Py_RETURN_NONE;
+}
+
+PyObject *cipher_ctrl_set(EVP_CIPHER_CTX *ctx, int cmd, PyObject *arg) {
+    Py_buffer buf;
+    int ret;
+    if (arg == Py_None) {
+        ret = EVP_CIPHER_CTX_ctrl(ctx, cmd, 0, NULL);
+    } else if (m2_PyObject_GetBuffer(arg, &buf, PyBUF_SIMPLE) == -1) {
+        return NULL;
+    } else {
+        /* For GCM tag, the length is passed as the 3rd argument */
+        ret = EVP_CIPHER_CTX_ctrl(ctx, cmd, buf.len, buf.buf);
+        m2_PyBuffer_Release(arg, &buf);
+    }
+    if (ret <= 0) {
+        PyErr_SetString(PyExc_RuntimeError, "EVP_CIPHER_CTX_ctrl (set) failed");
+        return NULL;
+    }
+    return PyLong_FromLong(ret);
+}
+
+PyObject *cipher_ctrl_get(EVP_CIPHER_CTX *ctx, int cmd, int outlen) {
+    unsigned char *buf = PyMem_Malloc(outlen);
+    int ret = EVP_CIPHER_CTX_ctrl(ctx, cmd, outlen, buf);
+    if (ret <= 0) {
+        PyMem_Free(buf);
+        unsigned long err = ERR_get_error();
+        char err_buf[256];
+        ERR_error_string_n(err, err_buf, sizeof(err_buf));
+        PyErr_Format(PyExc_RuntimeError, "EVP_CIPHER_CTX_ctrl (get) failed: %s", err_buf);
+        return NULL;
+    }
+    PyObject *res = PyBytes_FromStringAndSize((char*)buf, outlen);
+    PyMem_Free(buf);
+    return res;
+}
+%}
 
 
 %rename(cipher_set_padding) EVP_CIPHER_CTX_set_padding;

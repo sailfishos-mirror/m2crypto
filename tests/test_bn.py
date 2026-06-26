@@ -9,7 +9,7 @@ Copyright (c) 2005 Open Source Applications Foundation. All rights reserved.
 import re
 import warnings
 
-from M2Crypto import BN, Rand
+from M2Crypto import BN, Rand, m2
 from tests import unittest
 
 loops = 16
@@ -71,8 +71,60 @@ class BNTestCase(unittest.TestCase):
             assert m.match(r)
 
 
+class BNConvTestCase(unittest.TestCase):
+    """Regression tests for m2.hex_to_bn / m2.dec_to_bn.
+
+    These wrap OpenSSL's BN_hex2bn / BN_dec2bn, which require a
+    NUL-terminated C string.  The Python wrappers must copy the
+    incoming buffer into a NUL-terminated scratch area; passing the
+    raw buffer pointer is an out-of-bounds read on hostile input.
+    """
+
+    def test_hex_to_bn_roundtrip(self):
+        bn = m2.hex_to_bn(b"deadbeef")
+        # bn_to_hex returns bytes (the .pyi annotation is incorrect)
+        self.assertEqual(m2.bn_to_hex(bn).upper(), b"DEADBEEF")
+
+    def test_dec_to_bn_roundtrip(self):
+        bn_dec = m2.dec_to_bn(b"3735928559")  # 0xDEADBEEF
+        bn_hex = m2.hex_to_bn(b"deadbeef")
+        self.assertEqual(m2.bn_to_bin(bn_dec), m2.bn_to_bin(bn_hex))
+
+    def test_hex_to_bn_non_nul_terminated(self):
+        """The bytearray slice has no trailing NUL: must not OOB-read.
+
+        Before the fix, BN_hex2bn would read past the end of the
+        buffer until it found a NUL or a non-hex byte.  After the fix,
+        the wrapper copies into its own NUL-terminated scratch buffer,
+        so the result must depend only on the slice contents.
+        """
+        big = bytearray(b"deadbeef" + b"ZZZZZZZZ")
+        view = memoryview(big)[:8]
+        bn = m2.hex_to_bn(view)
+        self.assertEqual(m2.bn_to_hex(bn).upper(), b"DEADBEEF")
+
+    def test_dec_to_bn_non_nul_terminated(self):
+        big = bytearray(b"12345" + b"9999")
+        view = memoryview(big)[:5]
+        bn = m2.dec_to_bn(view)
+        self.assertEqual(int(m2.bn_to_hex(bn), 16), 12345)
+
+    def test_hex_to_bn_rejects_str(self):
+        # Note: the underlying TypeError is wrapped in SystemError by
+        # SWIG's BIGNUM* output typemap (pre-existing behaviour).
+        with self.assertRaises((TypeError, SystemError)):
+            m2.hex_to_bn("deadbeef")
+
+    def test_dec_to_bn_rejects_str(self):
+        with self.assertRaises((TypeError, SystemError)):
+            m2.dec_to_bn("12345")
+
+
 def suite():
-    return unittest.TestLoader().loadTestsFromTestCase(BNTestCase)
+    t_suite = unittest.TestSuite()
+    t_suite.addTest(unittest.TestLoader().loadTestsFromTestCase(BNTestCase))
+    t_suite.addTest(unittest.TestLoader().loadTestsFromTestCase(BNConvTestCase))
+    return t_suite
 
 
 if __name__ == "__main__":

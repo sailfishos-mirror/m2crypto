@@ -566,25 +566,43 @@ PyObject *bn_to_hex(BIGNUM *bn) {
 BIGNUM *hex_to_bn(PyObject *value) {
     Py_buffer vbuf;
     BIGNUM *bn;
+    char *tmp;
 
-
-    if (m2_PyObject_GetBuffer(value, &vbuf, PyBUF_SIMPLE) == -1)
+    /* m2_PyObject_GetBufferInt also bounds vbuf.len <= INT_MAX, which
+     * matches what OpenSSL's BN_hex2bn can safely consume and keeps
+     * the +1 below from overflowing on a 32-bit size_t. */
+    if (m2_PyObject_GetBufferInt(value, &vbuf, PyBUF_SIMPLE) == -1)
         return NULL;
 
-    if ((bn=BN_new())==NULL) {
-        PyErr_SetString(PyExc_MemoryError, "hex_to_bn");
+    if ((bn = BN_new()) == NULL) {
+        PyErr_SetString(PyExc_MemoryError, "hex_to_bn: BN_new");
         m2_PyBuffer_Release(value, &vbuf);
         return NULL;
     }
 
-    /* BN_hex2bn expects a null-terminated string/buffer */
-    /* We pass vbuf.buf assuming input is correctly formatted (e.g. bytes from hex string) */
-    if (BN_hex2bn(&bn, (const char *)vbuf.buf) <= 0) {
-        m2_PyErr_Msg(PyExc_RuntimeError);
+    /* BN_hex2bn requires a NUL-terminated C string.  Python bytes
+     * (and bytearray slices, memoryview, etc.) are not guaranteed
+     * to be NUL-terminated, so copy into a temporary buffer that
+     * we control.  Embedded NULs will still truncate parsing -- that
+     * matches BN_hex2bn's documented behaviour. */
+    tmp = PyMem_Malloc((size_t)vbuf.len + 1);
+    if (tmp == NULL) {
+        PyErr_SetString(PyExc_MemoryError, "hex_to_bn: tmp buffer");
         BN_free(bn);
         m2_PyBuffer_Release(value, &vbuf);
         return NULL;
     }
+    memcpy(tmp, vbuf.buf, (size_t)vbuf.len);
+    tmp[vbuf.len] = '\0';
+
+    if (BN_hex2bn(&bn, tmp) <= 0) {
+        m2_PyErr_Msg(PyExc_RuntimeError);
+        BN_free(bn);
+        PyMem_Free(tmp);
+        m2_PyBuffer_Release(value, &vbuf);
+        return NULL;
+    }
+    PyMem_Free(tmp);
     m2_PyBuffer_Release(value, &vbuf);
     return bn;
 }
@@ -592,23 +610,37 @@ BIGNUM *hex_to_bn(PyObject *value) {
 BIGNUM *dec_to_bn(PyObject *value) {
     Py_buffer vbuf;
     BIGNUM *bn;
+    char *tmp;
 
-    if (m2_PyObject_GetBuffer(value, &vbuf, PyBUF_SIMPLE) == -1)
+    if (m2_PyObject_GetBufferInt(value, &vbuf, PyBUF_SIMPLE) == -1)
         return NULL;
 
-    if ((bn=BN_new())==NULL) {
-      PyErr_SetString(PyExc_MemoryError, "dec_to_bn");
-      m2_PyBuffer_Release(value, &vbuf);
-      return NULL;
+    if ((bn = BN_new()) == NULL) {
+        PyErr_SetString(PyExc_MemoryError, "dec_to_bn: BN_new");
+        m2_PyBuffer_Release(value, &vbuf);
+        return NULL;
     }
 
-    /* BN_dec2bn expects a null-terminated string/buffer */
-    if ((BN_dec2bn(&bn, (const char *)vbuf.buf) <= 0)) {
-      m2_PyErr_Msg(PyExc_RuntimeError);
-      BN_free(bn);
-      m2_PyBuffer_Release(value, &vbuf);
-      return NULL;
+    /* See hex_to_bn() above for the rationale behind the NUL-terminated
+     * temporary copy. */
+    tmp = PyMem_Malloc((size_t)vbuf.len + 1);
+    if (tmp == NULL) {
+        PyErr_SetString(PyExc_MemoryError, "dec_to_bn: tmp buffer");
+        BN_free(bn);
+        m2_PyBuffer_Release(value, &vbuf);
+        return NULL;
     }
+    memcpy(tmp, vbuf.buf, (size_t)vbuf.len);
+    tmp[vbuf.len] = '\0';
+
+    if (BN_dec2bn(&bn, tmp) <= 0) {
+        m2_PyErr_Msg(PyExc_RuntimeError);
+        BN_free(bn);
+        PyMem_Free(tmp);
+        m2_PyBuffer_Release(value, &vbuf);
+        return NULL;
+    }
+    PyMem_Free(tmp);
     m2_PyBuffer_Release(value, &vbuf);
     return bn;
 }

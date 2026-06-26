@@ -67,7 +67,19 @@ class Context(object):
         ctxmap()[id(self.ctx)] = self
         m2.ssl_ctx_set_cache_size(self.ctx, 128)
         if weak_crypto is None and protocol in ("sslv23", "tls"):
-            self.set_options(m2.SSL_OP_ALL | m2.SSL_OP_NO_SSLv2 | m2.SSL_OP_NO_SSLv3)
+            # SSLv2, SSLv3, TLS 1.0 and TLS 1.1 are all considered
+            # insecure and are disabled by default.  Callers that need
+            # to interoperate with a legacy peer must pass
+            # weak_crypto=1 (which leaves the protocol-restriction
+            # options unset) or clear the relevant bits with
+            # ctx.set_options() after construction.
+            self.set_options(
+                m2.SSL_OP_ALL
+                | m2.SSL_OP_NO_SSLv2
+                | m2.SSL_OP_NO_SSLv3
+                | m2.SSL_OP_NO_TLSv1
+                | m2.SSL_OP_NO_TLSv1_1
+            )
 
     def __del__(self) -> None:
         if getattr(self, "ctx", None):

@@ -7,7 +7,7 @@ Copyright (C) 2009-2010 Heikki Toivonen. All Rights Reserved.
 
 import doctest
 
-from M2Crypto import Rand, SSL, X509
+from M2Crypto import Rand, SSL, X509, m2
 from tests import unittest
 from tests.test_ssl import srv_host
 
@@ -55,6 +55,36 @@ class ContextTestCase(unittest.TestCase):
 
         store = ctx.get_cert_store()
         self.assertIsInstance(store, X509.X509_Store)
+
+    def test_default_options_disable_legacy_protocols(self):
+        """Default Context() must disable SSLv2, SSLv3, TLS 1.0 and TLS 1.1.
+
+        Regression test for the security-audit finding that TLS 1.0 / 1.1
+        were enabled by default.
+        """
+        # set_options(0) returns the currently-set bitmask without
+        # changing it (OR-ing in zero is a no-op).
+        ctx = SSL.Context()
+        opts = ctx.set_options(0)
+        for flag_name in (
+            "SSL_OP_NO_SSLv2",
+            "SSL_OP_NO_SSLv3",
+            "SSL_OP_NO_TLSv1",
+            "SSL_OP_NO_TLSv1_1",
+        ):
+            flag = getattr(m2, flag_name)
+            self.assertTrue(
+                opts & flag,
+                "Default Context() must have %s set (mask=0x%x)" % (flag_name, opts),
+            )
+
+    def test_weak_crypto_keeps_legacy_protocols(self):
+        """Context(weak_crypto=1) preserves the legacy escape hatch."""
+        ctx = SSL.Context(weak_crypto=1)
+        opts = ctx.set_options(0)
+        # weak_crypto=1 must not gratuitously set the NO_TLSv1* bits.
+        self.assertFalse(opts & m2.SSL_OP_NO_TLSv1)
+        self.assertFalse(opts & m2.SSL_OP_NO_TLSv1_1)
 
 
 def suite():

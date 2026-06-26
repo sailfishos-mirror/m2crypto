@@ -62,6 +62,9 @@ SSL_OP_ALL: int
 SSL_OP_NO_SSLv2: int
 SSL_OP_NO_SSLv3: int
 SSL_OP_NO_TLSv1: int
+SSL_OP_NO_TLSv1_1: int
+SSL_OP_NO_TLSv1_2: int
+SSL_OP_NO_TLSv1_3: int
 
 # SSL state flags
 SSL_ST_CONNECT: int

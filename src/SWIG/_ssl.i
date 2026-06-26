@@ -246,6 +246,9 @@ extern int ssl_write(SSL *ssl, PyObject *blob, double timeout = -1);
 %constant int SSL_OP_NO_SSLv2             = 0x01000000L;
 %constant int SSL_OP_NO_SSLv3             = 0x02000000L;
 %constant int SSL_OP_NO_TLSv1             = 0x04000000L;
+%constant int SSL_OP_NO_TLSv1_1           = 0x10000000L;
+%constant int SSL_OP_NO_TLSv1_2           = 0x08000000L;
+%constant int SSL_OP_NO_TLSv1_3           = 0x20000000L;
 %constant int SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS = 0x00000800L;
 
 %constant int SSL_MODE_ENABLE_PARTIAL_WRITE = SSL_MODE_ENABLE_PARTIAL_WRITE;

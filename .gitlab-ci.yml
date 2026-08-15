@@ -159,7 +159,7 @@ leap:
     - zypper refresh
     - zypper dist-upgrade -y
     - zypper install -y pattern:devel_rpm_build pattern:devel_C_C++ osc
-    - zypper install -y swig python3-devel python3-pip libopenssl-devel openssl python3-docutils python3-setuptools python3-service_identity python3-Twisted python3-twine python3-wheel python3-flake8
+    - zypper install -y swig python3 python3-devel python3-pip libopenssl-devel openssl python3-docutils python3-setuptools python3-service_identity python3-Twisted python3-twine python3-wheel python3-flake8
   script:
     - *common_setup_script
     - |
@@ -180,7 +180,7 @@ opensuse:
     - zypper refresh
     - zypper dist-upgrade -y
     - zypper install -y pattern:devel_rpm_build pattern:devel_C_C++ osc
-    - zypper install -y swig python3-devel python3-pip libopenssl-devel openssl python3-service_identity python3-setuptools python3-Twisted python3-irc python3-twine python3-wheel python3-flake8
+    - zypper install -y swig python3 python3-devel python3-pip libopenssl-devel openssl python3-service_identity python3-setuptools python3-Twisted python3-irc python3-twine python3-wheel python3-flake8
   script:
     - *common_setup_script
     - *common_python_build_script

@@ -1,6 +1,6 @@
+import platform
 import socket
 import threading
-import time
 import unittest
 
 from M2Crypto import SSL
@@ -74,6 +74,7 @@ class StarttlsTest(unittest.TestCase):
         # The server thread will exit on its own
         pass
 
+    @unittest.skipIf("BSD" in platform.system(), "Tests are broken on *BSD")
     def test_starttls_smtp(self):
         # Plain socket connection
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

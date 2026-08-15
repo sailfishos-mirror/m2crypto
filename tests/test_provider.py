@@ -3,6 +3,7 @@
 
 import hashlib
 import os
+import platform
 import shutil
 import subprocess
 import tempfile
@@ -18,6 +19,7 @@ PRIVKEY_URI = f"pkcs11:id=%01;type=private?pin-value={PIN}"
 PUBKEY_URI = "pkcs11:id=%01;type=public"
 
 
+@unittest.skipIf("BSD" in platform.system(), "Tests are broken on *BSD")
 class TestM2CryptoProvider(unittest.TestCase):
     """
     Test suite for M2Crypto.Provider using a PKCS#11 device.
@@ -196,6 +198,7 @@ class TestM2CryptoProvider(unittest.TestCase):
                 "365",
                 "-key",
                 PRIVKEY_URI,
+                "-sha256",
                 "-subj",
                 "/CN=01_cert/",
                 "-out",

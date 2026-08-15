@@ -1,3 +1,29 @@
+0.49.0 - 2026-08-15
+-------------------
+
+I have started seriously to use LLM for security check of this project,
+and it really found some issues. Plenty of them are fixed in this
+release. Also, it resolves compatiblility with new Fedora OpenSSL 4.0
+and Swig 4.5.
+
+- defer unavailable ENGINE constant lookup
+- fixes problematic behaviour of pkcs11-provider
+- support TLS 1.0 contexts with modern OpenSSL
+- use Python 3 C APIs in handwritten SWIG code
+- feat: Add AES-GCM (AEAD) support to M2Crypto
+- remove Black configuration from setup.cfg
+- release X509V3 config with its context
+- keep IOBuffer chains alive until destruction
+- test: free low-level OpenSSL objects in leak tests
+- avoid leaking X509V3 extension config
+- free RSA exponent on modulus conversion failure
+- free replaced EVP digest contexts
+- wrap created X509 name entries with ownership
+- own ASN1 values created from Python data
+- own PKCS7 certificate stack copies
+- release BIOs on explicit close
+- Add AuthorityKeyIdentifier extension support
+
 0.48.0 - 2026-05-18
 -------------------
 

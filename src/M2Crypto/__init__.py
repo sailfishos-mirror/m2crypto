@@ -18,7 +18,7 @@ Copyright 2008-2011 Heikki Toivonen. All rights reserved.
 
 from typing import Any, Callable, Optional, Tuple, cast
 
-__version__: str = "0.48.0"
+__version__: str = "0.49.0"
 version: str = __version__
 
 VersionCtor: Optional[Callable[[str], Any]]

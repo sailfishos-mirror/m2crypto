@@ -1194,6 +1194,9 @@ class Urllib2SSLClientTestCase(BaseSSLClientTestCase):
 
             # TODO This should be assertEqual 1, but we leak sock
             # somewhere. Not sure how to fix it.
+            # Python 3.6 does not necessarily collect the response cycle
+            # before this check, so collect it explicitly.
+            gc.collect()
             log.debug("get_referrers = %d", len(gc.get_referrers(s[0])))
             self.assertLessEqual(len(gc.get_referrers(s[0])), 4)
         finally:

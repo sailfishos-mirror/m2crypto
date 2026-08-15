@@ -136,7 +136,7 @@ PyObject *bio_read(BIO *bio, int num) {
     Py_BEGIN_ALLOW_THREADS
     r = BIO_read(bio, buf, num);
     Py_END_ALLOW_THREADS
-    if (r < 0) {
+    if (r <= 0) {
         PyMem_Free(buf);
         if (ERR_peek_error()) {
             m2_PyErr_Msg(_bio_err);
@@ -518,4 +518,3 @@ BIO* BIO_new_pyfd(int fd, int close_flag) {
     return ret;
     }
 %}
-

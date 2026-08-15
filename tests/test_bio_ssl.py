@@ -48,7 +48,7 @@ class HandshakeClient(threading.Thread):
             while not handshake_complete:
                 ret = sslbio.do_handshake()
                 output_token = writebio.read()
-                if output_token is not None:
+                if output_token:
                     sock.sendall(output_token)
 
                 if ret > 0:
@@ -58,7 +58,7 @@ class HandshakeClient(threading.Thread):
                     print(err_string)
                     self.error = "unrecoverable error in handshake - client"
                     return
-                elif output_token is None and sslbio.should_read():
+                elif not output_token and sslbio.should_read():
                     input_token = sock.recv(1024)
                     if not input_token:
                         self.error = "connection closed during handshake - client"
@@ -142,14 +142,14 @@ class SSLTestCase(unittest.TestCase):
                 while not handshake_complete:
                     ret = self.sslbio.do_handshake()
                     output_token = writebio.read()
-                    if output_token is not None:
+                    if output_token:
                         new_sock.sendall(output_token)
 
                     if ret > 0:
                         handshake_complete = True
                     elif not self.sslbio.should_retry():
                         self.fail("unrecoverable error in handshake - server")
-                    elif output_token is None and self.sslbio.should_read():
+                    elif not output_token and self.sslbio.should_read():
                         input_token = new_sock.recv(1024)
                         if not input_token:
                             self.fail("connection closed during handshake - server")

@@ -12,7 +12,8 @@ class EngineError(Exception):
     """Engine-related errors."""
 
 
-m2.engine_init_error(EngineError)
+if m2.is_engine_available:
+    m2.engine_init_error(EngineError)
 
 
 class Engine(object):

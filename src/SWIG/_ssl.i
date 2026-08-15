@@ -71,8 +71,6 @@ extern const char *SSL_alert_desc_string_long(int);
 
 %rename(sslv23_method) SSLv23_method;
 extern SSL_METHOD *SSLv23_method(void);
-%ignore TLSv1_method;
-extern SSL_METHOD *TLSv1_method(void);
 
 %typemap(out) SSL_CTX * {
     PyObject *self = NULL; /* bug in SWIG_NewPointerObj as of 3.0.5 */
@@ -274,7 +272,13 @@ void ssl_init(PyObject *ssl_err, PyObject *ssl_timeout_err) {
 const SSL_METHOD *tlsv1_method(void) {
     PyErr_WarnEx(PyExc_DeprecationWarning,
                  "Function TLSv1_method has been deprecated.", 1);
-    return TLSv1_method();
+    return TLS_method();
+}
+
+int ssl_ctx_set_tls1(SSL_CTX *ctx) {
+    if (!SSL_CTX_set_min_proto_version(ctx, TLS1_VERSION))
+        return 0;
+    return SSL_CTX_set_max_proto_version(ctx, TLS1_VERSION);
 }
 
 void ssl_ctx_passphrase_callback(SSL_CTX *ctx, PyObject *pyfunc) {
@@ -1113,7 +1117,6 @@ X509_CRL *sk_x509_crl_value(STACK_OF(X509_CRL) *stack, int idx) {
     return sk_X509_CRL_value(stack, idx);
 }
 %}
-
 %threadallow i2d_ssl_session;
 %inline %{
 void i2d_ssl_session(BIO *bio, SSL_SESSION *sess) {
@@ -1165,4 +1168,3 @@ int ssl_is_init_finished(SSL *ssl)
   return SSL_is_init_finished(ssl);
 }
 %}
-

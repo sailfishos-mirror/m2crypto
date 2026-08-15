@@ -60,6 +60,8 @@ class Context(object):
             else:
                 raise ValueError("no such protocol '%s'" % protocol)
         self.ctx = m2.ssl_ctx_new(proto())
+        if protocol == "tlsv1" and not m2.ssl_ctx_set_tls1(self.ctx):
+            raise ValueError("TLS 1.0 is not supported by this OpenSSL")
         self.allow_unknown_ca: Union[int, bool] = 0
         self.post_connection_check = post_connection_check
         ctxmap()[id(self.ctx)] = self

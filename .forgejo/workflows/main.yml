@@ -10,7 +10,7 @@ jobs:
   build-opensuse:
     runs-on: opensuse-leap
     container:
-      image: opensuse/leap:latest
+      image: opensuse/leap:15
 
     # Environment variables remain the same.
     env:
@@ -20,7 +20,7 @@ jobs:
       - name: Prepare container
         run: |
           zypper --non-interactive refresh
-          zypper --non-interactive install nodejs20 git-core
+          zypper --non-interactive install nodejs git-core
 
       - name: Checkout repository
         uses: actions/checkout@v4

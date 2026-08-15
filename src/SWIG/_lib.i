@@ -345,7 +345,7 @@ int x509_store_verify_callback(int ok, X509_STORE_CTX *ctx) {
          */
         cret = 0;
     } else {
-        cret = (int)PyInt_AsLong(ret);
+        cret = (int)PyLong_AsLong(ret);
     }
 
     Py_XDECREF(ret);

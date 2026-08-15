@@ -154,9 +154,9 @@ PyObject *ec_get_builtin_curves(void) {
     PyDict_SetItemString(ret_dict, "NID",
                          PyLong_FromLong((long)curves[i].nid));
     PyDict_SetItemString(ret_dict, "sname",
-                         PyString_FromString(sname));
+                         PyUnicode_FromString(sname));
     PyDict_SetItemString(ret_dict, "comment",
-                         PyString_FromString(comment));
+                         PyUnicode_FromString(comment));
 
     PyTuple_SET_ITEM(ret_tuple, i, ret_dict);
 

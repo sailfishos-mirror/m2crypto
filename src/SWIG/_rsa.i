@@ -550,7 +550,7 @@ PyObject *rsa_get_ex_data(RSA *rsa, int index) {
         return NULL;
     }
 
-    return PyInt_FromLong(*data);
+    return PyLong_FromLong(*data);
 }
 %}
 

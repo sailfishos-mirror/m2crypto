@@ -55,6 +55,7 @@ IS_DEBIAN = os.path.exists("/etc/debian_version")
 # It would be probably better if the port was randomly selected.
 # https://fedorahosted.org/libuser/browser/tests/alloc_port.c
 srv_host = "localhost"
+srv_bind_host = "127.0.0.1"
 
 
 def allocate_srv_port():
@@ -100,6 +101,7 @@ class VerifyCB(object):
         return verify_cb_new_function(ok, store)
 
 
+server_start_timeout = float(os.getenv("M2CRYPTO_TEST_SSL_TIMEOUT", "10"))
 sleepTime = float(os.getenv("M2CRYPTO_TEST_SSL_SLEEP", "1.5"))
 
 
@@ -133,8 +135,26 @@ class BaseSSLClientTestCase(unittest.TestCase):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
-        time.sleep(sleepTime)
-        return pid
+        deadline = time.monotonic() + server_start_timeout
+        while time.monotonic() < deadline:
+            if pid.poll() is not None:
+                out, err = pid.communicate()
+                raise RuntimeError(
+                    "openssl s_server exited during startup: %s"
+                    % err.decode(errors="replace")
+                )
+            try:
+                with socket.create_connection(self.srv_bind_addr, timeout=0.1):
+                    return pid
+            except OSError:
+                time.sleep(0.05)
+
+        pid.terminate()
+        out, err = pid.communicate()
+        raise RuntimeError(
+            "openssl s_server did not start listening on %s: %s"
+            % (self.srv_bind_addr, err.decode(errors="replace"))
+        )
 
     def stop_server(self, pid):
         pid.terminate()
@@ -158,6 +178,7 @@ class BaseSSLClientTestCase(unittest.TestCase):
         self.srv_host = srv_host
         self.srv_port = allocate_srv_port()
         self.srv_addr = (srv_host, self.srv_port)
+        self.srv_bind_addr = (srv_bind_host, self.srv_port)
         self.srv_url = "https://%s:%s/" % (srv_host, self.srv_port)
         self.args = [
             "s_server",
@@ -165,7 +186,7 @@ class BaseSSLClientTestCase(unittest.TestCase):
             "-cert",
             "server.pem",
             "-accept",
-            str(self.srv_port),
+            "%s:%s" % (srv_bind_host, self.srv_port),
         ]
         self.test_output = "s_server -www"
 
@@ -273,7 +294,7 @@ class HttpslibSSLClientTestCase(BaseSSLClientTestCase):
             "-cert",
             "idn_server.pem",
             "-accept",
-            str(self.srv_port),
+            "%s:%s" % (srv_bind_host, self.srv_port),
         ]
         pid = self.start_server(args)
         try:
@@ -385,7 +406,7 @@ class HttpslibSSLSNIClientTestCase(BaseSSLClientTestCase):
             "-key2",
             "server_key.pem",
             "-accept",
-            str(self.srv_port),
+            "%s:%s" % (srv_bind_host, self.srv_port),
         ]
         self.ctx = SSL.Context()
 

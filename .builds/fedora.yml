@@ -8,7 +8,6 @@ packages:
   - python3-pip
   - openssl
   - openssl-devel
-  - openssl-devel-engine
   - pkcs11-provider
   - softhsm
   - opensc

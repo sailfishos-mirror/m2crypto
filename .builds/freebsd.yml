@@ -6,14 +6,14 @@ packages:
   - swig
   - pkgconf
   - python3
-  - py311-pip
-  - py311-build
-  - py311-setuptools
-  - py311-twisted
-  - py311-docutils
-  - py311-mypy
-  - py311-importlib-resources
-  - py311-irc
+  - py312-pip
+  - py312-build
+  - py312-setuptools
+  - py312-twisted
+  - py312-docutils
+  - py312-mypy
+  - py312-importlib-resources
+  - py312-irc
   - openssl
   - libp11
   - softhsm2

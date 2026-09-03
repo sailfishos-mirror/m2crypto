@@ -14,6 +14,10 @@ issue.
 *   OpenSSL (development libraries)
 *   A C compiler (like GCC)
 
+If OpenSSL headers are missing, `setup.py` fails while generating
+`src/SWIG/x509_v_flag.h` and leaves that tracked file empty. Restore the file
+before retrying the build.
+
 ## SWIG Integration
 
 M2Crypto uses SWIG to generate Python bindings from OpenSSL C headers.

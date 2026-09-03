@@ -1211,12 +1211,13 @@ import threading
 class ChunkedHTTPSServer(threading.Thread):
     """Simple HTTPS server that sends a chunked response."""
 
-    def __init__(self, host, port, certfile, keyfile):
+    def __init__(self, host, port, certfile, keyfile, response_delay=0):
         super().__init__(daemon=True)
         self.host = host
         self.port = port
         self.certfile = certfile
         self.keyfile = keyfile
+        self.response_delay = response_delay
         self.ready = threading.Event()
         self.stop_event = threading.Event()
 
@@ -1224,6 +1225,7 @@ class ChunkedHTTPSServer(threading.Thread):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server_socket.bind((self.host, self.port))
+        self.port = self.server_socket.getsockname()[1]
         self.server_socket.listen(1)
         self.server_socket.settimeout(0.5)
 
@@ -1246,6 +1248,9 @@ class ChunkedHTTPSServer(threading.Thread):
 
                 # Read the request
                 request = ssl_conn.recv(4096)
+
+                if self.response_delay:
+                    time.sleep(self.response_delay)
 
                 # Send properly formatted chunked response
                 response = (
@@ -1277,6 +1282,39 @@ class ChunkedHTTPSServer(threading.Thread):
             self.server_socket.close()
         except:
             pass
+
+
+class SSLReadTimeoutTestCase(unittest.TestCase):
+    """Test SSL reads which must wait for the socket to become ready."""
+
+    def setUp(self):
+        self.server = ChunkedHTTPSServer(
+            srv_bind_host,
+            0,
+            certfile="tests/server.pem",
+            keyfile="tests/server_key.pem",
+            response_delay=0.2,
+        )
+        self.server.start()
+        if not self.server.ready.wait(timeout=5):
+            self.fail("HTTPS server failed to start")
+
+    def tearDown(self):
+        self.server.stop()
+        self.server.join(timeout=2)
+
+    def test_read_retries_after_socket_becomes_ready(self):
+        ctx = SSL.Context()
+        conn = SSL.Connection(ctx)
+        try:
+            conn.connect((srv_host, self.server.port))
+            conn.write(b"GET / HTTP/1.0\r\n\r\n")
+            conn.settimeout(2.0)
+
+            self.assertEqual(conn.read(1), b"H")
+        finally:
+            conn.close()
+            ctx.close()
 
 
 class Urllib2TEChunkedSSLClientTestCase(BaseSSLClientTestCase):

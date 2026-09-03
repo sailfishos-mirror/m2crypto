@@ -795,6 +795,12 @@ PyObject *ssl_read(SSL *ssl, int num, double timeout) {
         return NULL;
     }
 
+    if (timeout > 0 && gettimeofday(&tv, NULL) != 0) {
+        PyMem_Free(buf);
+        PyErr_SetFromErrno(PyExc_OSError);
+        return NULL;
+    }
+
     while (1) {
         Py_BEGIN_ALLOW_THREADS
         r = SSL_read(ssl, buf, num);
@@ -825,14 +831,13 @@ PyObject *ssl_read(SSL *ssl, int num, double timeout) {
                         goto cleanup;
                     }
 
-                    // NOTE: ssl_sleep_with_timeout must now check and enforce the timeout
-                    // This function should return 0 on success/retry, and -1 on timeout or error
-                    if (ssl_sleep_with_timeout(ssl, &tv, timeout, ssl_err) == 0) {
+                    // ssl_sleep_with_timeout returns 0 when the socket is
+                    // ready and -1 after setting an exception.
+                    if (ssl_sleep_with_timeout(ssl, &tv, timeout, ssl_err) != 0) {
                         obj = NULL;
                         goto cleanup;
                     }
-                    // If it returns 0 (success/retry), loop continues.
-                    break;
+                    continue;
                 /* Some non-recoverable, fatal I/O error occurred. If this
                  * error occurs then no further I/O operations should be
                  * performed on the connection and SSL_shutdown() must not

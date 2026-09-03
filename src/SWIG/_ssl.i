@@ -555,7 +555,7 @@ static int ssl_sleep_with_timeout(SSL *ssl, const struct timeval *start,
 again:
     if (gettimeofday(&now, NULL) != 0) {
         // Should not happen, but handle defensively
-        PyErr_SetString(PyExc_OSError, "gettimeofday failed");
+        PyErr_SetFromErrno(PyExc_OSError);
         return -1;
     }
 
@@ -664,7 +664,7 @@ PyObject *ssl_accept(SSL *ssl, double timeout) {
     // Get start time only if a timeout is specified
     if (has_timeout) {
         if (gettimeofday(&tv_start, NULL) != 0) {
-             PyErr_SetString(PyExc_OSError, "gettimeofday failed");
+             PyErr_SetFromErrno(PyExc_OSError);
              return NULL;
         }
     }
@@ -790,14 +790,13 @@ PyObject *ssl_read(SSL *ssl, int num, double timeout) {
     int r;
     struct timeval tv;
 
-    if (!(buf = PyMem_Malloc(num))) {
-        PyErr_SetString(PyExc_MemoryError, "ssl_read");
+    if (timeout > 0 && gettimeofday(&tv, NULL) != 0) {
+        PyErr_SetFromErrno(PyExc_OSError);
         return NULL;
     }
 
-    if (timeout > 0 && gettimeofday(&tv, NULL) != 0) {
-        PyMem_Free(buf);
-        PyErr_SetFromErrno(PyExc_OSError);
+    if (!(buf = PyMem_Malloc(num))) {
+        PyErr_SetString(PyExc_MemoryError, "ssl_read");
         return NULL;
     }
 

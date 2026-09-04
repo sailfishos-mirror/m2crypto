@@ -6,6 +6,9 @@ and it really found some issues. Plenty of them are fixed in this
 release. Also, it resolves compatiblility with new Fedora OpenSSL 4.0
 and Swig 4.5.
 
+- prevent out-of-bounds reads in BIGNUM hexadecimal and decimal conversions
+- disable TLS 1.0 and TLS 1.1 by default
+- deprecate RC4 and warn when it is instantiated
 - defer unavailable ENGINE constant lookup
 - fixes problematic behaviour of pkcs11-provider
 - support TLS 1.0 contexts with modern OpenSSL

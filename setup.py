@@ -115,7 +115,7 @@ def openssl_version(ossldir: str, req_ver: int, required: bool = False):
         else:
             crypt_lib = ctypes.cdll.LoadLibrary("libssl.so")
         log.info(f"crypt_lib = {crypt_lib}")
-    except (AttributeError, FileNotFoundError):
+    except Exception:
         ver = None
         file = os.path.join(ossldir, "include", "openssl", "opensslv.h")
 

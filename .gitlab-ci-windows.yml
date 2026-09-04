@@ -41,7 +41,7 @@ build-test-windows:
       - PYTHON_VERSION: "313"
       - PYTHON_VERSION: "314"
   variables:
-    OPENSSL_INSTALLER: "Win64OpenSSL-3_0_21.exe"
+    OPENSSL_INSTALLER: "Win64OpenSSL-3_0_22.exe"
     OPENSSL_PATH: "C:\\OpenSSL-3-0-Win64"
     BUNDLEDLLS: 1
   tags:
@@ -51,6 +51,7 @@ build-test-windows:
       - "dist/*"
       - "src/SWIG/_m2crypto_wrap.c"
   script: |
+    $ErrorActionPreference = "Stop"
     # Install Python and Swig
     $CHOCOLATEY_PYTHON_OPTIONS = ""
     choco install --limitoutput --yes $CHOCOLATEY_PYTHON_OPTIONS python$PYTHON_VERSION

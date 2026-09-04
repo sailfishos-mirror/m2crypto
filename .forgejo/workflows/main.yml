@@ -44,6 +44,11 @@ jobs:
           # We no longer export this to GITEA_ENV to improve compatibility.
           python3 -mpip install -v --upgrade --target ${PYTHONPATH_DYNAMIC} --no-compile --ignore-installed --no-deps --no-index dist/[mM]2[cC]rypto*.whl
 
+      # No `python3-build` available
+      - name: Build distribution tarball
+        run: |
+          python3 setup.py sdist
+
 #      There is no mypy for Python 3.6 and certainly not in openSUSE/Leap packages
 #      - name: Run mypy check
 #        run: |
@@ -121,5 +126,5 @@ jobs:
           name: build-artifacts-fedora
           path: |
             src/SWIG/_m2crypto_wrap.c
-            dist/*.whl
-            dist/*.tar.gz
+            dist/M2Crypto*.whl
+            dist/M2Crypto*.tar.gz

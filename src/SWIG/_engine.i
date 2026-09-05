@@ -9,8 +9,11 @@
  */
 %{
 #include <openssl/opensslconf.h>
+#include <openssl/opensslv.h>
 #ifndef OPENSSL_NO_ENGINE
+#if !defined(OPENSSL_NO_DEPRECATED_3_0) && OPENSSL_VERSION_NUMBER < 0x30500000L
 #include <openssl/engine.h>
+#endif
 #endif
 #include <openssl/ui.h>
 #include <stdio.h>
@@ -18,8 +21,11 @@
 %}
 
 %include <openssl/opensslconf.h>
+%include <openssl/opensslv.h>
 
-#if defined(OPENSSL_NO_ENGINE)
+#if defined(OPENSSL_NO_ENGINE) \
+        || defined(OPENSSL_NO_DEPRECATED_3_0) \
+        || OPENSSL_VERSION_NUMBER >= 0x30500000L
     %constant bool is_engine_available = false;
 #else
     %constant bool is_engine_available = true;

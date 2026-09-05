@@ -62,6 +62,11 @@ class Connection:
         self._bio_freed = False
         self.ctx = ctx
         self.ssl: C.SSL = m2.ssl_new(self.ctx.ctx)
+        # SSL_set_bio() takes ownership of the native BIOs. Keep the Python
+        # wrappers alive while SSL owns their pointers, but prevent their
+        # destructors from freeing those pointers a second time.
+        self._readbio: Optional[BIO.BIO] = None
+        self._writebio: Optional[BIO.BIO] = None
         if sock is not None:
             self.socket = sock
         else:
@@ -115,6 +120,8 @@ class Connection:
             self.close()
         if self.ssl_close_flag == self.m2_bio_noclose and getattr(self, "ssl", None):
             self.m2_ssl_free(self.ssl)
+        self._readbio = None
+        self._writebio = None
 
     def close(self, freeBio: Optional[bool] = True) -> None:
         """
@@ -189,7 +196,13 @@ class Connection:
         :param readbio: BIO for reading
         :param writebio: BIO for writing.
         """
+        # SSL_set_bio() takes ownership of both native BIOs. The wrappers
+        # must remain alive, but must not free the pointers independently.
+        readbio._pyfree = 0
+        writebio._pyfree = 0
         m2.ssl_set_bio(self.ssl, readbio._ptr(), writebio._ptr())
+        self._readbio = readbio
+        self._writebio = writebio
 
     def set_client_CA_list_from_file(self, cafile: str) -> None:
         """Set the acceptable client CA list.

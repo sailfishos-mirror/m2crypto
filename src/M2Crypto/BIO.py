@@ -31,6 +31,11 @@ class BIO(object):
         _close_cb: Optional[Callable] = None,
     ) -> None:
         self.bio = bio
+        # Whether this Python wrapper owns the native BIO pointer. A value of
+        # 1 makes __del__() call m2.bio_free() for self.bio; a value of 0
+        # means that another object, usually OpenSSL after a BIO is passed to
+        # SSL_set_bio(), owns the pointer. In the latter case the wrapper must
+        # stay alive if its pointer is still in use, but must not free it.
         self._pyfree = _pyfree
         self._close_cb = _close_cb
         self.closed = 0

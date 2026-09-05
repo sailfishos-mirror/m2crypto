@@ -100,5 +100,5 @@ build-test-windows:
     # Run the actual tests
     python -m unittest discover -b -v tests
   rules:
-    - if: "($CI_COMMIT_BRANCH == \"master\" || $CI_COMMIT_BRANCH =~ /^windows.*/)"  # Run for all changes to master or branches starting with "windows"
+    - if: "($CI_COMMIT_REF_NAME == \"master\" || $CI_COMMIT_REF_NAME =~ /^windows.*/)"  # Run for all changes to master or branches starting with "windows"
     - if: "$CI_COMMIT_TAG =~ /^\\d+\\.\\d+\\.\\d+$/"  # Also run when pushing tags for versions, e.g: 0.40.1

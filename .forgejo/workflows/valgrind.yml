@@ -8,7 +8,7 @@ on:
 
 jobs:
   test-valgrind:
-    runs-on: fedora
+    runs-on: docker
     container:
       image: fedora:latest
     env:

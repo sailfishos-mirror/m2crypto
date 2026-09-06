@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-opensuse:
-    runs-on: opensuse-leap
+    runs-on: docker
     container:
       image: opensuse/leap:15
 
@@ -73,7 +73,7 @@ jobs:
             dist/*.tar.gz
 
   build-fedora:
-    runs-on: fedora
+    runs-on: docker
     container:
       image: fedora:latest
     env:

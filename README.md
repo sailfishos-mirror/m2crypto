@@ -5,7 +5,7 @@
   <https://todo.sr.ht/~mcepl/m2crypto> (R/O, please\
   report issues via the email list).\
 **maintainer**: "Matěj Cepl"\
-**web-Site**: <https://codeberg.org/mcepl/m2crypto/>
+**web-Site**: <https://codefloe.com/mcepl/m2crypto/>
 
 # M2Crypto
 

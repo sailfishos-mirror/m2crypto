@@ -17,6 +17,7 @@
 #include <openssl/provider.h>
 #include <openssl/params.h>
 #else
+typedef void OSSL_LIB_CTX;
 typedef void OSSL_PROVIDER;
 #endif
 %}
@@ -63,13 +64,24 @@ static void raise_ossl_error(PyObject *exc, const char *fmt, ...)
     }
 }
 
-EVP_PKEY *provider_load_key(const char *uri)
+EVP_PKEY *provider_load_key(OSSL_LIB_CTX *libctx, const char *uri)
 {
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
+    (void)libctx;
+    (void)uri;
+    PyErr_SetString(provider_exc(), "OpenSSL provider API requires OpenSSL >= 3.0");
+    return NULL;
+#else
     OSSL_STORE_CTX *store;
     OSSL_STORE_INFO *info;
     EVP_PKEY *key = NULL;
     int want_private = 0;
     int want_public = 0;
+
+    if (!libctx) {
+        PyErr_SetString(provider_exc(), "Invalid NULL library context");
+        return NULL;
+    }
 
     if (!uri) {
         raise_ossl_error(_provider_err, "Invalid NULL uri");
@@ -77,7 +89,7 @@ EVP_PKEY *provider_load_key(const char *uri)
     }
 
     ERR_clear_error();
-    store = OSSL_STORE_open(uri, NULL, NULL, NULL, NULL);
+    store = OSSL_STORE_open_ex(uri, libctx, NULL, NULL, NULL, NULL, NULL, NULL);
     if (store == NULL) {
         raise_ossl_error(_provider_err, "Failed to open store: %s", uri);
         return NULL;
@@ -180,13 +192,25 @@ EVP_PKEY *provider_load_key(const char *uri)
     OSSL_STORE_close(store);
 
     return key;
+#endif
 }
 
-X509 *provider_load_certificate(const char *uri)
+X509 *provider_load_certificate(OSSL_LIB_CTX *libctx, const char *uri)
 {
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
+    (void)libctx;
+    (void)uri;
+    PyErr_SetString(provider_exc(), "OpenSSL provider API requires OpenSSL >= 3.0");
+    return NULL;
+#else
     OSSL_STORE_CTX *store;
     OSSL_STORE_INFO *info;
     X509 *cert = NULL;
+
+    if (!libctx) {
+        PyErr_SetString(provider_exc(), "Invalid NULL library context");
+        return NULL;
+    }
 
     if (!uri) {
         raise_ossl_error(_provider_err, "Invalid NULL uri");
@@ -194,7 +218,7 @@ X509 *provider_load_certificate(const char *uri)
     }
 
     ERR_clear_error();
-    store = OSSL_STORE_open(uri, NULL, NULL, NULL, NULL);
+    store = OSSL_STORE_open_ex(uri, libctx, NULL, NULL, NULL, NULL, NULL, NULL);
     if (store == NULL) {
         raise_ossl_error(_provider_err, "Failed to open store: %s", uri);
         return NULL;
@@ -228,24 +252,54 @@ X509 *provider_load_certificate(const char *uri)
     OSSL_STORE_close(store);
 
     return cert;
+#endif
 }
 
-OSSL_PROVIDER *provider_load(const char *name)
+OSSL_LIB_CTX *provider_context_new(void)
 {
 #if OPENSSL_VERSION_NUMBER < 0x30000000L
+    PyErr_SetString(provider_exc(), "OpenSSL provider API requires OpenSSL >= 3.0");
+    return NULL;
+#else
+    OSSL_LIB_CTX *libctx = OSSL_LIB_CTX_new();
+    if (libctx == NULL) {
+        raise_ossl_error(provider_exc(), "Failed to create OpenSSL library context");
+    }
+    return libctx;
+#endif
+}
+
+void provider_context_free(OSSL_LIB_CTX *libctx)
+{
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
+    (void)libctx;
+#else
+    OSSL_LIB_CTX_free(libctx);
+#endif
+}
+
+OSSL_PROVIDER *provider_load(OSSL_LIB_CTX *libctx, const char *name)
+{
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
+    (void)libctx;
     (void)name;
     PyErr_SetString(provider_exc(), "OpenSSL provider API requires OpenSSL >= 3.0");
     return NULL;
 #else
     OSSL_PROVIDER *provider = NULL;
 
+    if (!libctx) {
+        PyErr_SetString(provider_exc(), "Invalid NULL library context");
+        return NULL;
+    }
+
     ERR_clear_error();
     /* Load providers */
 #if OPENSSL_VERSION_NUMBER >= 0x30500000L // OpenSSL 3.5.0
-    provider = OSSL_PROVIDER_load_ex(NULL, name, NULL);
+    provider = OSSL_PROVIDER_load_ex(libctx, name, NULL);
 #else
     /* Use the older function for OpenSSL < 3.5 */
-    provider = OSSL_PROVIDER_load(NULL, name);
+    provider = OSSL_PROVIDER_load(libctx, name);
 #endif
     if (!provider) {
         raise_ossl_error(provider_exc(), "Failed to load provider '%s'", name);
@@ -266,11 +320,12 @@ void provider_unload(OSSL_PROVIDER *provider)
 #endif
 }
 
-EVP_PKEY *provider_generate_rsa_key_pair(int bits, int exponent, OSSL_PROVIDER *provider)
+EVP_PKEY *provider_generate_rsa_key_pair(int bits, int exponent, OSSL_LIB_CTX *libctx, OSSL_PROVIDER *provider)
 {
 #if OPENSSL_VERSION_NUMBER < 0x30000000L
     (void)bits;
     (void)exponent;
+    (void)libctx;
     (void)provider;
     PyErr_SetString(provider_exc(), "Key generation requires OpenSSL >= 3.0");
     return NULL;
@@ -282,6 +337,11 @@ EVP_PKEY *provider_generate_rsa_key_pair(int bits, int exponent, OSSL_PROVIDER *
     size_t nbits = (size_t)bits;
     char propq[128];
     const char *pname = NULL;
+
+    if (libctx == NULL) {
+        PyErr_SetString(provider_exc(), "Invalid NULL library context");
+        return NULL;
+    }
 
     if (provider == NULL) {
         PyErr_SetString(provider_exc(), "Invalid NULL provider");
@@ -299,7 +359,7 @@ EVP_PKEY *provider_generate_rsa_key_pair(int bits, int exponent, OSSL_PROVIDER *
     ERR_clear_error();
 
     /* Create a context for RSA key generation from the requested provider. */
-    ctx = EVP_PKEY_CTX_new_from_name(NULL, "RSA", propq);
+    ctx = EVP_PKEY_CTX_new_from_name(libctx, "RSA", propq);
     if (ctx == NULL) {
         raise_ossl_error(provider_exc(), "Failed to create RSA key generation context");
         return NULL;
@@ -355,10 +415,11 @@ EVP_PKEY *provider_generate_rsa_key_pair(int bits, int exponent, OSSL_PROVIDER *
 #endif
 }
 
-EVP_PKEY *provider_generate_ec_key_pair(const char *curve_name, OSSL_PROVIDER *provider)
+EVP_PKEY *provider_generate_ec_key_pair(const char *curve_name, OSSL_LIB_CTX *libctx, OSSL_PROVIDER *provider)
 {
 #if OPENSSL_VERSION_NUMBER < 0x30000000L
     (void)curve_name;
+    (void)libctx;
     (void)provider;
     PyErr_SetString(provider_exc(), "Key generation requires OpenSSL >= 3.0");
     return NULL;
@@ -371,6 +432,11 @@ EVP_PKEY *provider_generate_ec_key_pair(const char *curve_name, OSSL_PROVIDER *p
     const char *pname = NULL;
 
     ERR_clear_error();
+
+    if (libctx == NULL) {
+        PyErr_SetString(provider_exc(), "Invalid NULL library context");
+        return NULL;
+    }
 
     if (!curve_name) {
         raise_ossl_error(provider_exc(), "Invalid NULL curve_name");
@@ -391,7 +457,7 @@ EVP_PKEY *provider_generate_ec_key_pair(const char *curve_name, OSSL_PROVIDER *p
     snprintf(propq, sizeof(propq), "provider=%s", pname);
 
     /* Create a context for EC key generation from the requested provider. */
-    ctx = EVP_PKEY_CTX_new_from_name(NULL, "EC", propq);
+    ctx = EVP_PKEY_CTX_new_from_name(libctx, "EC", propq);
     if (ctx == NULL) {
         raise_ossl_error(provider_exc(), "Failed to create EC key generation context");
         return NULL;

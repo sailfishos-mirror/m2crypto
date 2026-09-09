@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Test file for M2Crypto.Provider."""
 
+import gc
 import hashlib
 import os
 import platform
@@ -69,6 +70,17 @@ class TestM2CryptoProvider(unittest.TestCase):
 
         openssl_module_pkcs11 = cls.getenv("M2CRYPTO_OPENSSL_MODULE_PKCS11")
         pkcs11_module_path = cls.getenv("M2CRYPTO_PKCS11_MODULE_PATH")
+
+        cls.original_environment = {
+            name: os.environ.get(name)
+            for name in (
+                "OPENSSL_CONF",
+                "OPENSSL_MODULES",
+                "SOFTHSM2_CONF",
+                "PKCS11_MODULE_PATH",
+                "PKCS11_PIN",
+            )
+        }
 
         # Use mkdtemp + explicit cleanup for Python 3.6+ compatibility.
         cls.tempdir = tempfile.mkdtemp(prefix="m2crypto-provider-")
@@ -268,9 +280,24 @@ class TestM2CryptoProvider(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        # Release provider-backed objects before unloading the provider and
+        # removing the module, token, and configuration files they use.
+        cls.privkey = None
+        cls.pubkey = None
+        cls.cert = None
+        cls.provider = None
+        gc.collect()
+
+        for name, value in cls.original_environment.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+
         # Best-effort cleanup; tests may create extra files under tempdir.
         if getattr(cls, "tempdir", None):
             shutil.rmtree(cls.tempdir, ignore_errors=True)
+            cls.tempdir = None
 
     def test_public_key_der_comparison(self):
         """

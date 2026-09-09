@@ -57,3 +57,11 @@ export PYTHONPATH="$(find build -maxdepth 1 -type d -name "lib.*" | head -n 1)"
 ## Test Certificates
 
 Information on creating test certificates is available in `tests/README`.
+
+## Provider test isolation
+
+Loading the PKCS#11 provider into OpenSSL's default library context can change
+algorithm selection for later tests. In particular, OpenSSL 4 may route ordinary
+RSA request verification through `pkcs11prov`, which then fails to find a token
+object. Provider bindings and tests must use a private `OSSL_LIB_CTX`; unloading
+the provider from the default context does not reliably clear its method cache.

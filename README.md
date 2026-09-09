@@ -1,9 +1,7 @@
 **documentation**: <https://m2crypto.readthedocs.io/>\
 **email list**: <https://lists.sr.ht/~mcepl/m2crypto> ([subscribe via email])\
 **discussion channel**: <matrix:r/m2crypto:ceplovi.cz>\
-**issue tracker**: |-\
-  <https://todo.sr.ht/~mcepl/m2crypto> (R/O, please\
-  report issues via the email list).\
+**issue tracker**: <https://codefloe.com/mcepl/m2crypto/issues>\
 **maintainer**: "Matěj Cepl"\
 **web-Site**: <https://codefloe.com/mcepl/m2crypto/>
 

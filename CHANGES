@@ -1,3 +1,18 @@
+0.50.0 - 2026-09-09
+-------------------
+
+- switch to Codefloe
+- isolate OpenSSL providers in private contexts
+- disable legacy ENGINE bindings with OpenSSL 3 deprecations
+- manage BIO ownership when attaching to SSL connections
+- repair Windows CI pipeline and improve setup.py robustness
+- record security-related behavior changes
+- emit DeprecationWarning when RC4 cipher is instantiated
+- disable TLSv1.0 and TLSv1.1 by default
+- prevent out-of-bounds read in BN conversions
+- preserve errno from gettimeofday failures
+- restore timed read retries
+
 0.49.0 - 2026-08-15
 -------------------
 

@@ -8,9 +8,7 @@ on:
 
 jobs:
   build-opensuse:
-    runs-on: docker
-    container:
-      image: opensuse/leap:15
+    runs-on: opensuse-leap
 
     # Environment variables remain the same.
     env:
@@ -73,7 +71,7 @@ jobs:
             dist/*.tar.gz
 
   build-fedora:
-    runs-on: docker
+    runs-on: opensuse-leap
     container:
       image: fedora:latest
     env:

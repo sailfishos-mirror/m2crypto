@@ -45,6 +45,10 @@ Tests are located in `tests/` and use Python's `unittest`. Don't use
 *   `make check`: **Primary command.** Runs all unit tests using `unittest discover`.
 *   `make doctest`: Runs doctests on documentation.
 
+If `make check` builds a wheel successfully but then reports "No wheel file
+found in dist/", run it again. `LATEST_WHEEL` is evaluated when make starts,
+so it does not see a wheel first created during that invocation.
+
 ### Running Individual Tests
 
 To run a single test file or method, you must set `PYTHONPATH` to the local build directory.

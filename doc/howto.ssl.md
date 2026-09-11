@@ -102,6 +102,12 @@ Twisted wrapper class, and anything that uses those. In all other cases
 you must do the check manually. It is recommended you call the
 SSL.Checker to do the actual check.
 
+The hostname checker treats certificate DNS names as literal text, ignoring
+case, except for a single supported `*` wildcard that cannot match a dot.
+Other regular expression operators, such as `|`, `+`, or brackets, have no
+special meaning. Matching must cover the entire hostname. Hostname checking
+does not replace certificate chain validation; clients need both checks.
+
 SSL servers are different in that they typically do not require the
 client to send a certificate, so there is usually no certificate
 checking. Also, it is typically useless to perform host name checking.

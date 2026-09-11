@@ -316,18 +316,16 @@ class Checker:
             return False
 
         if certHost.find("\\") > -1:
-            # Not sure about this, maybe some encoding might have these.
-            # But being conservative for now, because regex below relies
-            # on this.
+            # A backslash is not valid in a DNS name. re.escape()
+            # below would treat it literally and it would simply
+            # fail to match, but reject it outright so such names
+            # never reach matching.
             return False
 
-        # Massage certHost so that it can be used in regex
-        certHost = certHost.replace(".", "\\.")
-        certHost = certHost.replace("*", "[^\\.]*")
-        if re.compile("^%s$" % certHost).match(host):
-            return True
-
-        return False
+        # Treat certificate names literally except for the
+        # supported wildcard.
+        certHost = re.escape(certHost).replace(r"\*", r"[^.]*")
+        return re.fullmatch(certHost, host) is not None
 
     def _matchIPAddress(
         self, host: Union[str, bytes], certHost: Union[str, bytes]

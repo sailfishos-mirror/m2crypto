@@ -16,7 +16,7 @@ orphan: true
 
 ## Introduction
 
-[M2Crypto](https://sr.ht/~mcepl/m2crypto/) is
+[M2Crypto](https://codefloe.com/mcepl/m2crypto) is
 a [Python](http://www.python.org) interface to
 [OpenSSL](http://www.openssl.org). It makes available to the Python
 programmer SSL functionality to implement clients and servers, S/MIME

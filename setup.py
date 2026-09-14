@@ -233,7 +233,7 @@ class _M2CryptoBuildExt(build_ext.build_ext):
 
         if sys.platform != "win32":
             # generate src/SWIG/x509_v_flag.h to overcome weaknesses of swig
-            # https://todo.sr.ht/~mcepl/m2crypto/298
+            # https://codefloe.com/mcepl/m2crypto/issues/298
             with open("src/SWIG/x509_v_flag.h", "w", encoding="utf-8") as x509_v_h:
                 cmd = [shutil.which(os.environ.get("CC", "gcc"))]
                 cflags = os.environ.get("CFLAGS")

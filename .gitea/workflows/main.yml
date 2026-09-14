@@ -55,14 +55,6 @@ jobs:
           export PYTHONPATH=$(readlink -f build/lib.*)
           python3 -munittest discover -b -v tests
           python3 -mdoctest -v src/M2Crypto/SSL/Checker.py
-          # case $BUILD_SUBMITTER in
-          #    *git.sr.ht*)
-          #         [ -n "$GIT_REF" ] && REASON="$JOB_ID ($GIT_REF)"
-          #         [ -n "$PATCHSET_URL" ] && REASON="$JOB_ID ($PATCHSET_URL)"
-          #         echo "Sourcehut build $BUILD_REASON finished with the result $? ($JOB_URL)." \
-          #             | .builds/irc-send irc.libera.chat m2bot mcepl "#m2crypto"
-          #    ;;
-          # esac
           echo "Test task finished."
 
       - name: Upload artifacts

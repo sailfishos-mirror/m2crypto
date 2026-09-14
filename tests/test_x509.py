@@ -661,7 +661,7 @@ class X509TestCase(unittest.TestCase):
         reference to the X509 itself, they become invalid when the last
         reference to X509 goes out of scope and the underlying memory is freed.
 
-        https://todo.sr.ht/~mcepl/m2crypto/325
+        https://codefloe.com/mcepl/m2crypto/issues/325
         """
         cert = X509.load_cert("tests/bad_date_cert.crt")
         not_before = cert.get_not_before()
@@ -861,7 +861,7 @@ class X509ExtTestCase(unittest.TestCase):
         X509.X509_Extension(x509_ext_ptr, 1)
 
     def test_multiple_extensions(self):
-        # Testing for https://todo.sr.ht/~mcepl/m2crypto/9
+        # Testing for https://codefloe.com/mcepl/m2crypto/issues/9
         # Test creating multiple X509 extensions
 
         # These are extensions that should work without special context
@@ -894,7 +894,7 @@ class X509ExtTestCase(unittest.TestCase):
         self.assertEqual(ext5.get_name(), "subjectKeyIdentifier")
 
     def test_multiple_extensions_older_version(self):
-        # Testing for https://todo.sr.ht/~mcepl/m2crypto/9
+        # Testing for https://codefloe.com/mcepl/m2crypto/issues/9
         sub_key_id = "1C:E6:F0:58:58:32:BC:7B:BA:8E:E0:23:1B:FF:17:99:B0:4D:CF:64"
         auth_id = "1C:E6:F0:58:58:32:BC:7B:BA:8E:E0:23:1B:FF:17:99:B0:4D:CF:64"
 

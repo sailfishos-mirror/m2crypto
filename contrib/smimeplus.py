@@ -108,7 +108,7 @@ class smimeplus(object):
         _p7, _data = SMIME.smime_load_pkcs7_bio(self.__pack(smsg))
         try:
             # Removed flags=SMIME.PKCS7_SIGNED which erroneously sets PKCS7_NOSIGS
-            # https://todo.sr.ht/~mcepl/m2crypto/329
+            # https://codefloe.com/mcepl/m2crypto/issues/329
             return _sender.verify(
                 _p7, _data, flags=0  # Use flags=0 for standard verification
             )

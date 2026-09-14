@@ -1,18 +1,13 @@
-**documentation**: <https://m2crypto.readthedocs.io/>\
-**email list**: <https://lists.sr.ht/~mcepl/m2crypto> ([subscribe via email])\
-**discussion channel**: <matrix:r/m2crypto:ceplovi.cz>\
-**issue tracker**: <https://codefloe.com/mcepl/m2crypto/issues>\
-**maintainer**: "Matěj Cepl"\
-**web-Site**: <https://codefloe.com/mcepl/m2crypto/>
+[![Documentation Status](https://readthedocs.org/projects/m2crypto/badge/?version=latest)](https://m2crypto.readthedocs.io/en/latest/)
+[![SourceHut Mailing List](https://img.shields.io/badge/mailing%20list-~mcepl%2Fm2crypto-3065a2?logo=sourcehut&logoColor=white)](https://lists.sr.ht/~mcepl/m2crypto)
+[![Support Channel](https://img.shields.io/badge/Matrix-%23m2crypto%3Aceplovi.cz-0DBD8B?logo=matrix&logoColor=white)](https://matrix.to/#/#m2crypto:ceplovi.cz)
+![Issue Tracker](https://codefloe.com/mcepl/m2crypto/badges/issues.svg)
 
-# M2Crypto
+# [M2Crypto]
 
 ## M2Crypto = Python + OpenSSL + SWIG
 
-~~~{image} https://builds.sr.ht/~mcepl.svg
-:alt: builds.sr.ht status
-:target: https://builds.sr.ht/~mcepl?
-~~~
+![Build Status](https://codefloe.com/mcepl/m2crypto/badges/workflows/main.yml/badge.svg)
 
 **NOTE: This library is currently in maintenance mode (and it has been
 in it since 2014 and I don’t plan to stop maintaining it anytime soon).
@@ -43,12 +38,10 @@ the library and it doesn't have to be preserved. If however some change
 to it breaks your app, let us know and we will try to make things
 working for you.
 
-- And much more.
-
 M2Crypto is released under a very liberal BSD-2-Clause licence. See
 LICENSES/BSD-2-Clause.txt for details.
 
-To install, see the file INSTALL.
+To install, see the file [INSTALL].
 
 Look at the tests and demos for example use. Recommended reading before
 deploying in production is "Network Security with OpenSSL" by John Viega,
@@ -66,7 +59,8 @@ Note these caveats:
 
 Have fun! Your feedback is welcome.
 
+[M2Crypto]: https://codefloe.com/mcepl/m2crypto
+[the documentation]: https://m2crypto.readthedocs.io/en/latest/
 [pyca/cryptography]: https://cryptography.io/en/latest/
-[subscribe via email]: mailto:~mcepl/m2crypto+subscribe@lists.sr.ht
-[the documentation]: https://m2crypto.readthedocs.io/en/latest/howto.migration.html
+[INSTALL]: ./src/branch/master/INSTALL.md
 [059600270X]: https://meta.wikimedia.org/wiki/Special:BookSources/0321480910

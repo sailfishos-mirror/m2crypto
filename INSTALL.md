@@ -93,9 +93,9 @@ an installer.
     (administrator) `PowerShell` to install Python modules.
 
 07. Get the latest `m2crypto` code. If you have `git` installed,
-    run `git clone https://git.sr.ht/~mcepl/m2crypto`. Otherwise,
-    download and extract the code from SourceHut:
-    <https://git.sr.ht/~mcepl/m2crypto/archive/master.tar.gz>
+    run `git clone https://codefloe.com/mcepl/m2crypto.git`. Otherwise,
+    download and extract the code from the repository:
+    <https://codefloe.com/mcepl/m2crypto/archive/master.tar.gz>
 
 08. Use `cd` to change into the directory `m2crypto` was cloned/extracted to.
 

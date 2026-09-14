@@ -320,7 +320,7 @@ class ProxyHTTPSConnectionTestCase(unittest.TestCase):
 
     This tests the fix for the bug where ProxyHTTPSConnection.connect()
     would establish the proxy connection twice.
-    See: https://todo.sr.ht/~mcepl/m2crypto/229
+    See: https://codefloe.com/mcepl/m2crypto/issues/229
     """
 
     def setUp(self):

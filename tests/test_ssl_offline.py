@@ -5,85 +5,8 @@ Copyright (C) 2006 Open Source Applications Foundation. All Rights Reserved.
 Copyright (C) 2009-2010 Heikki Toivonen. All Rights Reserved.
 """
 
-import doctest
-
 from M2Crypto import Rand, SSL, X509, m2
 from tests import unittest
-from tests.test_ssl import srv_host
-
-
-class CheckerTestCase(unittest.TestCase):
-    def test_checker(self):
-
-        check = SSL.Checker.Checker(
-            host=srv_host,
-            peerCertHash="9917962167CFDB8BCFAC775093E79A1113B3DA146EA4E1EB1FEFC6E58770D158",
-        )
-        x509 = X509.load_cert("tests/server.pem")
-        self.assertTrue(check(x509, srv_host))
-        with self.assertRaises(SSL.Checker.WrongHost):
-            check(x509, "example.com")
-
-        doctest.testmod(SSL.Checker)
-
-    def test_match_regex_metacharacters(self):
-        """Certificate names must not supply regular expression operators."""
-        check = SSL.Checker.Checker()
-        cases = (
-            ("target.com", "target.com|attacker.com"),
-            ("aaab.evil.com", "(a+)+b.evil.com"),
-            ("a.evil.com", "[ab].evil.com"),
-            ("a.evil.com", "a?.evil.com"),
-            ("aa.evil.com", "a{2}.evil.com"),
-            ("target.com", "^target.com$"),
-            ("target.com", "[.attacker.com"),
-            ("target.com", "(.attacker.com"),
-            ("target.com", "+.attacker.com"),
-        )
-        for host, cert_host in cases:
-            with self.subTest(host=host, cert_host=cert_host):
-                self.assertFalse(check._match(host, cert_host))
-
-    def test_checker_rejects_regex_identities(self):
-        """Reject regex identities read from real X.509 CN and SAN fields."""
-        for host, cert_host in (
-            ("target.com", "target.com|attacker.com"),
-            ("aaab.evil.com", "(a+)+b.evil.com"),
-            ("target.com", "[.attacker.com"),
-        ):
-            for field in ("commonName", "subjectAltName"):
-                with self.subTest(cert_host=cert_host, field=field):
-                    cert = X509.X509()
-                    subject = X509.X509_Name()
-                    # A matching CN must not override a mismatched DNS SAN.
-                    subject.CN = cert_host if field == "commonName" else host
-                    cert.set_subject(subject)
-                    if field == "subjectAltName":
-                        cert.add_ext(
-                            X509.new_extension("subjectAltName", "DNS:" + cert_host)
-                        )
-                    with self.assertRaises(SSL.Checker.WrongHost):
-                        SSL.Checker.Checker()(cert, host)
-
-    def test_match_wildcards_and_guards(self):
-        """Preserve wildcard matching and existing conservative guards."""
-        check = SSL.Checker.Checker()
-        cases = (
-            ("my.example.com", "my.example.com", True),
-            ("my.example.com", "MY.EXAMPLE.COM", True),
-            ("my.example.com", "*.example.com", True),
-            ("my.example.com", "m*.example.com", True),
-            ("my.example.com", "m*ample.com", False),
-            ("my.example.com", "*.*.com", False),
-            ("my.sub.example.com", "*.example.com", False),
-            ("1.2.3.4", "1.2.3.4", True),
-            ("1.2.3.4", "*.2.3.4", False),
-            ("my.example.com", r"m\*.example.com", False),
-            ("my.example.com\n", "*.example.com", False),
-        )
-        for host, cert_host, expected in cases:
-            with self.subTest(host=host, cert_host=cert_host):
-                self.assertEqual(check._match(host, cert_host), expected)
 
 
 class ContextTestCase(unittest.TestCase):
@@ -148,7 +71,6 @@ class ContextTestCase(unittest.TestCase):
 
 def suite():
     t_suite = unittest.TestSuite()
-    t_suite.addTest(unittest.TestLoader().loadTestsFromTestCase(CheckerTestCase))
     t_suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ContextTestCase))
     return t_suite
 

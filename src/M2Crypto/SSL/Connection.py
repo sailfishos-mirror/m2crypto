@@ -86,7 +86,7 @@ class Connection:
         if self.ctx.post_connection_check is not None:
             self.set_post_connection_check_callback(self.ctx.post_connection_check)
 
-        self.host: Optional[bytes] = None
+        self.host: Optional[Union[bytes, str]] = None
         self._closed = False
 
     m2_bio_noclose = m2.bio_noclose
@@ -740,6 +740,14 @@ class Connection:
         """
         m2.ssl_set_tlsext_host_name(self.ssl, name)
 
-    def set1_host(self, name: bytes) -> None:
-        """Set the requested hostname to check in the server certificate."""
+    def set1_host(self, name: Union[bytes, str]) -> None:
+        """Set the requested hostname to check in the server certificate.
+
+        The name is used by the post-connection check and is also handed
+        to OpenSSL (SSL_set1_host(3)), so that with ``verify_peer`` set the
+        handshake itself fails when the certificate does not match.
+        IP address literals are matched against iPAddress SANs.
+        """
         self.host = name
+        name_str = name.decode("utf-8") if isinstance(name, bytes) else name
+        m2.ssl_set1_host(self.ssl, name_str)

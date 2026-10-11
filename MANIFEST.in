@@ -18,6 +18,7 @@ recursive-include system_shadowing *
 # include package documentation files
 include INSTALL.md
 include README.md
+include SECURITY.md
 include CHANGES
 
 # include Swig-generated files

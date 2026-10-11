@@ -16,6 +16,7 @@ from typing import (
     Iterator,
     List,
     Optional,
+    Tuple,
     Union,
     overload,
 )
@@ -775,6 +776,24 @@ class X509(object):
             raise IndexError("index out of range")
         ext_ptr = m2.x509_get_ext(self.x509, index)
         return X509_Extension(ext_ptr, _pyfree=0)
+
+    def get_subject_alt_names(self) -> List[Tuple[int, bytes]]:
+        """
+        Get the subjectAltName entries as decoded by OpenSSL.
+
+        Use this instead of parsing ``get_ext('subjectAltName').get_value()``:
+        the printed text does not escape separators, so it cannot be
+        split reliably and must never be used for security decisions.
+
+        :return: list of ``(type, value)`` tuples, where ``type`` is one of
+                 ``m2.GEN_DNS``, ``m2.GEN_IPADD``, ``m2.GEN_URI``,
+                 ``m2.GEN_EMAIL``, ... For DNS, URI and email names
+                 ``value`` is the raw string, for IP addresses the 4 or 16
+                 address octets, and for other types the DER encoding of
+                 the GeneralName. Empty if there is no subjectAltName.
+        :raises X509Error: if the extension is malformed or duplicated.
+        """
+        return m2.x509_get_subject_alt_names(self.x509)
 
     def get_ext(self, name: str) -> X509_Extension:
         """

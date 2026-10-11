@@ -82,10 +82,27 @@ class WrongHost(SSLVerificationError):
         )
 
 
+def _ipAddressText(text: str) -> Optional[str]:
+    """Return the canonical text of an IP address literal, or None."""
+    try:
+        return str(ipaddress.ip_address(text.strip("[]")))
+    except ValueError:
+        return None
+
+
 class Checker:
+    """Post-connection check of the peer certificate.
+
+    Hostname matching is delegated to OpenSSL (X509_check_host(3)).
+    ``hostCheckFlags`` holds the X509_CHECK_FLAG_* flags passed to it;
+    the default rejects partial wildcards such as ``m*.example.com``.
+    Set it to 0 on an instance (or subclass) to accept them again.
+    """
 
     # COMPATIBILITY: re.Pattern is available only from Python 3.7+
     numericIpMatch: Pattern[str] = re.compile(r"^[0-9]+(\.[0-9]+)*$")
+
+    hostCheckFlags: int = m2.X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS
 
     def __init__(
         self,
@@ -144,58 +161,98 @@ class Checker:
                 )
 
         if self.host:
-            hostValidationPassed = False
-            self.useSubjectAltNameOnly = False
-
-            # subjectAltName=DNS:somehost[, ...]*
-            try:
-                subjectAltName = peerCert.get_ext("subjectAltName").get_value()
-                if self._splitSubjectAltName(self.host, subjectAltName):
-                    hostValidationPassed = True
-                elif self.useSubjectAltNameOnly:
-                    raise WrongHost(
-                        expectedHost=self.host,
-                        actualHost=subjectAltName,
-                        fieldName="subjectAltName",
-                    )
-            except LookupError:
-                pass
-
-            # commonName=somehost[, ...]*
-            if not hostValidationPassed:
-                hasCommonName = False
-                commonNames = ""
-                for entry in peerCert.get_subject().get_entries_by_nid(
-                    m2.NID_commonName
-                ):
-                    hasCommonName = True
-                    commonName = entry.get_data().as_text()
-                    if not commonNames:
-                        commonNames = commonName
-                    else:
-                        commonNames += "," + commonName
-                    if self._match(self.host, commonName):
-                        hostValidationPassed = True
-                        break
-
-                if not hasCommonName:
-                    raise WrongCertificate("no commonName in peer certificate")
-
-                if not hostValidationPassed:
-                    raise WrongHost(
-                        expectedHost=self.host,
-                        actualHost=commonNames,
-                        fieldName="commonName",
-                    )
+            self._checkHost(peerCert, self.host)
 
         return True
+
+    def _checkHost(self, peerCert: X509.X509, host: Union[str, bytes]) -> None:
+        """Verify that peerCert was issued for host.
+
+        Matching is done by OpenSSL (X509_check_host(3) and
+        X509_check_ip_asc(3)) on the structured subjectAltName, never on
+        its printed text.  The commonName is consulted only when the
+        certificate has no subjectAltName of the relevant type (RFC 6125).
+
+        :raises WrongHost: if the certificate does not match host.
+        :raises WrongCertificate: if the certificate has neither
+                                  subjectAltName nor commonName.
+        """
+        host_str = host.decode() if isinstance(host, bytes) else host
+        ip_host = _ipAddressText(host_str)
+
+        try:
+            san_types = {gen_type for gen_type, _ in peerCert.get_subject_alt_names()}
+        except X509.X509Error as exc:
+            raise WrongCertificate(str(exc))
+
+        # Kept for backwards compatibility; nothing reads it any more.
+        self.useSubjectAltNameOnly = bool(san_types & {m2.GEN_DNS, m2.GEN_IPADD})
+
+        if ip_host is not None:
+            if m2.x509_check_ip_asc(peerCert.x509, ip_host, 0) == 1:
+                return
+        else:
+            flags = self.hostCheckFlags
+            if self.useSubjectAltNameOnly:
+                # Legacy rule: any DNS or IP SAN disables commonName.
+                flags |= m2.X509_CHECK_FLAG_NEVER_CHECK_SUBJECT
+            ret = m2.x509_check_host(peerCert.x509, host_str, flags)
+            if ret == 1:
+                return
+            if ret < 0:
+                raise WrongCertificate(
+                    "cannot check host %r against peer certificate" % host_str
+                )
+
+        commonNames = [
+            entry.get_data().as_text()
+            for entry in peerCert.get_subject().get_entries_by_nid(m2.NID_commonName)
+        ]
+
+        if self.useSubjectAltNameOnly:
+            raise WrongHost(
+                expectedHost=host_str,
+                actualHost=self._describeSubjectAltName(peerCert),
+                fieldName="subjectAltName",
+            )
+
+        if ip_host is not None:
+            # X509_check_ip_asc() never looks at the commonName. Keep the
+            # old exact-match fallback for certificates without any SAN.
+            for commonName in commonNames:
+                if _ipAddressText(commonName) == ip_host:
+                    return
+
+        if not commonNames:
+            raise WrongCertificate("no commonName in peer certificate")
+
+        raise WrongHost(
+            expectedHost=host_str,
+            actualHost=",".join(commonNames),
+            fieldName="commonName",
+        )
+
+    @staticmethod
+    def _describeSubjectAltName(peerCert: X509.X509) -> str:
+        """Printable subjectAltName, for error messages only."""
+        try:
+            return peerCert.get_ext("subjectAltName").get_value()
+        except LookupError:
+            return ""
 
     def _splitSubjectAltName(
         self,
         host: Union[str, bytes],
         subjectAltName: Union[str, bytes],
     ) -> bool:
-        """
+        """Legacy helper matching host against printed subjectAltName text.
+
+        .. deprecated::
+           Not used by :class:`Checker` any more and unsafe for security
+           decisions: OpenSSL does not escape ',' inside URI, email or
+           otherName values, so the text cannot be split reliably. Use
+           :meth:`M2Crypto.X509.X509.get_subject_alt_names` instead.
+
         >>> check = Checker()
         >>> check._splitSubjectAltName(host='my.example.com',
         ...     subjectAltName='DNS:my.example.com')

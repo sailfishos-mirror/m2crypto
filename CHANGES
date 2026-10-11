@@ -1,3 +1,21 @@
+Unreleased
+----------
+
+- SECURITY: SSL.Checker no longer splits the printed subjectAltName on
+  commas. A URI, email or otherName SAN containing ",DNS:<host>" was
+  accepted as a DNS identity for <host>. Hostname checks now use
+  OpenSSL's X509_check_host()/X509_check_ip_asc() on the decoded
+  GeneralNames. Reported by ucsurf.
+- Checker rejects partial wildcards (m*.example.com) by default; set
+  Checker.hostCheckFlags = 0 to restore the old behaviour.
+- Connection.set1_host() now also calls SSL_set1_host(), so OpenSSL
+  checks the hostname during the handshake when verify_peer is set.
+- new X509.get_subject_alt_names() returning (GEN_* type, bytes) pairs,
+  new m2.x509_check_host(), m2.x509_check_ip_asc(), m2.ssl_set1_host()
+  and X509_CHECK_FLAG_* / GEN_* constants
+- add SECURITY.md
+- move SSL.Checker tests to tests/test_ssl_checker.py
+
 0.50.0 - 2026-09-09
 -------------------
 

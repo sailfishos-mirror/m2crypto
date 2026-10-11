@@ -16,6 +16,7 @@
 #include <openssl/ssl.h>
 #include <openssl/tls1.h>
 #include <openssl/x509.h>
+#include <openssl/x509v3.h>
 #include <openssl/err.h>
 #include <assert.h>
 #ifdef _WIN32
@@ -452,6 +453,34 @@ int ssl_set_tlsext_host_name(SSL *ssl, const char *name) {
         return -1;
     }
     /* Return an "int" to match the 'typemap(out) int' in _lib.i */
+    return 1;
+}
+
+/*
+ * Ask OpenSSL to verify the peer certificate against the hostname during
+ * the handshake (SSL_set1_host(3)).  Passing NULL clears any expected host.
+ */
+int ssl_set1_host(SSL *ssl, const char *name) {
+    X509_VERIFY_PARAM *param = SSL_get0_param(ssl);
+    ASN1_OCTET_STRING *ip = NULL;
+    int ok;
+
+    if (name != NULL && (ip = a2i_IPADDRESS(name)) != NULL) {
+        /* IP address literal: match iPAddress SANs, not DNS names. */
+        ASN1_OCTET_STRING_free(ip);
+        ok = X509_VERIFY_PARAM_set1_host(param, NULL, 0)
+             && X509_VERIFY_PARAM_set1_ip_asc(param, name);
+    } else {
+        ERR_clear_error(); /* a2i_IPADDRESS failure is not an error here */
+        ok = X509_VERIFY_PARAM_set1_ip(param, NULL, 0)
+             && X509_VERIFY_PARAM_set1_host(param, name, 0);
+        X509_VERIFY_PARAM_set_hostflags(param,
+            X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
+    }
+    if (!ok) {
+        m2_PyErr_Msg(_ssl_err);
+        return -1;
+    }
     return 1;
 }
 

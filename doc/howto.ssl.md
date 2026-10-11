@@ -102,11 +102,25 @@ Twisted wrapper class, and anything that uses those. In all other cases
 you must do the check manually. It is recommended you call the
 SSL.Checker to do the actual check.
 
-The hostname checker treats certificate DNS names as literal text, ignoring
-case, except for a single supported `*` wildcard that cannot match a dot.
-Other regular expression operators, such as `|`, `+`, or brackets, have no
-special meaning. Matching must cover the entire hostname. Hostname checking
-does not replace certificate chain validation; clients need both checks.
+Hostname matching is done by OpenSSL (`X509_check_host(3)` and
+`X509_check_ip_asc(3)`) on the decoded subjectAltName entries, following
+RFC 6125. Only DNS names are compared with hostnames and only iPAddress
+entries with IP addresses; URI, email and other SAN types are never
+treated as host identities. The commonName is consulted only when the
+certificate has no DNS or IP subjectAltName at all. A single `*` wildcard
+is accepted as the whole left-most label (`*.example.com`); partial
+wildcards such as `m*.example.com` are rejected unless
+`Checker.hostCheckFlags` is set to `0`. Hostname checking does not
+replace certificate chain validation; clients need both checks.
+
+Calling `Connection.set1_host()` additionally asks OpenSSL to check the
+hostname during the handshake, so with `SSL.verify_peer` a mismatching
+certificate makes the handshake itself fail.
+
+Never make security decisions by parsing
+`X509.get_ext('subjectAltName').get_value()`: that is human-readable
+text in which separators are not escaped. Use
+`X509.get_subject_alt_names()`, which returns `(type, value)` pairs.
 
 SSL servers are different in that they typically do not require the
 client to send a certificate, so there is usually no certificate

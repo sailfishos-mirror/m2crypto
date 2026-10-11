@@ -69,3 +69,10 @@ algorithm selection for later tests. In particular, OpenSSL 4 may route ordinary
 RSA request verification through `pkcs11prov`, which then fails to find a token
 object. Provider bindings and tests must use a private `OSSL_LIB_CTX`; unloading
 the provider from the default context does not reliably clear its method cache.
+
+# Build environment
+
+The agent may run inside a Flatpak sandbox without `make`, `swig` or
+`gcc`. Build and test through the host instead, e.g.
+`flatpak-spawn --host distrobox enter plan9 -- sh -c 'cd <repo> && make check'`
+(the `plan9` Tumbleweed container has the build dependencies installed).

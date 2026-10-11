@@ -360,6 +360,14 @@ X509 *d2i_x509(BIO *bio) {
 %constant int        X509_V_ERR_CERT_REJECTED                       = 28;
 %constant int        X509_V_ERR_APPLICATION_VERIFICATION            = 50;
 
+/* Flags for X509_check_host(3) */
+%constant unsigned int X509_CHECK_FLAG_ALWAYS_CHECK_SUBJECT    = X509_CHECK_FLAG_ALWAYS_CHECK_SUBJECT;
+%constant unsigned int X509_CHECK_FLAG_NO_WILDCARDS            = X509_CHECK_FLAG_NO_WILDCARDS;
+%constant unsigned int X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS    = X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS;
+%constant unsigned int X509_CHECK_FLAG_MULTI_LABEL_WILDCARDS   = X509_CHECK_FLAG_MULTI_LABEL_WILDCARDS;
+%constant unsigned int X509_CHECK_FLAG_SINGLE_LABEL_SUBDOMAINS = X509_CHECK_FLAG_SINGLE_LABEL_SUBDOMAINS;
+%constant unsigned int X509_CHECK_FLAG_NEVER_CHECK_SUBJECT     = X509_CHECK_FLAG_NEVER_CHECK_SUBJECT;
+
 /* See man page of X509_VERIFY_PARAM_set_flags for definition of all these flags */
 
 #ifdef X509_V_FLAG_ALLOW_PROXY_CERTS
@@ -465,6 +473,102 @@ void x509_init(PyObject *x509_err) {
     _x509_err = x509_err;
 }
 %}
+
+%inline %{
+/*
+ * Return the subjectAltName of a certificate as a list of
+ * (GEN_* type, bytes) tuples, decoded from the structured GENERAL_NAMES.
+ *
+ * For GEN_DNS, GEN_URI and GEN_EMAIL the bytes are the raw IA5String
+ * contents, for GEN_IPADD the raw 4 or 16 address octets, and for all
+ * other types the DER encoding of the whole GENERAL_NAME.
+ * Returns an empty list when the certificate has no subjectAltName.
+ */
+PyObject *x509_get_subject_alt_names(X509 *x) {
+    GENERAL_NAMES *gens;
+    PyObject *list;
+    int i, crit = 0;
+
+    list = PyList_New(0);
+    if (list == NULL)
+        return NULL;
+
+    gens = X509_get_ext_d2i(x, NID_subject_alt_name, &crit, NULL);
+    if (gens == NULL) {
+        if (crit == -2) {
+            /* duplicate extension */
+            Py_DECREF(list);
+            PyErr_SetString(_x509_err,
+                            "certificate has multiple subjectAltName extensions");
+            return NULL;
+        }
+        if (crit >= 0) {
+            /* extension present but could not be decoded */
+            ERR_clear_error();
+            Py_DECREF(list);
+            PyErr_SetString(_x509_err, "malformed subjectAltName extension");
+            return NULL;
+        }
+        ERR_clear_error();
+        return list;
+    }
+
+    for (i = 0; i < sk_GENERAL_NAME_num(gens); i++) {
+        GENERAL_NAME *gen = sk_GENERAL_NAME_value(gens, i);
+        PyObject *value = NULL, *item;
+
+        switch (gen->type) {
+        case GEN_DNS:
+        case GEN_URI:
+        case GEN_EMAIL:
+        case GEN_IPADD: {
+            ASN1_STRING *s = (ASN1_STRING *)gen->d.ia5;
+            value = PyBytes_FromStringAndSize(
+                (const char *)ASN1_STRING_get0_data(s), ASN1_STRING_length(s));
+            break;
+        }
+        default: {
+            unsigned char *buf = NULL;
+            int len = i2d_GENERAL_NAME(gen, &buf);
+            if (len < 0) {
+                GENERAL_NAMES_free(gens);
+                Py_DECREF(list);
+                m2_PyErr_Msg(_x509_err);
+                return NULL;
+            }
+            value = PyBytes_FromStringAndSize((const char *)buf, len);
+            OPENSSL_free(buf);
+            break;
+        }
+        }
+        if (value == NULL) {
+            GENERAL_NAMES_free(gens);
+            Py_DECREF(list);
+            return NULL;
+        }
+        item = Py_BuildValue("(iN)", gen->type, value);
+        if (item == NULL || PyList_Append(list, item) < 0) {
+            Py_XDECREF(item);
+            GENERAL_NAMES_free(gens);
+            Py_DECREF(list);
+            return NULL;
+        }
+        Py_DECREF(item);
+    }
+    GENERAL_NAMES_free(gens);
+    return list;
+}
+%}
+
+%constant int GEN_OTHERNAME = GEN_OTHERNAME;
+%constant int GEN_EMAIL     = GEN_EMAIL;
+%constant int GEN_DNS       = GEN_DNS;
+%constant int GEN_X400      = GEN_X400;
+%constant int GEN_DIRNAME   = GEN_DIRNAME;
+%constant int GEN_EDIPARTY  = GEN_EDIPARTY;
+%constant int GEN_URI       = GEN_URI;
+%constant int GEN_IPADD     = GEN_IPADD;
+%constant int GEN_RID       = GEN_RID;
 
 %typemap(out) X509_REQ * {
     PyObject *self = NULL; /* bug in SWIG_NewPointerObj as of 3.0.5 */
@@ -663,6 +767,25 @@ int x509_store_load_locations(X509_STORE *store, const char *file) {
         m2_PyErr_Msg(_x509_err);
     }
     return locations;
+}
+
+/*
+ * Hostname and IP address checks performed by OpenSSL on the structured
+ * subjectAltName (GENERAL_NAMES) of the certificate, following RFC 6125.
+ *
+ * Return 1 on match, 0 on mismatch and a negative value on internal
+ * error or malformed input (as X509_check_host(3)).
+ */
+int x509_check_host(X509 *x, const char *name, unsigned int flags) {
+    if (x == NULL || name == NULL)
+        return -2;
+    return X509_check_host(x, name, strlen(name), flags, NULL);
+}
+
+int x509_check_ip_asc(X509 *x, const char *address, unsigned int flags) {
+    if (x == NULL || address == NULL)
+        return -2;
+    return X509_check_ip_asc(x, address, flags);
 }
 
 int x509_type_check(X509 *x509) {

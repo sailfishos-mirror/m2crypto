@@ -5,7 +5,7 @@ Unreleased
   commas. A URI, email or otherName SAN containing ",DNS:<host>" was
   accepted as a DNS identity for <host>. Hostname checks now use
   OpenSSL's X509_check_host()/X509_check_ip_asc() on the decoded
-  GeneralNames. Reported by ucsurf.
+  GeneralNames. CVE-2026-109087. Reported by ucsurf.
 - Checker rejects partial wildcards (m*.example.com) by default; set
   Checker.hostCheckFlags = 0 to restore the old behaviour.
 - Connection.set1_host() now also calls SSL_set1_host(), so OpenSSL
